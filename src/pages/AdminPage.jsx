@@ -1,0 +1,672 @@
+import { CalendarDays, Database, FileUp, Image, KeyRound, RefreshCcw, Trash2 } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiFetch, getToken, setToken } from '../api.js';
+
+function StatBox({ label, value }) {
+  return (
+    <div className="rounded border border-white/10 bg-white/6 p-4">
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="mt-2 text-3xl font-black text-white">{value}</p>
+    </div>
+  );
+}
+
+export default function AdminPage() {
+  const [tokenState, setTokenState] = useState(getToken());
+  const [username, setUsername] = useState('admin');
+  const [password, setPassword] = useState('admin123');
+  const [file, setFile] = useState(null);
+  const [content, setContent] = useState('');
+  const [job, setJob] = useState(null);
+  const [enrichJob, setEnrichJob] = useState(null);
+  const [stats, setStats] = useState(null);
+  const [tmdbStatus, setTmdbStatus] = useState(null);
+  const [tmdbApiKey, setTmdbApiKey] = useState('');
+  const [tmdbAccessToken, setTmdbAccessToken] = useState('');
+  const [tmdbLanguage, setTmdbLanguage] = useState('pt-BR');
+  const [tmdbLimit, setTmdbLimit] = useState(1000);
+  const [tmdbMode, setTmdbMode] = useState('missing');
+  const [tmdbRunAll, setTmdbRunAll] = useState(true);
+  const [epgStatus, setEpgStatus] = useState(null);
+  const [epgUrl, setEpgUrl] = useState('');
+  const [epgContent, setEpgContent] = useState('');
+  const [epgJob, setEpgJob] = useState(null);
+  const [epgJobSource, setEpgJobSource] = useState('xmltv');
+  const [error, setError] = useState('');
+  const [tmdbMessage, setTmdbMessage] = useState('');
+  const [epgMessage, setEpgMessage] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const percent = useMemo(() => {
+    if (!job?.totalBytes) return 0;
+    return Math.min(100, Math.round((job.bytesRead / job.totalBytes) * 100));
+  }, [job]);
+
+  const epgPercent = useMemo(() => {
+    if (!epgJob?.totalPrograms) return 0;
+    return Math.min(100, Math.round((epgJob.processed / epgJob.totalPrograms) * 100));
+  }, [epgJob]);
+
+  useEffect(() => {
+    if (!tokenState) return;
+    apiFetch('/admin/settings')
+      .then((data) => {
+        setTmdbStatus(data.tmdb);
+        setEpgStatus(data.epg);
+        setEpgUrl(data.epg?.url || '');
+        setTmdbLanguage(data.raw?.tmdbLanguage || data.tmdb?.language || 'pt-BR');
+      })
+      .catch(() => {});
+  }, [tokenState]);
+
+  useEffect(() => {
+    if (!enrichJob || !['queued', 'running'].includes(enrichJob.status)) return undefined;
+    const timer = setInterval(() => {
+      apiFetch(`/tmdb/enrich/${enrichJob.id}`)
+        .then((data) => {
+          setEnrichJob(data.job);
+          if (['done', 'error'].includes(data.job.status)) refreshStats();
+        })
+        .catch((err) => setTmdbMessage(err.message));
+    }, 1200);
+    return () => clearInterval(timer);
+  }, [enrichJob]);
+
+  useEffect(() => {
+    if (!epgJob || !['queued', 'running'].includes(epgJob.status)) return undefined;
+    const endpoint = epgJobSource === 'iptv-org' ? `/epg/iptv-org/${epgJob.id}` : `/epg/import/${epgJob.id}`;
+    const timer = setInterval(() => {
+      apiFetch(endpoint)
+        .then((data) => {
+          setEpgJob(data.job);
+          if (['done', 'error'].includes(data.job.status)) refreshEpgStatus();
+        })
+        .catch((err) => setEpgMessage(err.message));
+    }, 1200);
+    return () => clearInterval(timer);
+  }, [epgJob, epgJobSource]);
+
+  function refreshStats() {
+    apiFetch('/stats').then(setStats).catch(() => {});
+  }
+
+  function refreshEpgStatus() {
+    apiFetch('/epg/status')
+      .then((data) => {
+        setEpgStatus(data.epg);
+        if (data.epg?.url) setEpgUrl(data.epg.url);
+      })
+      .catch(() => {});
+  }
+
+  useEffect(() => {
+    refreshStats();
+  }, []);
+
+  useEffect(() => {
+    if (!job || !['queued', 'running'].includes(job.status)) return undefined;
+    const timer = setInterval(() => {
+      apiFetch(`/import/${job.id}`)
+        .then((data) => {
+          setJob(data.job);
+          if (['done', 'error'].includes(data.job.status)) refreshStats();
+        })
+        .catch((err) => setError(err.message));
+    }, 900);
+    return () => clearInterval(timer);
+  }, [job]);
+
+  async function login(event) {
+    event.preventDefault();
+    setBusy(true);
+    setError('');
+    try {
+      const data = await apiFetch('/auth/login', { method: 'POST', body: { username, password } });
+      setToken(data.token);
+      setTokenState(data.token);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startImport(event) {
+    event.preventDefault();
+    if (!file && !content.trim()) {
+      setError('Envie um arquivo ou cole o conteudo M3U');
+      return;
+    }
+
+    setBusy(true);
+    setError('');
+    try {
+      const form = new FormData();
+      if (file) form.append('file', file);
+      if (content.trim()) form.append('content', content);
+      const data = await apiFetch('/import', { method: 'POST', body: form });
+      setJob(data.job);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearAll() {
+    if (!window.confirm('Limpar toda a biblioteca importada?')) return;
+    setBusy(true);
+    setError('');
+    try {
+      const data = await apiFetch('/library', { method: 'DELETE' });
+      setStats(data.stats);
+      setJob(null);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function saveTmdbSettings(event) {
+    event.preventDefault();
+    setBusy(true);
+    setTmdbMessage('');
+    try {
+      const data = await apiFetch('/admin/settings', {
+        method: 'PUT',
+        body: {
+          tmdbApiKey,
+          tmdbAccessToken,
+          tmdbLanguage
+        }
+      });
+      setTmdbStatus(data.tmdb);
+      setTmdbApiKey('');
+      setTmdbAccessToken('');
+      setTmdbMessage('TMDB configurado');
+    } catch (err) {
+      setTmdbMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startTmdbEnrichment() {
+    setBusy(true);
+    setTmdbMessage('');
+    try {
+      const data = await apiFetch('/tmdb/enrich', {
+        method: 'POST',
+          body: {
+            limit: Number(tmdbLimit) || 1000,
+            runAll: tmdbRunAll,
+            force: tmdbMode === 'replace'
+          }
+      });
+      setEnrichJob(data.job);
+    } catch (err) {
+      setTmdbMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startEpgImport(event) {
+    event.preventDefault();
+    if (!epgUrl.trim() && !epgContent.trim()) {
+      setEpgMessage('Cole a URL XMLTV ou o conteudo XML');
+      return;
+    }
+
+    setBusy(true);
+    setEpgMessage('');
+    try {
+      const data = await apiFetch('/epg/import', {
+        method: 'POST',
+        body: {
+          url: epgUrl.trim(),
+          content: epgContent.trim()
+        }
+      });
+      setEpgJobSource('xmltv');
+      setEpgJob(data.job);
+      if (epgUrl.trim()) setEpgContent('');
+    } catch (err) {
+      setEpgMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startIptvOrgEpg() {
+    setBusy(true);
+    setEpgMessage('');
+    try {
+      const data = await apiFetch('/epg/iptv-org', { method: 'POST' });
+      setEpgJobSource('iptv-org');
+      setEpgJob(data.job);
+    } catch (err) {
+      setEpgMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function logout() {
+    setToken(null);
+    setTokenState(null);
+  }
+
+  async function controlTmdbJob(action) {
+    if (!enrichJob?.id) return;
+    setTmdbMessage('');
+    try {
+      const data = await apiFetch(`/tmdb/enrich/${enrichJob.id}`, {
+        method: 'PATCH',
+        body: { action }
+      });
+      setEnrichJob(data.job);
+    } catch (err) {
+      setTmdbMessage(err.message);
+    }
+  }
+
+  if (!tokenState) {
+    return (
+      <div className="mx-auto grid min-h-[70vh] max-w-md place-items-center px-4">
+        <form onSubmit={login} className="glass w-full rounded p-6">
+          <h1 className="text-3xl font-black text-white">Admin</h1>
+          <div className="mt-6 space-y-3">
+            <input value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded border border-white/10 bg-black/30 px-3 py-3 text-white outline-none" placeholder="Usuario" />
+            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" className="w-full rounded border border-white/10 bg-black/30 px-3 py-3 text-white outline-none" placeholder="Senha" />
+          </div>
+          {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+          <button disabled={busy} className="mt-6 w-full rounded bg-brand px-5 py-3 text-sm font-black text-white hover:bg-red-600 disabled:opacity-60">
+            Entrar
+          </button>
+        </form>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+      <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-4xl font-black text-white">Admin</h1>
+          <p className="mt-2 text-sm text-slate-400">Importe playlists M3U/M3U8 para a biblioteca local.</p>
+        </div>
+        <button onClick={logout} className="rounded border border-white/10 px-4 py-2 text-sm font-bold text-slate-200 hover:bg-white/8">
+          Sair
+        </button>
+      </div>
+
+      <div className="mb-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+        <StatBox label="Filmes" value={stats?.movies ?? 0} />
+        <StatBox label="Series" value={stats?.series ?? 0} />
+        <StatBox label="Temporadas" value={stats?.seasons ?? 0} />
+        <StatBox label="Episodios" value={stats?.episodes ?? 0} />
+        <StatBox label="Canais" value={stats?.channels ?? 0} />
+        <StatBox label="Categorias" value={stats?.categories ?? 0} />
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+        <form onSubmit={startImport} className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-brand text-white">
+              <FileUp size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Importacao</h2>
+              <p className="text-sm text-slate-400">Arquivo .m3u, .m3u8 ou conteudo colado.</p>
+            </div>
+          </div>
+
+          <label className="block rounded border border-dashed border-white/18 bg-black/18 p-4">
+            <span className="text-sm font-bold text-slate-200">Arquivo</span>
+            <input
+              type="file"
+              accept=".m3u,.m3u8,.txt"
+              onChange={(event) => setFile(event.target.files?.[0] || null)}
+              className="mt-3 block w-full text-sm text-slate-300 file:mr-4 file:rounded file:border-0 file:bg-white file:px-4 file:py-2 file:text-sm file:font-bold file:text-ink"
+            />
+          </label>
+
+          <textarea
+            value={content}
+            onChange={(event) => setContent(event.target.value)}
+            className="mt-4 min-h-48 w-full rounded border border-white/10 bg-black/24 p-3 text-sm text-white outline-none placeholder:text-slate-500"
+            placeholder="#EXTM3U"
+          />
+
+          {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button disabled={busy || job?.status === 'running'} className="inline-flex items-center gap-2 rounded bg-brand px-5 py-3 text-sm font-black text-white hover:bg-red-600 disabled:opacity-60">
+              <RefreshCcw size={17} />
+              Importar
+            </button>
+            <button type="button" onClick={clearAll} disabled={busy} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
+              <Trash2 size={17} />
+              Limpar biblioteca
+            </button>
+          </div>
+        </form>
+
+        <aside className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-ocean text-ink">
+              <Database size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Status</h2>
+              <p className="text-sm text-slate-400">{job?.message || 'Sem importacao ativa'}</p>
+            </div>
+          </div>
+
+          {job ? (
+            <div className="space-y-4">
+              <div>
+                <div className="mb-2 flex justify-between text-sm text-slate-300">
+                  <span>{job.status}</span>
+                  <span>{percent}%</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded bg-black/40">
+                  <div className={`h-full rounded bg-brand ${job.status === 'running' ? 'transition-all' : ''}`} style={{ width: `${percent || (job.status === 'running' ? 12 : 0)}%` }} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <StatBox label="Linhas" value={job.processedLines} />
+                <StatBox label="Itens" value={job.processedItems} />
+                <StatBox label="Duplicados" value={job.duplicates} />
+                <StatBox label="Erros" value={job.errors} />
+              </div>
+
+              <div className="rounded bg-black/24 p-3 text-sm text-slate-300">
+                <p>Filmes: {job.imported.movies}</p>
+                <p>Series: {job.imported.series}</p>
+                <p>Temporadas: {job.imported.seasons}</p>
+                <p>Episodios: {job.imported.episodes}</p>
+                <p>Canais: {job.imported.channels}</p>
+              </div>
+
+              {job.errorSamples?.length > 0 && (
+                <div className="rounded bg-red-950/30 p-3 text-xs text-red-200">
+                  {job.errorSamples.map((sample) => (
+                    <p key={sample} className="truncate">{sample}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">O progresso aparece aqui depois que a importacao comecar.</p>
+          )}
+        </aside>
+      </div>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+        <form onSubmit={startEpgImport} className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-ocean text-ink">
+              <CalendarDays size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">EPG</h2>
+              <p className="text-sm text-slate-400">Grade XMLTV dos canais ao vivo.</p>
+            </div>
+          </div>
+
+          <label className="block">
+            <span className="text-sm font-bold text-slate-200">URL XMLTV</span>
+            <input
+              value={epgUrl}
+              onChange={(event) => setEpgUrl(event.target.value)}
+              className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+              placeholder="https://.../xmltv.php ou https://.../epg.xml.gz"
+            />
+          </label>
+
+          <textarea
+            value={epgContent}
+            onChange={(event) => setEpgContent(event.target.value)}
+            className="mt-4 min-h-32 w-full rounded border border-white/10 bg-black/24 p-3 text-sm text-white outline-none placeholder:text-slate-500"
+            placeholder="<tv>...</tv>"
+          />
+
+          {epgMessage && <p className="mt-4 text-sm text-slate-300">{epgMessage}</p>}
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button disabled={busy || epgJob?.status === 'running'} className="inline-flex items-center gap-2 rounded bg-white px-5 py-3 text-sm font-black text-ink hover:bg-slate-200 disabled:opacity-60">
+              <CalendarDays size={17} />
+              Importar EPG
+            </button>
+            <button type="button" onClick={refreshEpgStatus} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8">
+              <RefreshCcw size={17} />
+              Atualizar
+            </button>
+            <button
+              type="button"
+              onClick={startIptvOrgEpg}
+              disabled={busy || epgJob?.status === 'running'}
+              className="inline-flex items-center gap-2 rounded bg-ocean px-5 py-3 text-sm font-black text-ink hover:bg-cyan-300 disabled:opacity-60"
+            >
+              <CalendarDays size={17} />
+              Importar iptv-org Brasil
+            </button>
+          </div>
+        </form>
+
+        <aside className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-white text-ink">
+              <CalendarDays size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Programacao</h2>
+              <p className="text-sm text-slate-400">{epgJob?.message || 'Sem importacao EPG ativa'}</p>
+            </div>
+          </div>
+
+          {epgJob ? (
+            <div className="space-y-4">
+              <div>
+                <div className="mb-2 flex justify-between text-sm text-slate-300">
+                  <span>{epgJob.status}</span>
+                  <span>{epgJob.processed}/{epgJob.totalPrograms}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded bg-black/40">
+                  <div className="h-full rounded bg-ocean transition-all" style={{ width: `${epgPercent}%` }} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <StatBox label="Importados" value={epgJob.imported} />
+                <StatBox label="Canais" value={epgJob.matchedChannels} />
+                <StatBox label="Erros" value={epgJob.errors} />
+                <StatBox label="Progresso" value={`${epgPercent}%`} />
+              </div>
+              {epgJob.commandLog?.length > 0 && (
+                <div className="max-h-32 overflow-y-auto rounded bg-black/24 p-3 text-xs text-slate-300">
+                  {epgJob.commandLog.map((line, index) => (
+                    <p key={`${line}-${index}`} className="truncate">{line}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <StatBox label="Programas" value={epgStatus?.programs ?? 0} />
+              <StatBox label="Canais" value={epgStatus?.channels ?? 0} />
+            </div>
+          )}
+
+          {epgStatus?.lastImportedAt && (
+            <p className="mt-4 text-sm text-slate-400">
+              Ultima importacao: {new Date(epgStatus.lastImportedAt).toLocaleString('pt-BR')}
+            </p>
+          )}
+        </aside>
+      </section>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+        <form onSubmit={saveTmdbSettings} className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-gold text-ink">
+              <KeyRound size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">TMDB</h2>
+              <p className="text-sm text-slate-400">
+                {tmdbStatus?.configured ? `Conectado em ${tmdbStatus.language}` : 'Cole uma chave gratuita do The Movie Database.'}
+              </p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">API key</span>
+              <input
+                value={tmdbApiKey}
+                onChange={(event) => setTmdbApiKey(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder={tmdbStatus?.apiKeyMasked || 'TMDB_API_KEY'}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Access token</span>
+              <input
+                value={tmdbAccessToken}
+                onChange={(event) => setTmdbAccessToken(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder={tmdbStatus?.accessTokenMasked || 'Opcional'}
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-[160px_160px_1fr]">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Idioma</span>
+              <input
+                value={tmdbLanguage}
+                onChange={(event) => setTmdbLanguage(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Limite</span>
+              <input
+                value={tmdbLimit}
+                onChange={(event) => setTmdbLimit(event.target.value)}
+                type="number"
+                min="1"
+                max="2000"
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none"
+              />
+            </label>
+            <div className="mt-7 grid grid-cols-2 overflow-hidden rounded border border-white/10 bg-black/18 p-1">
+              <button
+                type="button"
+                onClick={() => setTmdbMode('missing')}
+                className={`rounded px-3 py-2 text-sm font-bold ${tmdbMode === 'missing' ? 'bg-white text-ink' : 'text-slate-300 hover:bg-white/8'}`}
+              >
+                So faltantes
+              </button>
+              <button
+                type="button"
+                onClick={() => setTmdbMode('replace')}
+                className={`rounded px-3 py-2 text-sm font-bold ${tmdbMode === 'replace' ? 'bg-white text-ink' : 'text-slate-300 hover:bg-white/8'}`}
+              >
+                Substituir tudo
+              </button>
+            </div>
+          </div>
+
+          <label className="mt-4 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+            <input checked={tmdbRunAll} onChange={(event) => setTmdbRunAll(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+            Processar todos os lotes automaticamente
+          </label>
+
+          {tmdbMessage && <p className="mt-4 text-sm text-slate-300">{tmdbMessage}</p>}
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button disabled={busy} className="inline-flex items-center gap-2 rounded bg-white px-5 py-3 text-sm font-black text-ink hover:bg-slate-200 disabled:opacity-60">
+              <KeyRound size={17} />
+              Salvar TMDB
+            </button>
+            <button
+              type="button"
+              onClick={startTmdbEnrichment}
+              disabled={busy || enrichJob?.status === 'running'}
+              className="inline-flex items-center gap-2 rounded bg-brand px-5 py-3 text-sm font-black text-white hover:bg-red-600 disabled:opacity-60"
+            >
+              <Image size={17} />
+              Iniciar fila
+            </button>
+          </div>
+        </form>
+
+        <aside className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-white text-ink">
+              <Image size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Capas</h2>
+              <p className="text-sm text-slate-400">{enrichJob?.message || 'Sem atualizacao ativa'}</p>
+            </div>
+          </div>
+
+          {enrichJob ? (
+            <div className="space-y-4">
+              <div>
+                <div className="mb-2 flex justify-between text-sm text-slate-300">
+                  <span>{enrichJob.status}</span>
+                  <span>{enrichJob.processed}/{enrichJob.total}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded bg-black/40">
+                  <div
+                    className="h-full rounded bg-ocean transition-all"
+                    style={{ width: `${enrichJob.total ? Math.round((enrichJob.processed / enrichJob.total) * 100) : 0}%` }}
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <StatBox label="Encontradas" value={enrichJob.matched} />
+                <StatBox label="Sem match" value={enrichJob.skipped} />
+                <StatBox label="Erros" value={enrichJob.errors} />
+                <StatBox label="Lote" value={enrichJob.batch || 0} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {enrichJob.status === 'running' && (
+                  <button onClick={() => controlTmdbJob('pause')} className="rounded border border-white/10 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/8">
+                    Pausar
+                  </button>
+                )}
+                {enrichJob.status === 'paused' && (
+                  <button onClick={() => controlTmdbJob('resume')} className="rounded bg-white px-3 py-2 text-sm font-black text-ink hover:bg-slate-200">
+                    Continuar
+                  </button>
+                )}
+                {['running', 'paused', 'queued'].includes(enrichJob.status) && (
+                  <button onClick={() => controlTmdbJob('stop')} className="rounded border border-white/10 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/8">
+                    Parar
+                  </button>
+                )}
+              </div>
+              {enrichJob.errorSamples?.length > 0 && (
+                <div className="rounded bg-red-950/30 p-3 text-xs text-red-200">
+                  {enrichJob.errorSamples.map((sample) => (
+                    <p key={sample} className="truncate">{sample}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">Depois de configurar o TMDB, use este painel para corrigir posters e backdrops em lotes.</p>
+          )}
+        </aside>
+      </section>
+    </div>
+  );
+}

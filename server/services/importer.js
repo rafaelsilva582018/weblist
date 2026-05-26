@@ -1,0 +1,299 @@
+import fs from 'node:fs';
+import readline from 'node:readline';
+import { randomUUID } from 'node:crypto';
+import { db, rebuildSearchIndex, setSetting } from '../db.js';
+import { classifyItem, cleanCatalogTitle, isProbablyPlayableUrl, parseExtInf, parseM3uHeader } from '../parser/m3uParser.js';
+import { compactSpaces, normalizeTitle, padNumber } from '../utils/normalize.js';
+
+const jobs = new Map();
+
+function createEmptyJob(filePath) {
+  return {
+    id: randomUUID(),
+    filePath,
+    status: 'queued',
+    message: 'Aguardando importacao',
+    totalBytes: 0,
+    bytesRead: 0,
+    processedLines: 0,
+    processedItems: 0,
+    duplicates: 0,
+    errors: 0,
+    errorSamples: [],
+    imported: {
+      movies: 0,
+      series: 0,
+      seasons: 0,
+      episodes: 0,
+      channels: 0
+    },
+    epgUrlDetected: '',
+    startedAt: null,
+    finishedAt: null
+  };
+}
+
+export function queueImport(filePath, options = {}) {
+  const job = createEmptyJob(filePath);
+  jobs.set(job.id, job);
+
+  setImmediate(async () => {
+    try {
+      await importPlaylistFile(job, options);
+    } catch (error) {
+      job.status = 'error';
+      job.message = error.message || 'Falha ao importar playlist';
+      job.finishedAt = new Date().toISOString();
+    } finally {
+      if (options.cleanup) {
+        fs.promises.unlink(filePath).catch(() => {});
+      }
+    }
+  });
+
+  return job;
+}
+
+export function getImportJob(id) {
+  return jobs.get(id) || null;
+}
+
+function prepareStatements() {
+  return {
+    findStream: db.prepare(`
+      SELECT 1 FROM movies WHERE stream_url = ?
+      UNION ALL SELECT 1 FROM episodes WHERE stream_url = ?
+      UNION ALL SELECT 1 FROM channels WHERE stream_url = ?
+      LIMIT 1
+    `),
+    selectCategory: db.prepare('SELECT id FROM categories WHERE name = ? AND type = ?'),
+    insertCategory: db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)'),
+    selectSeries: db.prepare('SELECT id, poster_url AS posterUrl FROM series WHERE normalized_title = ?'),
+    insertSeries: db.prepare(`
+      INSERT INTO series (title, normalized_title, poster_url, category_id)
+      VALUES (?, ?, ?, ?)
+    `),
+    updateSeriesPoster: db.prepare("UPDATE series SET poster_url = ? WHERE id = ? AND (poster_url IS NULL OR poster_url = '')"),
+    selectSeason: db.prepare('SELECT id FROM seasons WHERE series_id = ? AND season_number = ?'),
+    insertSeason: db.prepare('INSERT INTO seasons (series_id, season_number, title) VALUES (?, ?, ?)'),
+    insertEpisode: db.prepare(`
+      INSERT INTO episodes (
+        series_id, season_id, season_number, episode_number, title, display_title,
+        stream_url, poster_url, category_id
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `),
+    insertMovie: db.prepare(`
+      INSERT INTO movies (title, normalized_title, stream_url, poster_url, category_id)
+      VALUES (?, ?, ?, ?, ?)
+    `),
+    insertChannel: db.prepare(`
+      INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+  };
+}
+
+function getCategoryId(statements, cache, type, name) {
+  const categoryName = compactSpaces(name || 'Sem categoria') || 'Sem categoria';
+  const cacheKey = `${type}:${categoryName.toLowerCase()}`;
+  if (cache.has(cacheKey)) return cache.get(cacheKey);
+
+  const existing = statements.selectCategory.get(categoryName, type);
+  if (existing) {
+    cache.set(cacheKey, existing.id);
+    return existing.id;
+  }
+
+  const result = statements.insertCategory.run(categoryName, type);
+  const id = Number(result.lastInsertRowid);
+  cache.set(cacheKey, id);
+  return id;
+}
+
+function addError(job, message) {
+  job.errors += 1;
+  if (job.errorSamples.length < 8) {
+    job.errorSamples.push(message);
+  }
+}
+
+function importItem(meta, url, statements, cache, job) {
+  const streamUrl = compactSpaces(url);
+  if (!isProbablyPlayableUrl(streamUrl)) {
+    addError(job, `URL ignorada: ${streamUrl.slice(0, 100)}`);
+    return;
+  }
+
+  if (statements.findStream.get(streamUrl, streamUrl, streamUrl)) {
+    job.duplicates += 1;
+    return;
+  }
+
+  const classification = classifyItem(meta, streamUrl);
+  const rawTitle = compactSpaces(meta.name || meta.rawTitle || 'Sem titulo');
+  const title = classification.type === 'channel' ? rawTitle : cleanCatalogTitle(rawTitle);
+  const posterUrl = compactSpaces(meta.logo || '');
+
+  try {
+    if (classification.type === 'episode') {
+      const categoryId = getCategoryId(statements, cache, 'series', meta.group);
+      const seriesTitle = compactSpaces(classification.seriesTitle);
+      const normalizedSeries = normalizeTitle(seriesTitle);
+
+      if (!normalizedSeries) {
+        addError(job, `Episodio sem serie: ${title}`);
+        return;
+      }
+
+      let series = statements.selectSeries.get(normalizedSeries);
+      let seriesId;
+
+      if (!series) {
+        const result = statements.insertSeries.run(seriesTitle, normalizedSeries, posterUrl || null, categoryId);
+        seriesId = Number(result.lastInsertRowid);
+        job.imported.series += 1;
+      } else {
+        seriesId = series.id;
+        if (posterUrl && !series.posterUrl) {
+          statements.updateSeriesPoster.run(posterUrl, seriesId);
+        }
+      }
+
+      let season = statements.selectSeason.get(seriesId, classification.season);
+      let seasonId;
+      if (!season) {
+        const result = statements.insertSeason.run(
+          seriesId,
+          classification.season,
+          `Temporada ${classification.season}`
+        );
+        seasonId = Number(result.lastInsertRowid);
+        job.imported.seasons += 1;
+      } else {
+        seasonId = season.id;
+      }
+
+      const episodeTitle = classification.episodeTitle || `Episodio ${classification.episode}`;
+      const displayTitle = `${seriesTitle} S${padNumber(classification.season)}E${padNumber(classification.episode)} - ${episodeTitle}`;
+
+      statements.insertEpisode.run(
+        seriesId,
+        seasonId,
+        classification.season,
+        classification.episode,
+        episodeTitle,
+        displayTitle,
+        streamUrl,
+        posterUrl || null,
+        categoryId
+      );
+      job.imported.episodes += 1;
+      return;
+    }
+
+    if (classification.type === 'channel') {
+      const categoryId = getCategoryId(statements, cache, 'channel', meta.group);
+      statements.insertChannel.run(
+        title,
+        normalizeTitle(title),
+        compactSpaces(meta.tvgId || meta.attrs?.['tvg-id'] || ''),
+        compactSpaces(meta.tvgName || meta.name || ''),
+        streamUrl,
+        posterUrl || null,
+        categoryId
+      );
+      job.imported.channels += 1;
+      return;
+    }
+
+    const categoryId = getCategoryId(statements, cache, 'movie', meta.group);
+    statements.insertMovie.run(title, normalizeTitle(title), streamUrl, posterUrl || null, categoryId);
+    job.imported.movies += 1;
+  } catch (error) {
+    if (String(error.message).includes('UNIQUE')) {
+      job.duplicates += 1;
+      return;
+    }
+    addError(job, `${title}: ${error.message}`);
+  }
+}
+
+async function importPlaylistFile(job) {
+  if (!fs.existsSync(job.filePath)) {
+    throw new Error('Arquivo da playlist nao encontrado');
+  }
+
+  job.status = 'running';
+  job.message = 'Importando playlist';
+  job.startedAt = new Date().toISOString();
+  job.totalBytes = fs.statSync(job.filePath).size;
+
+  const statements = prepareStatements();
+  const categoryCache = new Map();
+  const stream = fs.createReadStream(job.filePath, { encoding: 'utf8' });
+  stream.on('data', (chunk) => {
+    job.bytesRead += Buffer.byteLength(chunk, 'utf8');
+  });
+
+  const reader = readline.createInterface({ input: stream, crlfDelay: Infinity });
+  let pendingInfo = null;
+  let batch = 0;
+  let transactionOpen = false;
+
+  db.exec('BEGIN IMMEDIATE');
+  transactionOpen = true;
+
+  try {
+    for await (const rawLine of reader) {
+      job.processedLines += 1;
+      const line = rawLine.trim();
+
+      if (!line) continue;
+      if (line.toUpperCase().startsWith('#EXTM3U')) {
+        const header = parseM3uHeader(line);
+        const epgUrl = compactSpaces(header['x-tvg-url'] || header['url-tvg'] || header['epg-url'] || '');
+        if (epgUrl) {
+          job.epgUrlDetected = epgUrl;
+          setSetting('epg_url', epgUrl);
+        }
+        continue;
+      }
+      if (line.toUpperCase().startsWith('#EXTINF')) {
+        pendingInfo = parseExtInf(line);
+        continue;
+      }
+
+      if (pendingInfo && !line.startsWith('#')) {
+        importItem(pendingInfo, line, statements, categoryCache, job);
+        job.processedItems += 1;
+        pendingInfo = null;
+        batch += 1;
+      }
+
+      if (batch >= 500) {
+        db.exec('COMMIT');
+        transactionOpen = false;
+        batch = 0;
+        await new Promise((resolve) => setImmediate(resolve));
+        db.exec('BEGIN IMMEDIATE');
+        transactionOpen = true;
+      }
+    }
+
+    if (transactionOpen) {
+      db.exec('COMMIT');
+      transactionOpen = false;
+    }
+
+    job.status = 'done';
+    job.message = 'Importacao concluida';
+    job.bytesRead = job.totalBytes;
+    job.finishedAt = new Date().toISOString();
+    rebuildSearchIndex();
+  } catch (error) {
+    if (transactionOpen) {
+      db.exec('ROLLBACK');
+    }
+    throw error;
+  }
+}

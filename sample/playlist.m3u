@@ -1,0 +1,19 @@
+#EXTM3U
+
+#EXTINF:-1 tvg-name="Big Buck Bunny" group-title="Filmes / Demo", Big Buck Bunny
+https://media.w3.org/2010/05/bunny/movie.mp4
+
+#EXTINF:-1 tvg-name="Sintel" group-title="Filmes / Demo", Sintel
+https://media.w3.org/2010/05/sintel/trailer.mp4
+
+#EXTINF:-1 tvg-name="The Last Show S01E01 - Piloto" group-title="Series / Demo", The Last Show S01E01 - Piloto
+https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4
+
+#EXTINF:-1 tvg-name="The Last Show S01E02 - A Chegada" group-title="Series / Demo", The Last Show S01E02 - A Chegada
+https://www.w3schools.com/html/mov_bbb.mp4
+
+#EXTINF:-1 tvg-name="The Last Show S02E01 - Nova Fase" group-title="Series / Demo", The Last Show S02E01 - Nova Fase
+https://media.w3.org/2010/05/bunny/trailer.mp4
+
+#EXTINF:-1 tvg-name="Demo Live 24h" group-title="Canais / Demo", Demo Live 24h
+https://test-streams.mux.dev/x36xhzz/x36xhzz.m3u8

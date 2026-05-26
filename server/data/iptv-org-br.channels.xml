@@ -1,0 +1,1754 @@
+<channels>
+  <channel site="app.tvufop.com.br" lang="pt" xmltv_id="TVUFOP.br@HD" site_id="TVUFOP.br@HD">TV UFOP</channel>
+  <channel site="claro.com.br" site_id="1_407" lang="pt" xmltv_id="">Animal Planet</channel>
+  <channel site="claro.com.br" site_id="1_409" lang="pt" xmltv_id="">BBC World News</channel>
+  <channel site="claro.com.br" site_id="1_410" lang="pt" xmltv_id="">cartoonito</channel>
+  <channel site="claro.com.br" site_id="1_414" lang="pt" xmltv_id="">Canal Brasil</channel>
+  <channel site="claro.com.br" site_id="1_416" lang="pt" xmltv_id="">CNN International</channel>
+  <channel site="claro.com.br" site_id="1_419" lang="pt" xmltv_id="">Discovery Turbo</channel>
+  <channel site="claro.com.br" site_id="1_420" lang="pt" xmltv_id="">Discovery Kids</channel>
+  <channel site="claro.com.br" site_id="1_421" lang="pt" xmltv_id="">Discovery Channel</channel>
+  <channel site="claro.com.br" site_id="1_423" lang="pt" xmltv_id="">Discovery Science</channel>
+  <channel site="claro.com.br" site_id="1_425" lang="pt" xmltv_id="">E!</channel>
+  <channel site="claro.com.br" site_id="1_426" lang="pt" xmltv_id="">ESPN</channel>
+  <channel site="claro.com.br" site_id="1_427" lang="pt" xmltv_id="">ESPN 2</channel>
+  <channel site="claro.com.br" site_id="1_430" lang="pt" xmltv_id="">Futura</channel>
+  <channel site="claro.com.br" site_id="1_431" lang="pt" xmltv_id="">Gazeta</channel>
+  <channel site="claro.com.br" site_id="1_432" lang="pt" xmltv_id="">GloboNews</channel>
+  <channel site="claro.com.br" site_id="1_433" lang="pt" xmltv_id="">GNT</channel>
+  <channel site="claro.com.br" site_id="1_435" lang="pt" xmltv_id="">Globo</channel>
+  <channel site="claro.com.br" site_id="1_436" lang="pt" xmltv_id="">HBO 2</channel>
+  <channel site="claro.com.br" site_id="1_437" lang="pt" xmltv_id="">HBO</channel>
+  <channel site="claro.com.br" site_id="1_438" lang="pt" xmltv_id="">Discovery Home &amp; Health</channel>
+  <channel site="claro.com.br" site_id="1_439" lang="pt" xmltv_id="">HBO Family</channel>
+  <channel site="claro.com.br" site_id="1_440" lang="pt" xmltv_id="">HBO Signature</channel>
+  <channel site="claro.com.br" site_id="1_442" lang="pt" xmltv_id="">Sexy Hot</channel>
+  <channel site="claro.com.br" site_id="1_446" lang="pt" xmltv_id="">HBO Xtreme</channel>
+  <channel site="claro.com.br" site_id="1_449" lang="pt" xmltv_id="">Hbo Mundi</channel>
+  <channel site="claro.com.br" site_id="1_450" lang="pt" xmltv_id="">Multishow</channel>
+  <channel site="claro.com.br" site_id="1_453" lang="pt" xmltv_id="">Hbo Pop</channel>
+  <channel site="claro.com.br" site_id="1_456" lang="pt" xmltv_id="">MTV</channel>
+  <channel site="claro.com.br" site_id="1_457" lang="pt" xmltv_id="">A&amp;E</channel>
+  <channel site="claro.com.br" site_id="1_459" lang="pt" xmltv_id="">Shoptime</channel>
+  <channel site="claro.com.br" site_id="1_461" lang="pt" xmltv_id="">NHK World Premium</channel>
+  <channel site="claro.com.br" site_id="1_462" lang="pt" xmltv_id="">Nickelodeon</channel>
+  <channel site="claro.com.br" site_id="1_463" lang="pt" xmltv_id="">Playboy TV</channel>
+  <channel site="claro.com.br" site_id="1_465" lang="pt" xmltv_id="">Record</channel>
+  <channel site="claro.com.br" site_id="1_467" lang="pt" xmltv_id="">Canal Rural</channel>
+  <channel site="claro.com.br" site_id="1_468" lang="pt" xmltv_id="">SBT</channel>
+  <channel site="claro.com.br" site_id="1_470" lang="pt" xmltv_id="">SporTV 2</channel>
+  <channel site="claro.com.br" site_id="1_471" lang="pt" xmltv_id="">SporTV</channel>
+  <channel site="claro.com.br" site_id="1_472" lang="pt" xmltv_id="">National Geographic</channel>
+  <channel site="claro.com.br" site_id="1_473" lang="pt" xmltv_id="">Telecine Premium</channel>
+  <channel site="claro.com.br" site_id="1_474" lang="pt" xmltv_id="">Telecine Action</channel>
+  <channel site="claro.com.br" site_id="1_475" lang="pt" xmltv_id="">Telecine Touch</channel>
+  <channel site="claro.com.br" site_id="1_476" lang="pt" xmltv_id="">Telecine Pipoca</channel>
+  <channel site="claro.com.br" site_id="1_477" lang="pt" xmltv_id="">Telecine Cult</channel>
+  <channel site="claro.com.br" site_id="1_478" lang="pt" xmltv_id="">TNT</channel>
+  <channel site="claro.com.br" site_id="1_479" lang="pt" xmltv_id="">ID</channel>
+  <channel site="claro.com.br" site_id="1_480" lang="pt" xmltv_id="">TV5 Monde</channel>
+  <channel site="claro.com.br" site_id="1_482" lang="pt" xmltv_id="">AXN</channel>
+  <channel site="claro.com.br" site_id="1_483" lang="pt" xmltv_id="">Universal TV</channel>
+  <channel site="claro.com.br" site_id="1_484" lang="pt" xmltv_id="">Rede Vida</channel>
+  <channel site="claro.com.br" site_id="1_487" lang="pt" xmltv_id="">Combate</channel>
+  <channel site="claro.com.br" site_id="1_488" lang="pt" xmltv_id="">Disney Channel</channel>
+  <channel site="claro.com.br" site_id="1_490" lang="pt" xmltv_id="">FX</channel>
+  <channel site="claro.com.br" site_id="1_492" lang="pt" xmltv_id="">Cinecanal</channel>
+  <channel site="claro.com.br" site_id="1_509" lang="pt" xmltv_id="">Canal do Boi</channel>
+  <channel site="claro.com.br" site_id="1_520" lang="pt" xmltv_id="">TCM</channel>
+  <channel site="claro.com.br" site_id="1_528" lang="pt" xmltv_id="">Venus</channel>
+  <channel site="claro.com.br" site_id="1_530" lang="pt" xmltv_id="">Syfy</channel>
+  <channel site="claro.com.br" site_id="1_531" lang="pt" xmltv_id="">Lifetime</channel>
+  <channel site="claro.com.br" site_id="1_532" lang="pt" xmltv_id="">Megapix</channel>
+  <channel site="claro.com.br" site_id="1_533" lang="pt" xmltv_id="">Modo viagem HD</channel>
+  <channel site="claro.com.br" site_id="1_545" lang="pt" xmltv_id="">Band HD</channel>
+  <channel site="claro.com.br" site_id="1_548" lang="pt" xmltv_id="">Canal de Vendas NET</channel>
+  <channel site="claro.com.br" site_id="1_563" lang="pt" xmltv_id="">Globo HD</channel>
+  <channel site="claro.com.br" site_id="1_574" lang="pt" xmltv_id="">MTV HD ³</channel>
+  <channel site="claro.com.br" site_id="1_592" lang="pt" xmltv_id="">Record News</channel>
+  <channel site="claro.com.br" site_id="1_593" lang="pt" xmltv_id="">Rede 21</channel>
+  <channel site="claro.com.br" site_id="1_609" lang="pt" xmltv_id="">TV Korea</channel>
+  <channel site="claro.com.br" site_id="1_692" lang="pt" xmltv_id="">Studio Universal</channel>
+  <channel site="claro.com.br" site_id="1_693" lang="pt" xmltv_id="">Premiere 7</channel>
+  <channel site="claro.com.br" site_id="1_798" lang="pt" xmltv_id="">Sextreme</channel>
+  <channel site="claro.com.br" site_id="1_832" lang="pt" xmltv_id="">Nick Jr.</channel>
+  <channel site="claro.com.br" site_id="1_836" lang="pt" xmltv_id="">Mega TV</channel>
+  <channel site="claro.com.br" site_id="1_838" lang="pt" xmltv_id="">Telecine Premium HD ³</channel>
+  <channel site="claro.com.br" site_id="1_847" lang="pt" xmltv_id="">Terra Viva</channel>
+  <channel site="claro.com.br" site_id="1_856" lang="pt" xmltv_id="">HBO HD ³</channel>
+  <channel site="claro.com.br" site_id="1_858" lang="pt" xmltv_id="">SBT HD</channel>
+  <channel site="claro.com.br" site_id="1_863" lang="pt" xmltv_id="">BIS HD ³</channel>
+  <channel site="claro.com.br" site_id="1_871" lang="pt" xmltv_id="">Telecine Pipoca HD ³</channel>
+  <channel site="claro.com.br" site_id="1_872" lang="pt" xmltv_id="">Viva</channel>
+  <channel site="claro.com.br" site_id="1_875" lang="pt" xmltv_id="">TNT HD ³</channel>
+  <channel site="claro.com.br" site_id="1_876" lang="pt" xmltv_id="">Space HD ³</channel>
+  <channel site="claro.com.br" site_id="1_877" lang="pt" xmltv_id="">Discovery Theater HD ³</channel>
+  <channel site="claro.com.br" site_id="1_878" lang="pt" xmltv_id="">Megapix HD ³</channel>
+  <channel site="claro.com.br" site_id="1_890" lang="pt" xmltv_id="">TLC HD ³</channel>
+  <channel site="claro.com.br" site_id="1_896" lang="pt" xmltv_id="">RIT TV</channel>
+  <channel site="claro.com.br" site_id="1_897" lang="pt" xmltv_id="">Space</channel>
+  <channel site="claro.com.br" site_id="1_898" lang="pt" xmltv_id="">Telecine Action HD ³</channel>
+  <channel site="claro.com.br" site_id="1_899" lang="pt" xmltv_id="">Telecine Fun</channel>
+  <channel site="claro.com.br" site_id="1_927" lang="pt" xmltv_id="">E! HD</channel>
+  <channel site="claro.com.br" site_id="1_928" lang="pt" xmltv_id="">Animal Planet HD</channel>
+  <channel site="claro.com.br" site_id="1_931" lang="pt" xmltv_id="">Lifetime HD</channel>
+  <channel site="claro.com.br" site_id="1_932" lang="pt" xmltv_id="">Baby Tv</channel>
+  <channel site="claro.com.br" site_id="1_935" lang="pt" xmltv_id="">FOOD NETWORK HD</channel>
+  <channel site="claro.com.br" site_id="1_950" lang="pt" xmltv_id="">Cinecanal HD</channel>
+  <channel site="claro.com.br" site_id="1_952" lang="pt" xmltv_id="">Food Network</channel>
+  <channel site="claro.com.br" site_id="1_953" lang="pt" xmltv_id="">Band News HD</channel>
+  <channel site="claro.com.br" site_id="1_1004" lang="pt" xmltv_id="">Record HD</channel>
+  <channel site="claro.com.br" site_id="1_1008" lang="pt" xmltv_id="">Sony HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1011" lang="pt" xmltv_id="">History 2 HD</channel>
+  <channel site="claro.com.br" site_id="1_1014" lang="pt" xmltv_id="">Mosaico Multijogos</channel>
+  <channel site="claro.com.br" site_id="1_1017" lang="pt" xmltv_id="">AXN HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1018" lang="pt" xmltv_id="">Telecine Fun HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1019" lang="pt" xmltv_id="">Telecine Touch HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1020" lang="pt" xmltv_id="">Off HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1021" lang="pt" xmltv_id="">Band Sports</channel>
+  <channel site="claro.com.br" site_id="1_1022" lang="pt" xmltv_id="">Band News</channel>
+  <channel site="claro.com.br" site_id="1_1023" lang="pt" xmltv_id="">SporTV 3</channel>
+  <channel site="claro.com.br" site_id="1_1026" lang="pt" xmltv_id="">Tnt novelas</channel>
+  <channel site="claro.com.br" site_id="1_1027" lang="pt" xmltv_id="">Combate HD</channel>
+  <channel site="claro.com.br" site_id="1_1034" lang="pt" xmltv_id="">Espn 4</channel>
+  <channel site="claro.com.br" site_id="1_1035" lang="pt" xmltv_id="">ESPN 4 HD</channel>
+  <channel site="claro.com.br" site_id="1_1036" lang="pt" xmltv_id="">Disney Channel HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1041" lang="pt" xmltv_id="">Cinemax</channel>
+  <channel site="claro.com.br" site_id="1_1042" lang="pt" xmltv_id="">Gloob</channel>
+  <channel site="claro.com.br" site_id="1_1043" lang="pt" xmltv_id="">Gloob HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1044" lang="pt" xmltv_id="">Cultura HD</channel>
+  <channel site="claro.com.br" site_id="1_1047" lang="pt" xmltv_id="">SporTV 2 HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1049" lang="pt" xmltv_id="">ESPN HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1051" lang="pt" xmltv_id="">GNT HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1053" lang="pt" xmltv_id="">Curta!</channel>
+  <channel site="claro.com.br" site_id="1_1054" lang="pt" xmltv_id="">Modo viagem</channel>
+  <channel site="claro.com.br" site_id="1_1055" lang="pt" xmltv_id="">BIS</channel>
+  <channel site="claro.com.br" site_id="1_1056" lang="pt" xmltv_id="">Off</channel>
+  <channel site="claro.com.br" site_id="1_1057" lang="pt" xmltv_id="">Play TV</channel>
+  <channel site="claro.com.br" site_id="1_1058" lang="pt" xmltv_id="">Woohoo</channel>
+  <channel site="claro.com.br" site_id="1_1059" lang="pt" xmltv_id="">ID HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1060" lang="pt" xmltv_id="">Discovery HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1061" lang="pt" xmltv_id="">Discovery Home &amp; Health HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1062" lang="pt" xmltv_id="">Multishow HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1063" lang="pt" xmltv_id="">SporTV HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1064" lang="pt" xmltv_id="">Premiere HD 2</channel>
+  <channel site="claro.com.br" site_id="1_1066" lang="pt" xmltv_id="">GloboNews HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1071" lang="pt" xmltv_id="">Prime Box Brazil</channel>
+  <channel site="claro.com.br" site_id="1_1072" lang="pt" xmltv_id="">Music Box Brazil</channel>
+  <channel site="claro.com.br" site_id="1_1073" lang="pt" xmltv_id="">Arte 1</channel>
+  <channel site="claro.com.br" site_id="1_1079" lang="pt" xmltv_id="">Discovery Kids HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1086" lang="pt" xmltv_id="">HBO Signature HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1088" lang="pt" xmltv_id="">Comedy Central</channel>
+  <channel site="claro.com.br" site_id="1_1091" lang="pt" xmltv_id="">ESPN 6 HD</channel>
+  <channel site="claro.com.br" site_id="1_1093" lang="pt" xmltv_id="">Polishop</channel>
+  <channel site="claro.com.br" site_id="1_1095" lang="pt" xmltv_id="">Band Sports HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1098" lang="pt" xmltv_id="">Cinemax HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1099" lang="pt" xmltv_id="">HBO Family HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1100" lang="pt" xmltv_id="">Telecine Cult HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1103" lang="pt" xmltv_id="">Star Channel</channel>
+  <channel site="claro.com.br" site_id="1_1104" lang="pt" xmltv_id="">FX HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1111" lang="pt" xmltv_id="">Viva HD</channel>
+  <channel site="claro.com.br" site_id="1_1131" lang="pt" xmltv_id="">Canal Brasil HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1133" lang="pt" xmltv_id="">Discovery Turbo HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1137" lang="pt" xmltv_id="">SporTV 3 HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1144" lang="pt" xmltv_id="">Discovery world HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1158" lang="pt" xmltv_id="">Cultura</channel>
+  <channel site="claro.com.br" site_id="1_1159" lang="pt" xmltv_id="">Rede TV</channel>
+  <channel site="claro.com.br" site_id="1_1165" lang="pt" xmltv_id="">PREMIERE HD 3 ³</channel>
+  <channel site="claro.com.br" site_id="1_1166" lang="pt" xmltv_id="">PREMIERE HD 4 ³</channel>
+  <channel site="claro.com.br" site_id="1_1167" lang="pt" xmltv_id="">PREMIERE HD 5 ³</channel>
+  <channel site="claro.com.br" site_id="1_1177" lang="pt" xmltv_id="">Tv Aparecida</channel>
+  <channel site="claro.com.br" site_id="1_1196" lang="pt" xmltv_id="">Canal 2</channel>
+  <channel site="claro.com.br" site_id="1_1197" lang="pt" xmltv_id="">A&amp;E HD</channel>
+  <channel site="claro.com.br" site_id="1_1202" lang="pt" xmltv_id="">FISH TV</channel>
+  <channel site="claro.com.br" site_id="1_1203" lang="pt" xmltv_id="">TNT SÉRIES HD</channel>
+  <channel site="claro.com.br" site_id="1_1230" lang="pt" xmltv_id="">Bloomberg TV</channel>
+  <channel site="claro.com.br" site_id="1_1231" lang="pt" xmltv_id="">Boa Vontade TV</channel>
+  <channel site="claro.com.br" site_id="1_1270" lang="pt" xmltv_id="">Cartoon Network</channel>
+  <channel site="claro.com.br" site_id="1_1280" lang="pt" xmltv_id="">DW-TV</channel>
+  <channel site="claro.com.br" site_id="1_1292" lang="pt" xmltv_id="">Gazeta HD</channel>
+  <channel site="claro.com.br" site_id="1_1330" lang="pt" xmltv_id="">HBO HD 2 ³</channel>
+  <channel site="claro.com.br" site_id="1_1334" lang="pt" xmltv_id="">Jogos Interativos Cartoon</channel>
+  <channel site="claro.com.br" site_id="1_1353" lang="pt" xmltv_id="">National Geographic HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1360" lang="pt" xmltv_id="">Premiere 2</channel>
+  <channel site="claro.com.br" site_id="1_1361" lang="pt" xmltv_id="">Premiere 3</channel>
+  <channel site="claro.com.br" site_id="1_1362" lang="pt" xmltv_id="">Premiere 4</channel>
+  <channel site="claro.com.br" site_id="1_1363" lang="pt" xmltv_id="">Premiere 5</channel>
+  <channel site="claro.com.br" site_id="1_1364" lang="pt" xmltv_id="">Premiere 6</channel>
+  <channel site="claro.com.br" site_id="1_1365" lang="pt" xmltv_id="">Premiere Clubes</channel>
+  <channel site="claro.com.br" site_id="1_1366" lang="pt" xmltv_id="">Premiere Clubes HD</channel>
+  <channel site="claro.com.br" site_id="1_1372" lang="pt" xmltv_id="">RAI International</channel>
+  <channel site="claro.com.br" site_id="1_1420" lang="pt" xmltv_id="">Rede TV HD</channel>
+  <channel site="claro.com.br" site_id="1_1489" lang="pt" xmltv_id="">SIC International</channel>
+  <channel site="claro.com.br" site_id="1_1500" lang="pt" xmltv_id="">Sony</channel>
+  <channel site="claro.com.br" site_id="1_1512" lang="pt" xmltv_id="">TLC</channel>
+  <channel site="claro.com.br" site_id="1_1535" lang="pt" xmltv_id="">TV Climatempo</channel>
+  <channel site="claro.com.br" site_id="1_1563" lang="pt" xmltv_id="">TV Rá Tim Bum</channel>
+  <channel site="claro.com.br" site_id="1_1584" lang="pt" xmltv_id="">TVE International</channel>
+  <channel site="claro.com.br" site_id="1_1611" lang="pt" xmltv_id="">Nickelodeon HD</channel>
+  <channel site="claro.com.br" site_id="1_1615" lang="pt" xmltv_id="">Music Box Brazil HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1616" lang="pt" xmltv_id="">Tnt novelas HD</channel>
+  <channel site="claro.com.br" site_id="1_1618" lang="pt" xmltv_id="">AMC</channel>
+  <channel site="claro.com.br" site_id="1_1619" lang="pt" xmltv_id="">AMC HD</channel>
+  <channel site="claro.com.br" site_id="1_1641" lang="pt" xmltv_id="">Prime Box Brazil HD ³</channel>
+  <channel site="claro.com.br" site_id="1_1656" lang="pt" xmltv_id="">Rede Vida HD</channel>
+  <channel site="claro.com.br" site_id="1_1680" lang="pt" xmltv_id="">Canal Universitário</channel>
+  <channel site="claro.com.br" site_id="1_1682" lang="pt" xmltv_id="">TV Câmara</channel>
+  <channel site="claro.com.br" site_id="1_1683" lang="pt" xmltv_id="">TV Brasil</channel>
+  <channel site="claro.com.br" site_id="1_1693" lang="pt" xmltv_id="">Canal Legislativo</channel>
+  <channel site="claro.com.br" site_id="1_1754" lang="pt" xmltv_id="">TV Escola</channel>
+  <channel site="claro.com.br" site_id="1_1765" lang="pt" xmltv_id="">TV Justiça</channel>
+  <channel site="claro.com.br" site_id="1_1779" lang="pt" xmltv_id="">TV Senado</channel>
+  <channel site="claro.com.br" site_id="1_1833" lang="pt" xmltv_id="">Canal Comunitário</channel>
+  <channel site="claro.com.br" site_id="1_2059" lang="pt" xmltv_id="">Rede Gospel</channel>
+  <channel site="claro.com.br" site_id="1_2060" lang="pt" xmltv_id="">Arte 1 HD</channel>
+  <channel site="claro.com.br" site_id="1_2061" lang="pt" xmltv_id="">Syfy HD</channel>
+  <channel site="claro.com.br" site_id="1_2062" lang="pt" xmltv_id="">Studio Universal HD</channel>
+  <channel site="claro.com.br" site_id="1_2112" lang="pt" xmltv_id="">Mega TV HD</channel>
+  <channel site="claro.com.br" site_id="1_2113" lang="pt" xmltv_id="">Rede Gospel HD</channel>
+  <channel site="claro.com.br" site_id="1_2121" lang="pt" xmltv_id="">Premiere HD 6</channel>
+  <channel site="claro.com.br" site_id="1_2135" lang="pt" xmltv_id="">Nick Jr HD ³</channel>
+  <channel site="claro.com.br" site_id="1_2136" lang="pt" xmltv_id="">Comedy Central HD</channel>
+  <channel site="claro.com.br" site_id="1_2145" lang="pt" xmltv_id="">Curta! HD</channel>
+  <channel site="claro.com.br" site_id="1_2147" lang="pt" xmltv_id="">Cartoonito HD</channel>
+  <channel site="claro.com.br" site_id="1_2148" lang="pt" xmltv_id="">TV Rá Tim Bum HD ³</channel>
+  <channel site="claro.com.br" site_id="1_2150" lang="pt" xmltv_id="">Discovery Science HD ³</channel>
+  <channel site="claro.com.br" site_id="1_2157" lang="pt" xmltv_id="">Premiere HD 7</channel>
+  <channel site="claro.com.br" site_id="1_2158" lang="pt" xmltv_id="">Futura HD</channel>
+  <channel site="claro.com.br" site_id="1_2165" lang="pt" xmltv_id="">ZooMoo</channel>
+  <channel site="claro.com.br" site_id="1_2166" lang="pt" xmltv_id="">ZooMoo HD</channel>
+  <channel site="claro.com.br" site_id="1_2178" lang="pt" xmltv_id="">Woohoo HD</channel>
+  <channel site="claro.com.br" site_id="1_2181" lang="pt" xmltv_id="">TV Brasil HD</channel>
+  <channel site="claro.com.br" site_id="1_2213" lang="pt" xmltv_id="">LIKE HD</channel>
+  <channel site="claro.com.br" site_id="1_2224" lang="pt" xmltv_id="">Film&amp;Arts HD</channel>
+  <channel site="claro.com.br" site_id="1_2227" lang="pt" xmltv_id="">Film&amp;Arts</channel>
+  <channel site="claro.com.br" site_id="1_2239" lang="pt" xmltv_id="">ESPN 5 HD</channel>
+  <channel site="claro.com.br" site_id="1_2242" lang="pt" xmltv_id="">MTV Live HD</channel>
+  <channel site="claro.com.br" site_id="1_2243" lang="pt" xmltv_id="">Universal TV HD</channel>
+  <channel site="claro.com.br" site_id="1_2245" lang="pt" xmltv_id="">FISH TV HD</channel>
+  <channel site="claro.com.br" site_id="1_2247" lang="pt" xmltv_id="">Band</channel>
+  <channel site="claro.com.br" site_id="1_2251" lang="pt" xmltv_id="">ESPN 3 HD</channel>
+  <channel site="claro.com.br" site_id="1_2257" lang="pt" xmltv_id="">The History Channel</channel>
+  <channel site="claro.com.br" site_id="1_2259" lang="pt" xmltv_id="">Fashion TV HD</channel>
+  <channel site="claro.com.br" site_id="1_2261" lang="pt" xmltv_id="">Travel Box Brasil HD</channel>
+  <channel site="claro.com.br" site_id="1_2285" lang="pt" xmltv_id="">TV Pai Eterno</channel>
+  <channel site="claro.com.br" site_id="1_2288" lang="pt" xmltv_id="">Playboy HD</channel>
+  <channel site="claro.com.br" site_id="1_2289" lang="pt" xmltv_id="">DogTV HD</channel>
+  <channel site="claro.com.br" site_id="1_2301" lang="pt" xmltv_id="">TV Pai Eterno HD</channel>
+  <channel site="claro.com.br" site_id="1_2302" lang="pt" xmltv_id="">TV Brasil 2</channel>
+  <channel site="claro.com.br" site_id="1_2309" lang="pt" xmltv_id="">Eurochannel HD</channel>
+  <channel site="claro.com.br" site_id="1_2311" lang="pt" xmltv_id="">HGTV</channel>
+  <channel site="claro.com.br" site_id="1_2312" lang="pt" xmltv_id="">HGTV HD</channel>
+  <channel site="claro.com.br" site_id="1_2331" lang="pt" xmltv_id="">HBO +</channel>
+  <channel site="claro.com.br" site_id="1_2332" lang="pt" xmltv_id="">HBO + HD</channel>
+  <channel site="claro.com.br" site_id="1_2350" lang="pt" xmltv_id="">CNN Brasil</channel>
+  <channel site="claro.com.br" site_id="1_2351" lang="pt" xmltv_id="">CNN Brasil HD</channel>
+  <channel site="claro.com.br" site_id="1_2352" lang="pt" xmltv_id="">HBO Xtreme HD</channel>
+  <channel site="claro.com.br" site_id="1_2353" lang="pt" xmltv_id="">Agro Mais</channel>
+  <channel site="claro.com.br" site_id="1_2354" lang="pt" xmltv_id="">HBO MUNDI HD</channel>
+  <channel site="claro.com.br" site_id="1_2358" lang="pt" xmltv_id="">CGTN</channel>
+  <channel site="claro.com.br" site_id="1_2359" lang="pt" xmltv_id="">Agro Mais HD</channel>
+  <channel site="claro.com.br" site_id="1_2363" lang="pt" xmltv_id="">History Hd</channel>
+  <channel site="claro.com.br" site_id="1_2366" lang="pt" xmltv_id="">Trace Brazuca HD</channel>
+  <channel site="claro.com.br" site_id="1_2368" lang="pt" xmltv_id="">HBO POP HD</channel>
+  <channel site="claro.com.br" site_id="1_2370" lang="pt" xmltv_id="">TV Aparecida (espelho)</channel>
+  <channel site="claro.com.br" site_id="1_2382" lang="pt" xmltv_id="">CONMEBOL TV 4 HD</channel>
+  <channel site="claro.com.br" site_id="1_2417" lang="pt" xmltv_id="">Gloobinho</channel>
+  <channel site="claro.com.br" site_id="1_2418" lang="pt" xmltv_id="">Gloobinho HD</channel>
+  <channel site="claro.com.br" site_id="1_2423" lang="pt" xmltv_id="">Paramount Network</channel>
+  <channel site="claro.com.br" site_id="1_2424" lang="pt" xmltv_id="">Paramount Network HD</channel>
+  <channel site="claro.com.br" site_id="1_2429" lang="pt" xmltv_id="">STAR CHANNEL HD</channel>
+  <channel site="claro.com.br" site_id="1_2430" lang="pt" xmltv_id="">JP News HD</channel>
+  <channel site="claro.com.br" site_id="1_2431" lang="pt" xmltv_id="">Canal do Boi HD</channel>
+  <channel site="claro.com.br" site_id="1_2432" lang="pt" xmltv_id="">ESPN 2 HD</channel>
+  <channel site="claro.com.br" site_id="1_2433" lang="pt" xmltv_id="">Sabor &amp; Arte HD</channel>
+  <channel site="claro.com.br" site_id="1_2434" lang="pt" xmltv_id="">Shoptime TV</channel>
+  <channel site="claro.com.br" site_id="1_2435" lang="pt" xmltv_id="">Polishop TV</channel>
+  <channel site="claro.com.br" site_id="1_2436" lang="pt" xmltv_id="">Música</channel>
+  <channel site="claro.com.br" site_id="1_2437" lang="pt" xmltv_id="">France 24 HD</channel>
+  <channel site="claro.com.br" site_id="1_2438" lang="pt" xmltv_id="">Warner Channel</channel>
+  <channel site="claro.com.br" site_id="1_2439" lang="pt" xmltv_id="">Canal do cliente</channel>
+  <channel site="claro.com.br" site_id="1_2442" lang="pt" xmltv_id="">France 24</channel>
+  <channel site="claro.com.br" site_id="1_2444" lang="pt" xmltv_id="">Portal do Futebol</channel>
+  <channel site="claro.com.br" site_id="1_2445" lang="pt" xmltv_id="">Warner Channel HD</channel>
+  <channel site="claro.com.br" site_id="1_2446" lang="pt" xmltv_id="">Cartoon Network HD</channel>
+  <channel site="claro.com.br" site_id="1_2447" lang="pt" xmltv_id="">CANAL DO CLIENTE HD</channel>
+  <channel site="clarotvmais.com.br" site_id="1" lang="pt" xmltv_id="">DISCOVERY KIDS HD</channel>
+  <channel site="clarotvmais.com.br" site_id="2" lang="pt" xmltv_id="">CARTOON HD</channel>
+  <channel site="clarotvmais.com.br" site_id="3" lang="pt" xmltv_id="">NICKELODEON HD</channel>
+  <channel site="clarotvmais.com.br" site_id="5" lang="pt" xmltv_id="">BAND SPORTS HD</channel>
+  <channel site="clarotvmais.com.br" site_id="6" lang="pt" xmltv_id="">BAND NEWS</channel>
+  <channel site="clarotvmais.com.br" site_id="7" lang="pt" xmltv_id="">DISCOVERY HD</channel>
+  <channel site="clarotvmais.com.br" site_id="8" lang="pt" xmltv_id="">DISCOVERY HOME&amp;HEALTH HD</channel>
+  <channel site="clarotvmais.com.br" site_id="9" lang="pt" xmltv_id="">TNT HD</channel>
+  <channel site="clarotvmais.com.br" site_id="10" lang="pt" xmltv_id="">SPACE HD</channel>
+  <channel site="clarotvmais.com.br" site_id="11" lang="pt" xmltv_id="">CARTOONITO</channel>
+  <channel site="clarotvmais.com.br" site_id="12" lang="pt" xmltv_id="">TLC HD</channel>
+  <channel site="clarotvmais.com.br" site_id="13" lang="pt" xmltv_id="">ID HD</channel>
+  <channel site="clarotvmais.com.br" site_id="15" lang="pt" xmltv_id="">ANIMAL PLANET HD</channel>
+  <channel site="clarotvmais.com.br" site_id="16" lang="pt" xmltv_id="">PARAMOUNT NETWORK</channel>
+  <channel site="clarotvmais.com.br" site_id="17" lang="pt" xmltv_id="">NICK JR</channel>
+  <channel site="clarotvmais.com.br" site_id="18" lang="pt" xmltv_id="">DISCOVERY TURBO HD</channel>
+  <channel site="clarotvmais.com.br" site_id="19" lang="pt" xmltv_id="">CURTA</channel>
+  <channel site="clarotvmais.com.br" site_id="20" lang="pt" xmltv_id="">TNT SERIES HD</channel>
+  <channel site="clarotvmais.com.br" site_id="21" lang="pt" xmltv_id="">COMEDY CENTRAL</channel>
+  <channel site="clarotvmais.com.br" site_id="22" lang="pt" xmltv_id="">MTV HD</channel>
+  <channel site="clarotvmais.com.br" site_id="26" lang="pt" xmltv_id="">ESPN 4</channel>
+  <channel site="clarotvmais.com.br" site_id="27" lang="pt" xmltv_id="">ESPN 5</channel>
+  <channel site="clarotvmais.com.br" site_id="28" lang="pt" xmltv_id="">ESPN 2</channel>
+  <channel site="clarotvmais.com.br" site_id="29" lang="pt" xmltv_id="">ESPN</channel>
+  <channel site="clarotvmais.com.br" site_id="30" lang="pt" xmltv_id="">SPORTV</channel>
+  <channel site="clarotvmais.com.br" site_id="31" lang="pt" xmltv_id="">SPORTV 2</channel>
+  <channel site="clarotvmais.com.br" site_id="32" lang="pt" xmltv_id="">SPORTV 3</channel>
+  <channel site="clarotvmais.com.br" site_id="33" lang="pt" xmltv_id="">AMC HD</channel>
+  <channel site="clarotvmais.com.br" site_id="34" lang="pt" xmltv_id="">ARTE 1 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="35" lang="pt" xmltv_id="">BLOOMBERG TV</channel>
+  <channel site="clarotvmais.com.br" site_id="39" lang="pt" xmltv_id="">ESPN 3</channel>
+  <channel site="clarotvmais.com.br" site_id="40" lang="pt" xmltv_id="">FISH TV</channel>
+  <channel site="clarotvmais.com.br" site_id="46" lang="pt" xmltv_id="">Like + | Claro tv+</channel>
+  <channel site="clarotvmais.com.br" site_id="47" lang="pt" xmltv_id="">TCM BR</channel>
+  <channel site="clarotvmais.com.br" site_id="48" lang="pt" xmltv_id="">WOOHOO HD</channel>
+  <channel site="clarotvmais.com.br" site_id="49" lang="pt" xmltv_id="">DumDum</channel>
+  <channel site="clarotvmais.com.br" site_id="50" lang="pt" xmltv_id="">ESPN 6</channel>
+  <channel site="clarotvmais.com.br" site_id="51" lang="pt" xmltv_id="">FILM &amp; ARTS</channel>
+  <channel site="clarotvmais.com.br" site_id="52" lang="pt" xmltv_id="">FOOD NETWORK HD</channel>
+  <channel site="clarotvmais.com.br" site_id="53" lang="pt" xmltv_id="">GAZETA</channel>
+  <channel site="clarotvmais.com.br" site_id="54" lang="pt" xmltv_id="">CBI</channel>
+  <channel site="clarotvmais.com.br" site_id="55" lang="pt" xmltv_id="">MUSIC BOX BRAZIL</channel>
+  <channel site="clarotvmais.com.br" site_id="56" lang="pt" xmltv_id="">PLAY TV</channel>
+  <channel site="clarotvmais.com.br" site_id="57" lang="pt" xmltv_id="">PRIME BOX BRAZIL</channel>
+  <channel site="clarotvmais.com.br" site_id="58" lang="pt" xmltv_id="">RAI INTERNATIONAL</channel>
+  <channel site="clarotvmais.com.br" site_id="59" lang="pt" xmltv_id="">REDE GOSPEL</channel>
+  <channel site="clarotvmais.com.br" site_id="60" lang="pt" xmltv_id="">REDE VIDA</channel>
+  <channel site="clarotvmais.com.br" site_id="61" lang="pt" xmltv_id="">TV BRASIL</channel>
+  <channel site="clarotvmais.com.br" site_id="62" lang="pt" xmltv_id="">TV RA TIM BUM</channel>
+  <channel site="clarotvmais.com.br" site_id="63" lang="pt" xmltv_id="">TV5 MONDE</channel>
+  <channel site="clarotvmais.com.br" site_id="64" lang="pt" xmltv_id="">MTV 00&apos;s</channel>
+  <channel site="clarotvmais.com.br" site_id="66" lang="pt" xmltv_id="">DW-TV</channel>
+  <channel site="clarotvmais.com.br" site_id="67" lang="pt" xmltv_id="">BBC WORLD NEWS</channel>
+  <channel site="clarotvmais.com.br" site_id="68" lang="pt" xmltv_id="">TELECINE PREMIUM</channel>
+  <channel site="clarotvmais.com.br" site_id="69" lang="pt" xmltv_id="">TELECINE ACTION</channel>
+  <channel site="clarotvmais.com.br" site_id="70" lang="pt" xmltv_id="">TELECINE TOUCH</channel>
+  <channel site="clarotvmais.com.br" site_id="71" lang="pt" xmltv_id="">TELECINE FUN</channel>
+  <channel site="clarotvmais.com.br" site_id="72" lang="pt" xmltv_id="">TELECINE PIPOCA</channel>
+  <channel site="clarotvmais.com.br" site_id="73" lang="pt" xmltv_id="">TELECINE CULT</channel>
+  <channel site="clarotvmais.com.br" site_id="75" lang="pt" xmltv_id="">TRAVEL BOX</channel>
+  <channel site="clarotvmais.com.br" site_id="76" lang="pt" xmltv_id="">FASHION TV</channel>
+  <channel site="clarotvmais.com.br" site_id="77" lang="pt" xmltv_id="">CNN BRASIL</channel>
+  <channel site="clarotvmais.com.br" site_id="78" lang="pt" xmltv_id="">GLOBONEWS</channel>
+  <channel site="clarotvmais.com.br" site_id="79" lang="pt" xmltv_id="">AXN</channel>
+  <channel site="clarotvmais.com.br" site_id="80" lang="pt" xmltv_id="">AGROMAIS</channel>
+  <channel site="clarotvmais.com.br" site_id="81" lang="pt" xmltv_id="">TRACE BRASIL HD</channel>
+  <channel site="clarotvmais.com.br" site_id="82" lang="pt" xmltv_id="">SONY CHANNEL</channel>
+  <channel site="clarotvmais.com.br" site_id="83" lang="pt" xmltv_id="">WARNER CHANNEL</channel>
+  <channel site="clarotvmais.com.br" site_id="84" lang="pt" xmltv_id="">HISTORY</channel>
+  <channel site="clarotvmais.com.br" site_id="85" lang="pt" xmltv_id="">HISTORY 2</channel>
+  <channel site="clarotvmais.com.br" site_id="86" lang="pt" xmltv_id="">A&amp;E</channel>
+  <channel site="clarotvmais.com.br" site_id="87" lang="pt" xmltv_id="">E!</channel>
+  <channel site="clarotvmais.com.br" site_id="88" lang="pt" xmltv_id="">LIFETIME</channel>
+  <channel site="clarotvmais.com.br" site_id="89" lang="pt" xmltv_id="">Paramount+ 1</channel>
+  <channel site="clarotvmais.com.br" site_id="90" lang="pt" xmltv_id="">Paramount+ 2</channel>
+  <channel site="clarotvmais.com.br" site_id="91" lang="pt" xmltv_id="">Paramount+ 3</channel>
+  <channel site="clarotvmais.com.br" site_id="92" lang="pt" xmltv_id="">Paramount+ 4</channel>
+  <channel site="clarotvmais.com.br" site_id="93" lang="pt" xmltv_id="">GLOOB HD</channel>
+  <channel site="clarotvmais.com.br" site_id="94" lang="pt" xmltv_id="">GLOOBINHO HD</channel>
+  <channel site="clarotvmais.com.br" site_id="95" lang="pt" xmltv_id="">FUTURA HD</channel>
+  <channel site="clarotvmais.com.br" site_id="96" lang="pt" xmltv_id="">OFF HD</channel>
+  <channel site="clarotvmais.com.br" site_id="97" lang="pt" xmltv_id="">GNT HD</channel>
+  <channel site="clarotvmais.com.br" site_id="98" lang="pt" xmltv_id="">MULTISHOW HD</channel>
+  <channel site="clarotvmais.com.br" site_id="99" lang="pt" xmltv_id="">Globoplay Novelas</channel>
+  <channel site="clarotvmais.com.br" site_id="100" lang="pt" xmltv_id="">Modo Viagem</channel>
+  <channel site="clarotvmais.com.br" site_id="101" lang="pt" xmltv_id="">BIS HD</channel>
+  <channel site="clarotvmais.com.br" site_id="102" lang="pt" xmltv_id="">UNIVERSAL TV HD</channel>
+  <channel site="clarotvmais.com.br" site_id="103" lang="pt" xmltv_id="">USA HD</channel>
+  <channel site="clarotvmais.com.br" site_id="104" lang="pt" xmltv_id="">CANAL BRASIL HD</channel>
+  <channel site="clarotvmais.com.br" site_id="105" lang="pt" xmltv_id="">MEGAPIX HD</channel>
+  <channel site="clarotvmais.com.br" site_id="106" lang="pt" xmltv_id="">STUDIO UNIVERSAL HD</channel>
+  <channel site="clarotvmais.com.br" site_id="107" lang="pt" xmltv_id="">PREMIERE CLUBES HD</channel>
+  <channel site="clarotvmais.com.br" site_id="108" lang="pt" xmltv_id="">PREMIERE 2 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="109" lang="pt" xmltv_id="">PREMIERE 3 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="110" lang="pt" xmltv_id="">PREMIERE 4 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="111" lang="pt" xmltv_id="">PREMIERE 5 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="112" lang="pt" xmltv_id="">PREMIERE 6 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="113" lang="pt" xmltv_id="">PREMIERE 7 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="114" lang="pt" xmltv_id="">COMBATE HD</channel>
+  <channel site="clarotvmais.com.br" site_id="115" lang="pt" xmltv_id="">HGTV HD</channel>
+  <channel site="clarotvmais.com.br" site_id="116" lang="pt" xmltv_id="">DISCOVERY SCIENCE HD</channel>
+  <channel site="clarotvmais.com.br" site_id="117" lang="pt" xmltv_id="">DISCOVERY THEATER HD</channel>
+  <channel site="clarotvmais.com.br" site_id="118" lang="pt" xmltv_id="">DISCOVERY WORLD HD</channel>
+  <channel site="clarotvmais.com.br" site_id="119" lang="pt" xmltv_id="">EUROCHANNEL HD</channel>
+  <channel site="clarotvmais.com.br" site_id="124" lang="pt" xmltv_id="">GLOBO SÃO PAULO</channel>
+  <channel site="clarotvmais.com.br" site_id="129" lang="pt" xmltv_id="">FRANCE 24 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="174" lang="pt" xmltv_id="">BAND HD</channel>
+  <channel site="clarotvmais.com.br" site_id="175" lang="pt" xmltv_id="">CULTURA HD</channel>
+  <channel site="clarotvmais.com.br" site_id="176" lang="pt" xmltv_id="">TVE INTERNATIONAL</channel>
+  <channel site="clarotvmais.com.br" site_id="177" lang="pt" xmltv_id="">CNN INTERNATIONAL</channel>
+  <channel site="clarotvmais.com.br" site_id="178" lang="pt" xmltv_id="">CINEMAX HD</channel>
+  <channel site="clarotvmais.com.br" site_id="179" lang="pt" xmltv_id="">MTV LIVE</channel>
+  <channel site="clarotvmais.com.br" site_id="182" lang="pt" xmltv_id="">RECORD NEWS</channel>
+  <channel site="clarotvmais.com.br" site_id="183" lang="pt" xmltv_id="">LIKE</channel>
+  <channel site="clarotvmais.com.br" site_id="184" lang="pt" xmltv_id="">SBT</channel>
+  <channel site="clarotvmais.com.br" site_id="185" lang="pt" xmltv_id="">REDE TV! HD</channel>
+  <channel site="clarotvmais.com.br" site_id="187" lang="pt" xmltv_id="">JOVEM PAN NEWS</channel>
+  <channel site="clarotvmais.com.br" site_id="188" lang="pt" xmltv_id="">MEZZO HD</channel>
+  <channel site="clarotvmais.com.br" site_id="260" lang="pt" xmltv_id="">HBO</channel>
+  <channel site="clarotvmais.com.br" site_id="261" lang="pt" xmltv_id="">HBO2</channel>
+  <channel site="clarotvmais.com.br" site_id="262" lang="pt" xmltv_id="">HBO+</channel>
+  <channel site="clarotvmais.com.br" site_id="263" lang="pt" xmltv_id="">HBO Family</channel>
+  <channel site="clarotvmais.com.br" site_id="264" lang="pt" xmltv_id="">HBO Signature</channel>
+  <channel site="clarotvmais.com.br" site_id="265" lang="pt" xmltv_id="">HBO Pop</channel>
+  <channel site="clarotvmais.com.br" site_id="266" lang="pt" xmltv_id="">HBO Mundi</channel>
+  <channel site="clarotvmais.com.br" site_id="267" lang="pt" xmltv_id="">HBO Xtreme</channel>
+  <channel site="clarotvmais.com.br" site_id="268" lang="pt" xmltv_id="">DOG TV HD</channel>
+  <channel site="clarotvmais.com.br" site_id="288" lang="pt" xmltv_id="">Sabor &amp; Arte</channel>
+  <channel site="clarotvmais.com.br" site_id="296" lang="pt" xmltv_id="">SportyNet + 1</channel>
+  <channel site="clarotvmais.com.br" site_id="297" lang="pt" xmltv_id="">SportyNet + 2</channel>
+  <channel site="clarotvmais.com.br" site_id="298" lang="pt" xmltv_id="">SportyNet + 3</channel>
+  <channel site="clarotvmais.com.br" site_id="299" lang="pt" xmltv_id="">TNT NOVELAS</channel>
+  <channel site="clarotvmais.com.br" site_id="300" lang="pt" xmltv_id="">CANÇÃO NOVA HD</channel>
+  <channel site="clarotvmais.com.br" site_id="314" lang="pt" xmltv_id="">C3-TV</channel>
+  <channel site="clarotvmais.com.br" site_id="315" lang="pt" xmltv_id="">SportyNet HD</channel>
+  <channel site="clarotvmais.com.br" site_id="316" lang="pt" xmltv_id="">CGTN</channel>
+  <channel site="clarotvmais.com.br" site_id="317" lang="pt" xmltv_id="">RECORD HD</channel>
+  <channel site="clarotvmais.com.br" site_id="319" lang="pt" xmltv_id="">LMC+HD</channel>
+  <channel site="clarotvmais.com.br" site_id="320" lang="pt" xmltv_id="">TV APARECIDA HD</channel>
+  <channel site="clarotvmais.com.br" site_id="321" lang="pt" xmltv_id="">BM&amp;C HD</channel>
+  <channel site="clarotvmais.com.br" site_id="322" lang="pt" xmltv_id="">Adult Swim HD</channel>
+  <channel site="clarotvmais.com.br" site_id="323" lang="pt" xmltv_id="">UNIVERSAL PREMIERE HD</channel>
+  <channel site="clarotvmais.com.br" site_id="324" lang="pt" xmltv_id="">UNIVERSAL REALITY</channel>
+  <channel site="clarotvmais.com.br" site_id="328" lang="pt" xmltv_id="">CANAL DO BOI</channel>
+  <channel site="clarotvmais.com.br" site_id="329" lang="pt" xmltv_id="">Nsports HD</channel>
+  <channel site="clarotvmais.com.br" site_id="335" lang="pt" xmltv_id="">TRIP BRASIL CHANNEL</channel>
+  <channel site="clarotvmais.com.br" site_id="337" lang="pt" xmltv_id="">LBV</channel>
+  <channel site="clarotvmais.com.br" site_id="338" lang="pt" xmltv_id="">CANAL RURAL</channel>
+  <channel site="clarotvmais.com.br" site_id="339" lang="pt" xmltv_id="">TIMES | Exclusivo CNBC</channel>
+  <channel site="clarotvmais.com.br" site_id="348" lang="pt" xmltv_id="">SIC INTERNACIONAL</channel>
+  <channel site="clarotvmais.com.br" site_id="349" lang="pt" xmltv_id="">CNN Brasil Money HD</channel>
+  <channel site="clarotvmais.com.br" site_id="351" lang="pt" xmltv_id="">PREMIERE 8 HD</channel>
+  <channel site="clarotvmais.com.br" site_id="352" lang="pt" xmltv_id="">CANAL UOL</channel>
+  <channel site="clarotvmais.com.br" site_id="353" lang="pt" xmltv_id="">Travel &amp; Food and Drinks HD</channel>
+  <channel site="clarotvmais.com.br" site_id="373" lang="pt" xmltv_id="">TV Pai Eterno HD</channel>
+  <channel site="clarotvmais.com.br" site_id="439" lang="pt" xmltv_id="">Xsports HD</channel>
+  <channel site="clarotvmais.com.br" site_id="466" lang="pt" xmltv_id="">GE TV HD</channel>
+  <channel site="clarotvmais.com.br" site_id="467" lang="pt" xmltv_id="">MARKKET HD</channel>
+  <channel site="meuguia.tv" site_id="121" lang="pt" xmltv_id="PremiereClubes.br@SD">Premiere Clubes</channel>
+  <channel site="meuguia.tv" site_id="135" lang="pt" xmltv_id="Combate.br@SD">Combate</channel>
+  <channel site="meuguia.tv" site_id="ANX" lang="pt" xmltv_id="LifetimeLatinAmerica.us@Brazil">Lifetime</channel>
+  <channel site="meuguia.tv" site_id="APL" lang="pt" xmltv_id="AnimalPlanet.br@SD">Animal Planet</channel>
+  <channel site="meuguia.tv" site_id="AXN" lang="pt" xmltv_id="AXN.br@SD">AXN</channel>
+  <channel site="meuguia.tv" site_id="BAB" lang="pt" xmltv_id="BabyTV.uk@UK">Baby TV</channel>
+  <channel site="meuguia.tv" site_id="BAN" lang="pt" xmltv_id="Band.br@SD">Band</channel>
+  <channel site="meuguia.tv" site_id="BBC" lang="pt" xmltv_id="BBCNews.uk@NorthAmerica">BBC World News</channel>
+  <channel site="meuguia.tv" site_id="BIT" lang="pt" xmltv_id="BloombergTV.us@US">Bloomberg</channel>
+  <channel site="meuguia.tv" site_id="BOI" lang="pt" xmltv_id="CanaldoBoi.br@SD">Canal do Boi</channel>
+  <channel site="meuguia.tv" site_id="BQ5" lang="pt" xmltv_id="Arte1.br@SD">Arte 1</channel>
+  <channel site="meuguia.tv" site_id="BSP" lang="pt" xmltv_id="BandSports.br@SD">Band Sports</channel>
+  <channel site="meuguia.tv" site_id="C21" lang="pt" xmltv_id="">Canal 21</channel>
+  <channel site="meuguia.tv" site_id="CAM" lang="pt" xmltv_id="TVCamara.br@SD">TV Câmara</channel>
+  <channel site="meuguia.tv" site_id="CAR" lang="pt" xmltv_id="CartoonNetworkLatinAmerica.us@Brazil">Cartoon Network</channel>
+  <channel site="meuguia.tv" site_id="CBR" lang="pt" xmltv_id="CanalBrasil.br@SD">Canal Brasil</channel>
+  <channel site="meuguia.tv" site_id="CCE" lang="pt" xmltv_id="ComedyCentralLatinAmerica.us@Brazil">Comedy Central</channel>
+  <channel site="meuguia.tv" site_id="CFX" lang="pt" xmltv_id="FXLatinAmerica.us@Brazil">FX</channel>
+  <channel site="meuguia.tv" site_id="CLI" lang="pt" xmltv_id="Climatempo.br@SD">Climatempo</channel>
+  <channel site="meuguia.tv" site_id="CNN" lang="pt" xmltv_id="CNN.us@SD">CNN International</channel>
+  <channel site="meuguia.tv" site_id="CNV" lang="pt" xmltv_id="TVCancaoNova.br@SD">Canção Nova</channel>
+  <channel site="meuguia.tv" site_id="CUL" lang="pt" xmltv_id="">TV Cultura</channel>
+  <channel site="meuguia.tv" site_id="DHD" lang="pt" xmltv_id="DiscoveryTheater.br@SD">Discovery HD Theater</channel>
+  <channel site="meuguia.tv" site_id="DIS" lang="pt" xmltv_id="DiscoveryChannelLatinAmerica.us@Brazil">Discovery Channel</channel>
+  <channel site="meuguia.tv" site_id="DIW" lang="pt" xmltv_id="DiscoveryWorld.us@Brazil">Discovery World</channel>
+  <channel site="meuguia.tv" site_id="DNY" lang="pt" xmltv_id="DisneyChannel.br@SD">Disney Channel</channel>
+  <channel site="meuguia.tv" site_id="DSC" lang="pt" xmltv_id="DiscoveryScienceLatinAmerica.us@Brazil">Discovery Science</channel>
+  <channel site="meuguia.tv" site_id="DTU" lang="pt" xmltv_id="DiscoveryTurboLatinAmerica.us@Brazil">Discovery Turbo</channel>
+  <channel site="meuguia.tv" site_id="DWL" lang="pt" xmltv_id="DW.de@Deutsch">Deutsche Welle</channel>
+  <channel site="meuguia.tv" site_id="EET" lang="pt" xmltv_id="ELatinAmerica.us@Brazil">E! Entertainment Television</channel>
+  <channel site="meuguia.tv" site_id="ESB" lang="pt" xmltv_id="ESPN.br@SD">ESPN Brasil</channel>
+  <channel site="meuguia.tv" site_id="ESC" lang="pt" xmltv_id="TVEscola.br@SD">TV Escola</channel>
+  <channel site="meuguia.tv" site_id="ESP" lang="pt" xmltv_id="ESPN.us@SD">ESPN</channel>
+  <channel site="meuguia.tv" site_id="EUR" lang="pt" xmltv_id="Eurochannel.uk@SD">Eurochannel</channel>
+  <channel site="meuguia.tv" site_id="FS2" lang="pt" xmltv_id="FoxSports2.br@SD">Fox Sports 2</channel>
+  <channel site="meuguia.tv" site_id="FSP" lang="pt" xmltv_id="FoxSports.br@SD">Fox Sports</channel>
+  <channel site="meuguia.tv" site_id="FUT" lang="pt" xmltv_id="CanalFutura.br@SD">Futura</channel>
+  <channel site="meuguia.tv" site_id="GAZ" lang="pt" xmltv_id="TVGazeta.br@SD">TV Gazeta</channel>
+  <channel site="meuguia.tv" site_id="GLN" lang="pt" xmltv_id="GloboNews.br@SD">Globo News</channel>
+  <channel site="meuguia.tv" site_id="GNT" lang="pt" xmltv_id="GNT.br@SD">GNT</channel>
+  <channel site="meuguia.tv" site_id="GOB" lang="pt" xmltv_id="Gloob.br@SD">Gloob</channel>
+  <channel site="meuguia.tv" site_id="GRD" lang="pt" xmltv_id="">Globo</channel>
+  <channel site="meuguia.tv" site_id="HAL" lang="pt" xmltv_id="StudioUniversalLatinAmerica.us@Brazil">Studio Universal</channel>
+  <channel site="meuguia.tv" site_id="HB2" lang="pt" xmltv_id="HBO2.br@SD">HBO 2</channel>
+  <channel site="meuguia.tv" site_id="HBO" lang="pt" xmltv_id="HBO.br@SD">HBO</channel>
+  <channel site="meuguia.tv" site_id="HFA" lang="pt" xmltv_id="HBOFamily.br@SD">HBO Family</channel>
+  <channel site="meuguia.tv" site_id="HFE" lang="pt" xmltv_id="HBOSignature.br@SD">HBO Signature</channel>
+  <channel site="meuguia.tv" site_id="HPL" lang="pt" xmltv_id="HBOPlus.br@SD">HBO Plus</channel>
+  <channel site="meuguia.tv" site_id="JUS" lang="pt" xmltv_id="TVJustica.br@SD">TV Justiça</channel>
+  <channel site="meuguia.tv" site_id="LBV" lang="pt" xmltv_id="BoaVontadeTV.br@SD">Rede Boa Vontade</channel>
+  <channel site="meuguia.tv" site_id="MGM" lang="pt" xmltv_id="AMCLatinAmerica.us@Brazil">AMC</channel>
+  <channel site="meuguia.tv" site_id="MNX" lang="pt" xmltv_id="Cinemax.br@SD">Cinemax</channel>
+  <channel site="meuguia.tv" site_id="MPX" lang="pt" xmltv_id="Megapix.br@SD">Megapix</channel>
+  <channel site="meuguia.tv" site_id="MSH" lang="pt" xmltv_id="Bis.br@SD">Bis</channel>
+  <channel site="meuguia.tv" site_id="MSW" lang="pt" xmltv_id="Multishow.br@SD">Multishow</channel>
+  <channel site="meuguia.tv" site_id="MTV" lang="pt" xmltv_id="MTV.br@SD">MTV</channel>
+  <channel site="meuguia.tv" site_id="NEW" lang="pt" xmltv_id="BandNews.br@SD">Band News</channel>
+  <channel site="meuguia.tv" site_id="NHK" lang="pt" xmltv_id="NHKWorldJapan.jp@SD">NHK World</channel>
+  <channel site="meuguia.tv" site_id="NIC" lang="pt" xmltv_id="Nickelodeon.br@SD">Nickelodeon</channel>
+  <channel site="meuguia.tv" site_id="NJR" lang="pt" xmltv_id="NickJr.br@SD">Nick Jr.</channel>
+  <channel site="meuguia.tv" site_id="OFF" lang="pt" xmltv_id="CanalOff.br@SD">OFF HD</channel>
+  <channel site="meuguia.tv" site_id="PAR" lang="pt" xmltv_id="ParamountNetworkLatinAmerica.us@Brazil">Paramount Channel</channel>
+  <channel site="meuguia.tv" site_id="RAI" lang="pt" xmltv_id="">RAI International</channel>
+  <channel site="meuguia.tv" site_id="RCN" lang="pt" xmltv_id="RecordNews.br@SD">Record News</channel>
+  <channel site="meuguia.tv" site_id="REC" lang="pt" xmltv_id="Record.br@SD">Record TV</channel>
+  <channel site="meuguia.tv" site_id="RTB" lang="pt" xmltv_id="TVRaTimBum.br@SD">TV Rá-tim-bum</channel>
+  <channel site="meuguia.tv" site_id="RTV" lang="pt" xmltv_id="RedeTV.br@SD">Rede TV</channel>
+  <channel site="meuguia.tv" site_id="RUR" lang="pt" xmltv_id="CanalRural.br@SD">Canal Rural</channel>
+  <channel site="meuguia.tv" site_id="SBT" lang="pt" xmltv_id="">SBT</channel>
+  <channel site="meuguia.tv" site_id="SCI" lang="pt" xmltv_id="SyfyLatinAmerica.us@Brazil">SyFy</channel>
+  <channel site="meuguia.tv" site_id="SEN" lang="pt" xmltv_id="TVSenado.br@SD">TV Senado</channel>
+  <channel site="meuguia.tv" site_id="SET" lang="pt" xmltv_id="SonyChannel.br@SD">Sony</channel>
+  <channel site="meuguia.tv" site_id="SHO" lang="pt" xmltv_id="Shoptime.br@SD">Shoptime</channel>
+  <channel site="meuguia.tv" site_id="SIC" lang="pt" xmltv_id="SICInternacional.pt@SD">SIC International</channel>
+  <channel site="meuguia.tv" site_id="SP2" lang="pt" xmltv_id="SporTV2.br@SD">SporTV 2</channel>
+  <channel site="meuguia.tv" site_id="SP3" lang="pt" xmltv_id="SporTV3.br@SD">SporTV 3</channel>
+  <channel site="meuguia.tv" site_id="SPA" lang="pt" xmltv_id="Space.ar@Brazil">SPACE</channel>
+  <channel site="meuguia.tv" site_id="SPO" lang="pt" xmltv_id="SporTV.br@SD">SporTV</channel>
+  <channel site="meuguia.tv" site_id="SUP" lang="pt" xmltv_id="NationalGeographic.br@SD">National Geographic</channel>
+  <channel site="meuguia.tv" site_id="TAP" lang="pt" xmltv_id="TVAparecida.br@SD">TV Aparecida (aberta)</channel>
+  <channel site="meuguia.tv" site_id="TBS" lang="pt" xmltv_id="TBSLatinAmerica.us@Brazil">TBS</channel>
+  <channel site="meuguia.tv" site_id="TC1" lang="pt" xmltv_id="TelecinePremium.br@SD">Telecine Premium</channel>
+  <channel site="meuguia.tv" site_id="TC2" lang="pt" xmltv_id="TelecineAction.br@SD">Telecine Action</channel>
+  <channel site="meuguia.tv" site_id="TC3" lang="pt" xmltv_id="TelecineTouch.br@SD">Telecine Touch</channel>
+  <channel site="meuguia.tv" site_id="TC4" lang="pt" xmltv_id="TelecinePipoca.br@SD">Telecine Pipoca</channel>
+  <channel site="meuguia.tv" site_id="TC5" lang="pt" xmltv_id="TelecineCult.br@SD">Telecine Cult</channel>
+  <channel site="meuguia.tv" site_id="TC6" lang="pt" xmltv_id="TelecineFun.br@SD">Telecine Fun</channel>
+  <channel site="meuguia.tv" site_id="TCM" lang="pt" xmltv_id="TCMLatinAmerica.us@Brazil">TCM - Turner Classic</channel>
+  <channel site="meuguia.tv" site_id="TED" lang="pt" xmltv_id="TVBrasil.br@SD">TV Brasil</channel>
+  <channel site="meuguia.tv" site_id="TNS" lang="pt" xmltv_id="TNTSeriesLatinAmerica.us@Brazil">TNT Séries</channel>
+  <channel site="meuguia.tv" site_id="TNT" lang="pt" xmltv_id="TNTLatinAmerica.us@Brazil">TNT</channel>
+  <channel site="meuguia.tv" site_id="TOC" lang="pt" xmltv_id="Tooncast.us@SD">Tooncast</channel>
+  <channel site="meuguia.tv" site_id="TRB" lang="pt" xmltv_id="TravelBoxBrazil.br@SD">Travel Box Brazil</channel>
+  <channel site="meuguia.tv" site_id="TRV" lang="pt" xmltv_id="TLCLatinAmerica.us@Brazil">TLC</channel>
+  <channel site="meuguia.tv" site_id="TV5" lang="pt" xmltv_id="TV5MondeLatinAmerica.fr@SD">TV5 Monde</channel>
+  <channel site="meuguia.tv" site_id="TVE" lang="pt" xmltv_id="">TV Espanha</channel>
+  <channel site="meuguia.tv" site_id="TVV" lang="pt" xmltv_id="TerraViva.br@SD">Terra Viva</channel>
+  <channel site="meuguia.tv" site_id="USA" lang="pt" xmltv_id="UniversalTVLatinAmerica.us@Brazil">Universal Channel</channel>
+  <channel site="meuguia.tv" site_id="VDA" lang="pt" xmltv_id="RedeVida.br@SD">Rede Vida</channel>
+  <channel site="meuguia.tv" site_id="VIV" lang="pt" xmltv_id="CanalViva.br@SD">Viva</channel>
+  <channel site="meuguia.tv" site_id="WBT" lang="pt" xmltv_id="WarnerChannel.us@Brazil">Warner Channel</channel>
+  <channel site="meuguia.tv" site_id="WOO" lang="pt" xmltv_id="WooHoo.br@SD">Woohoo</channel>
+  <channel site="mi.tv" site_id="br#a-e" lang="pt" xmltv_id="AELatinAmerica.us@Brazil">A&amp;E</channel>
+  <channel site="mi.tv" site_id="br#a-e-hd" lang="pt" xmltv_id="">A&amp;E HD</channel>
+  <channel site="mi.tv" site_id="br#agromais-hd" lang="pt" xmltv_id="AgroMais.br@SD">Agromais HD</channel>
+  <channel site="mi.tv" site_id="br#amazon-sat" lang="pt" xmltv_id="AmazonSat.br@SD">Amazon Sat</channel>
+  <channel site="mi.tv" site_id="br#amazon-sat-hd" lang="pt" xmltv_id="">Amazon Sat HD</channel>
+  <channel site="mi.tv" site_id="br#amc-brasil" lang="pt" xmltv_id="AMCLatinAmerica.us@Brazil">AMC Brasil</channel>
+  <channel site="mi.tv" site_id="br#amc-hd" lang="pt" xmltv_id="">AMC HD</channel>
+  <channel site="mi.tv" site_id="br#animal-planet" lang="pt" xmltv_id="AnimalPlanet.br@SD">Animal Planet</channel>
+  <channel site="mi.tv" site_id="br#animal-planet-hd" lang="pt" xmltv_id="">Animal Planet HD</channel>
+  <channel site="mi.tv" site_id="br#arte-1" lang="pt" xmltv_id="Arte1.br@SD">Arte 1</channel>
+  <channel site="mi.tv" site_id="br#arte-1-hd" lang="pt" xmltv_id="">Arte 1 HD</channel>
+  <channel site="mi.tv" site_id="br#assembleia-legislativa-ceara-hd" lang="pt" xmltv_id="TVAssembleiaCeara.br@SD">Assembleia Legislativa Ceará HD</channel>
+  <channel site="mi.tv" site_id="br#axn" lang="pt" xmltv_id="AXN.br@SD">AXN</channel>
+  <channel site="mi.tv" site_id="br#axn-hd" lang="pt" xmltv_id="">AXN HD</channel>
+  <channel site="mi.tv" site_id="br#baby-tv" lang="pt" xmltv_id="BabyTV.uk@UK">BABY TV</channel>
+  <channel site="mi.tv" site_id="br#band" lang="pt" xmltv_id="BandSaoPaulo.br@SD">Band São Paulo</channel>
+  <channel site="mi.tv" site_id="br#band-amazonas" lang="pt" xmltv_id="BandAmazonas.br@SD">Band Amazonas</channel>
+  <channel site="mi.tv" site_id="br#band-amazonas-hd" lang="pt" xmltv_id="">Band Amazonas HD</channel>
+  <channel site="mi.tv" site_id="br#band-bahia" lang="pt" xmltv_id="BandBahia.br@SD">Band Bahia</channel>
+  <channel site="mi.tv" site_id="br#band-bahia-hd" lang="pt" xmltv_id="">Band Bahia HD</channel>
+  <channel site="mi.tv" site_id="br#band-belem" lang="pt" xmltv_id="">Band Belém</channel>
+  <channel site="mi.tv" site_id="br#band-bh-hd" lang="pt" xmltv_id="">Band BH HD</channel>
+  <channel site="mi.tv" site_id="br#band-brasilia" lang="pt" xmltv_id="">Band Brasília</channel>
+  <channel site="mi.tv" site_id="br#band-brasilia-hd" lang="pt" xmltv_id="">Band Brasília HD</channel>
+  <channel site="mi.tv" site_id="br#band-campinas" lang="pt" xmltv_id="">Band Campinas</channel>
+  <channel site="mi.tv" site_id="br#band-campinas-hd" lang="pt" xmltv_id="">Band Campinas HD</channel>
+  <channel site="mi.tv" site_id="br#band-curitiba" lang="pt" xmltv_id="BandCuritiba.br@SD">Band Curitiba</channel>
+  <channel site="mi.tv" site_id="br#band-curitiba-hd" lang="pt" xmltv_id="">Band Curitiba HD</channel>
+  <channel site="mi.tv" site_id="br#band-hd" lang="pt" xmltv_id="">Band HD</channel>
+  <channel site="mi.tv" site_id="br#band-maceio" lang="pt" xmltv_id="">Band Maceió</channel>
+  <channel site="mi.tv" site_id="br#band-maceio-hd" lang="pt" xmltv_id="">Band Maceió HD</channel>
+  <channel site="mi.tv" site_id="br#band-mato-grosso" lang="pt" xmltv_id="">Band Mato Grosso</channel>
+  <channel site="mi.tv" site_id="br#band-mato-grosso-hd" lang="pt" xmltv_id="">Band Mato Grosso HD</channel>
+  <channel site="mi.tv" site_id="br#band-minas" lang="pt" xmltv_id="">Band Minas</channel>
+  <channel site="mi.tv" site_id="br#band-minas-hd" lang="pt" xmltv_id="">Band Minas HD</channel>
+  <channel site="mi.tv" site_id="br#band-natal-hd" lang="pt" xmltv_id="">Band Natal HD</channel>
+  <channel site="mi.tv" site_id="br#band-news" lang="pt" xmltv_id="BandNews.br@SD">Band News</channel>
+  <channel site="mi.tv" site_id="br#band-piaui" lang="pt" xmltv_id="">Band Piauí</channel>
+  <channel site="mi.tv" site_id="br#band-piaui-hd" lang="pt" xmltv_id="">Band Piauí HD</channel>
+  <channel site="mi.tv" site_id="br#band-porto-alegre" lang="pt" xmltv_id="">Band Porto Alegre</channel>
+  <channel site="mi.tv" site_id="br#band-rio" lang="pt" xmltv_id="">Band Rio</channel>
+  <channel site="mi.tv" site_id="br#band-rio-grande-do-sul-hd" lang="pt" xmltv_id="">Band Rio Grande do Sul HD</channel>
+  <channel site="mi.tv" site_id="br#band-rj-hd" lang="pt" xmltv_id="">Band RJ HD</channel>
+  <channel site="mi.tv" site_id="br#band-roraima" lang="pt" xmltv_id="">Band Roraima</channel>
+  <channel site="mi.tv" site_id="br#band-roraima-hd" lang="pt" xmltv_id="">Band Roraima HD</channel>
+  <channel site="mi.tv" site_id="br#band-s-o-luis-tv-maranh-o" lang="pt" xmltv_id="">Band São Luís - TV Maranhão</channel>
+  <channel site="mi.tv" site_id="br#band-s-o-luis-tv-maranh-o-hd" lang="pt" xmltv_id="">Band São Luís - TV Maranhão HD</channel>
+  <channel site="mi.tv" site_id="br#band-satelite" lang="pt" xmltv_id="">Band Satélite</channel>
+  <channel site="mi.tv" site_id="br#band-satelite-hd" lang="pt" xmltv_id="">Band Satélite HD</channel>
+  <channel site="mi.tv" site_id="br#band-tv-goiania" lang="pt" xmltv_id="TVGoianiaBand.br@SD">Band TV Goiânia</channel>
+  <channel site="mi.tv" site_id="br#band-tv-goiania-hd" lang="pt" xmltv_id="">Band TV Goiânia HD</channel>
+  <channel site="mi.tv" site_id="br#band-vale" lang="pt" xmltv_id="">Band Vale</channel>
+  <channel site="mi.tv" site_id="br#bandnews-hd" lang="pt" xmltv_id="">Bandnews HD</channel>
+  <channel site="mi.tv" site_id="br#bandsports" lang="pt" xmltv_id="BandSports.br@SD">BandSports</channel>
+  <channel site="mi.tv" site_id="br#bandsports-hd" lang="pt" xmltv_id="">BandSports HD</channel>
+  <channel site="mi.tv" site_id="br#bbc-earth-hd" lang="pt" xmltv_id="">BBC Earth HD</channel>
+  <channel site="mi.tv" site_id="br#bbc-news" lang="pt" xmltv_id="BBCNews.uk@NorthAmerica">BBC News</channel>
+  <channel site="mi.tv" site_id="br#bbc-news-hd" lang="pt" xmltv_id="">BBC News HD</channel>
+  <channel site="mi.tv" site_id="br#bh-news-tv" lang="pt" xmltv_id="">BH News TV</channel>
+  <channel site="mi.tv" site_id="br#bis-hd" lang="pt" xmltv_id="Bis.br@SD">BIS HD</channel>
+  <channel site="mi.tv" site_id="br#bloomberg" lang="pt" xmltv_id="">Bloomberg</channel>
+  <channel site="mi.tv" site_id="br#bloomberg-hd" lang="pt" xmltv_id="">Bloomberg HD</channel>
+  <channel site="mi.tv" site_id="br#boa-vontade-tv" lang="pt" xmltv_id="BoaVontadeTV.br@SD">Boa Vontade TV</channel>
+  <channel site="mi.tv" site_id="br#boa-vontade-tv-hd" lang="pt" xmltv_id="">Boa Vontade TV HD</channel>
+  <channel site="mi.tv" site_id="br#boomerang" lang="pt" xmltv_id="CartoonitoLatinAmerica.us@Brazil">Cartoonito</channel>
+  <channel site="mi.tv" site_id="br#boomerang-hd" lang="pt" xmltv_id="">Boomerang HD</channel>
+  <channel site="mi.tv" site_id="br#canal-adulto" lang="pt" xmltv_id="">Canal Adulto</channel>
+  <channel site="mi.tv" site_id="br#canal-agromix" lang="pt" xmltv_id="">Canal Agromix</channel>
+  <channel site="mi.tv" site_id="br#canal-brasil" lang="pt" xmltv_id="CanalBrasil.br@SD">Canal Brasil</channel>
+  <channel site="mi.tv" site_id="br#canal-brasil-hd" lang="pt" xmltv_id="">Canal Brasil HD</channel>
+  <channel site="mi.tv" site_id="br#canal-do-boi" lang="pt" xmltv_id="CanaldoBoi.br@SD">Canal do Boi</channel>
+  <channel site="mi.tv" site_id="br#canal-legislativo-tval" lang="pt" xmltv_id="">Canal Legislativo TVAL</channel>
+  <channel site="mi.tv" site_id="br#canal-rural" lang="pt" xmltv_id="CanalRural.br@SD">Canal Rural</channel>
+  <channel site="mi.tv" site_id="br#canal-smithsonian-hd" lang="pt" xmltv_id="SmithsonianChannel.br@SD">Canal Smithsonian HD</channel>
+  <channel site="mi.tv" site_id="br#canal-universitario-cnu" lang="pt" xmltv_id="">Canal Universitário CNU</channel>
+  <channel site="mi.tv" site_id="br#canal-universitario-tv-ufsc" lang="pt" xmltv_id="">Canal Universitário TV UFSC</channel>
+  <channel site="mi.tv" site_id="br#canal-universitario-tv-unifor" lang="pt" xmltv_id="">$nameFromProvider</channel>
+  <channel site="mi.tv" site_id="br#canc-o-nova" lang="pt" xmltv_id="TVCancaoNova.br@SD">Canção Nova</channel>
+  <channel site="mi.tv" site_id="br#canc-o-nova-hd" lang="pt" xmltv_id="">Canção Nova HD</channel>
+  <channel site="mi.tv" site_id="br#cartoon" lang="pt" xmltv_id="CartoonNetworkLatinAmerica.us@Brazil">Cartoon Network</channel>
+  <channel site="mi.tv" site_id="br#cartoon-network-brazil-hd" lang="pt" xmltv_id="">Cartoon Network Brazil HD</channel>
+  <channel site="mi.tv" site_id="br#chef-tv" lang="pt" xmltv_id="ChefTV.br@SD">Chef TV</channel>
+  <channel site="mi.tv" site_id="br#cinebrasil-tv" lang="pt" xmltv_id="CineBrasilTV.br@SD">Cine Brasil TV</channel>
+  <channel site="mi.tv" site_id="br#cinemax" lang="pt" xmltv_id="Cinemax.br@SD">Cinemax</channel>
+  <channel site="mi.tv" site_id="br#cinemax-1" lang="pt" xmltv_id="">Cinemax</channel>
+  <channel site="mi.tv" site_id="br#cnn" lang="pt" xmltv_id="">CNN</channel>
+  <channel site="mi.tv" site_id="br#cnn-1" lang="pt" xmltv_id="">CNN</channel>
+  <channel site="mi.tv" site_id="br#cnn-brasil" lang="pt" xmltv_id="CNNBrasil.br@SD">CNN Brasil</channel>
+  <channel site="mi.tv" site_id="br#cnn-brasil-1" lang="pt" xmltv_id="">CNN Brasil</channel>
+  <channel site="mi.tv" site_id="br#cnn-en-espanol-hd" lang="pt" xmltv_id="">CNN en Español HD</channel>
+  <channel site="mi.tv" site_id="br#cnn-en-espanol-latin-america" lang="pt" xmltv_id="">CNN En Español Latin America</channel>
+  <channel site="mi.tv" site_id="br#cnn-international-hd" lang="pt" xmltv_id="CNNInternational.us@AsiaPacific">CNN International HD</channel>
+  <channel site="mi.tv" site_id="br#cnt" lang="pt" xmltv_id="">CNT</channel>
+  <channel site="mi.tv" site_id="br#cnt-bahia" lang="pt" xmltv_id="">CNT Bahía</channel>
+  <channel site="mi.tv" site_id="br#cnt-bahia-hd" lang="pt" xmltv_id="">CNT Bahía HD</channel>
+  <channel site="mi.tv" site_id="br#cnt-hd" lang="pt" xmltv_id="">CNT HD</channel>
+  <channel site="mi.tv" site_id="br#cnt-rio" lang="pt" xmltv_id="">CNT Rio</channel>
+  <channel site="mi.tv" site_id="br#cnt-rio-hd" lang="pt" xmltv_id="RedeCNTRiodeJaneiro.br@SD">CNT Rio HD</channel>
+  <channel site="mi.tv" site_id="br#combate" lang="pt" xmltv_id="">Combate</channel>
+  <channel site="mi.tv" site_id="br#combate-hd" lang="pt" xmltv_id="">Combate HD</channel>
+  <channel site="mi.tv" site_id="br#comedy-central" lang="pt" xmltv_id="ComedyCentralLatinAmerica.us@Brazil">Comedy Central</channel>
+  <channel site="mi.tv" site_id="br#comedy-central-hd" lang="pt" xmltv_id="">Comedy Central HD</channel>
+  <channel site="mi.tv" site_id="br#conmebol-tv-1" lang="pt" xmltv_id="">Conmebol TV 1</channel>
+  <channel site="mi.tv" site_id="br#conmebol-tv-2" lang="pt" xmltv_id="">Conmebol TV 2</channel>
+  <channel site="mi.tv" site_id="br#conmebol-tv-3" lang="pt" xmltv_id="">Conmebol TV 3</channel>
+  <channel site="mi.tv" site_id="br#conmebol-tv-4" lang="pt" xmltv_id="">Conmebol TV 4</channel>
+  <channel site="mi.tv" site_id="br#cultura" lang="pt" xmltv_id="">Cultura</channel>
+  <channel site="mi.tv" site_id="br#cultura-hd" lang="pt" xmltv_id="">Cultura HD</channel>
+  <channel site="mi.tv" site_id="br#curta" lang="pt" xmltv_id="Curta.br@SD">Curta!</channel>
+  <channel site="mi.tv" site_id="br#curta-hd" lang="pt" xmltv_id="">Curta! HD</channel>
+  <channel site="mi.tv" site_id="br#discovery" lang="pt" xmltv_id="DiscoveryChannelLatinAmerica.us@Brazil">Discovery</channel>
+  <channel site="mi.tv" site_id="br#discovery-civilization" lang="pt" xmltv_id="">Discovery Civilization</channel>
+  <channel site="mi.tv" site_id="br#discovery-civilization-hd" lang="pt" xmltv_id="">Discovery Civilization HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-hd" lang="pt" xmltv_id="">Discovery HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-home-health" lang="pt" xmltv_id="DiscoveryHomeHealthLatinAmerica.mx@Brazil">Discovery Home &amp; Health</channel>
+  <channel site="mi.tv" site_id="br#discovery-home-health-hd" lang="pt" xmltv_id="">Discovery Home &amp; Health HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-kids" lang="pt" xmltv_id="DiscoveryKidsLatinAmerica.us@Brazil">Discovery Kids</channel>
+  <channel site="mi.tv" site_id="br#discovery-kids-hd" lang="pt" xmltv_id="">Discovery Kids HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-science" lang="pt" xmltv_id="DiscoveryScienceLatinAmerica.us@Brazil">Discovery Science</channel>
+  <channel site="mi.tv" site_id="br#discovery-science-hd" lang="pt" xmltv_id="">Discovery Science HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-sciene-hd" lang="pt" xmltv_id="">Discovery Sciene HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-theater-hd" lang="pt" xmltv_id="DiscoveryTheater.br@SD">Discovery Theater</channel>
+  <channel site="mi.tv" site_id="br#discovery-turbo" lang="pt" xmltv_id="DiscoveryTurboLatinAmerica.us@Brazil">Discovery Turbo</channel>
+  <channel site="mi.tv" site_id="br#discovery-turbo-hd" lang="pt" xmltv_id="">Discovery Turbo HD</channel>
+  <channel site="mi.tv" site_id="br#discovery-world-hd" lang="pt" xmltv_id="DiscoveryWorld.us@Brazil">Discovery World</channel>
+  <channel site="mi.tv" site_id="br#disney" lang="pt" xmltv_id="DisneyChannel.br@SD">Disney</channel>
+  <channel site="mi.tv" site_id="br#disney-hd" lang="pt" xmltv_id="">Disney HD</channel>
+  <channel site="mi.tv" site_id="br#disney-junior" lang="pt" xmltv_id="">Disney Junior</channel>
+  <channel site="mi.tv" site_id="br#disney-junior-brazil-hd" lang="pt" xmltv_id="">Disney Junior Brazil HD</channel>
+  <channel site="mi.tv" site_id="br#disney-xd" lang="pt" xmltv_id="">Disney XD</channel>
+  <channel site="mi.tv" site_id="br#dogtv" lang="pt" xmltv_id="DogTV.us@SD">DOGTV</channel>
+  <channel site="mi.tv" site_id="br#dogtv-hd" lang="pt" xmltv_id="">DOGTV HD</channel>
+  <channel site="mi.tv" site_id="br#e" lang="pt" xmltv_id="ELatinAmerica.us@Brazil">E!</channel>
+  <channel site="mi.tv" site_id="br#e-hd" lang="pt" xmltv_id="">E! HD</channel>
+  <channel site="mi.tv" site_id="br#e-parana" lang="pt" xmltv_id="">É-Paraná</channel>
+  <channel site="mi.tv" site_id="br#e-parana-hd" lang="pt" xmltv_id="TVParanaTurismo.br@SD">E-Paraná HD</channel>
+  <channel site="mi.tv" site_id="br#eptv-campinas-1" lang="pt" xmltv_id="">EPTV Campinas</channel>
+  <channel site="mi.tv" site_id="br#eptv-campinas-hd" lang="pt" xmltv_id="">EPTV Campinas HD</channel>
+  <channel site="mi.tv" site_id="br#eptv-central" lang="pt" xmltv_id="">EPTV Central</channel>
+  <channel site="mi.tv" site_id="br#eptv-central-hd" lang="pt" xmltv_id="">EPTV Central HD</channel>
+  <channel site="mi.tv" site_id="br#eptv-ribeir-o-preto" lang="pt" xmltv_id="">EPTV Ribeirão Preto</channel>
+  <channel site="mi.tv" site_id="br#eptv-ribeir-o-preto-hd" lang="pt" xmltv_id="">EPTV Ribeirão Preto HD</channel>
+  <channel site="mi.tv" site_id="br#eptv-sul-de-minas" lang="pt" xmltv_id="">EPTV Sul de Minas</channel>
+  <channel site="mi.tv" site_id="br#eptv-sul-de-minas-hd" lang="pt" xmltv_id="EPTVSuldeMinas.br@SD">EPTV Sul de Minas HD</channel>
+  <channel site="mi.tv" site_id="br#espn" lang="pt" xmltv_id="ESPN.br@SD">ESPN Brasil</channel>
+  <channel site="mi.tv" site_id="br#espn-1" lang="pt" xmltv_id="">ESPN Extra</channel>
+  <channel site="mi.tv" site_id="br#espn-2" lang="pt" xmltv_id="ESPN.us@SD">ESPN</channel>
+  <channel site="mi.tv" site_id="br#espn-extra" lang="pt" xmltv_id="">ESPN Extra</channel>
+  <channel site="mi.tv" site_id="br#espn-extra-hd" lang="pt" xmltv_id="">ESPN Extra HD</channel>
+  <channel site="mi.tv" site_id="br#espn-hd" lang="pt" xmltv_id="">ESPN HD</channel>
+  <channel site="mi.tv" site_id="br#espn-plus" lang="pt" xmltv_id="ESPNExtra.br@SD">ESPN Extra</channel>
+  <channel site="mi.tv" site_id="br#espn-sur-andina-93a" lang="pt" xmltv_id="">ESPN Sur Andina (93A)</channel>
+  <channel site="mi.tv" site_id="br#esporte-interativo" lang="pt" xmltv_id="">Esporte Interativo</channel>
+  <channel site="mi.tv" site_id="br#esporte-interativo-1" lang="pt" xmltv_id="">Esporte Interativo</channel>
+  <channel site="mi.tv" site_id="br#esporte-interativo-2" lang="pt" xmltv_id="">Esporte Interativo 2</channel>
+  <channel site="mi.tv" site_id="br#esporte-interativo-2-hd" lang="pt" xmltv_id="">Esporte Interativo 2 HD</channel>
+  <channel site="mi.tv" site_id="br#esporte-interativo-hd" lang="pt" xmltv_id="">Esporte Interativo HD</channel>
+  <channel site="mi.tv" site_id="br#esporte-interativo-hd-1" lang="pt" xmltv_id="">Esporte Interativo HD</channel>
+  <channel site="mi.tv" site_id="br#eurochannel" lang="pt" xmltv_id="Eurochannel.uk@SD">Eurochannel</channel>
+  <channel site="mi.tv" site_id="br#ewtn-latin-america" lang="pt" xmltv_id="">EWTN Latin America</channel>
+  <channel site="mi.tv" site_id="br#fashion-tv" lang="pt" xmltv_id="FashionTV.br@SD">Fashion TV</channel>
+  <channel site="mi.tv" site_id="br#film-arts" lang="pt" xmltv_id="FilmArts.ar@Brazil">film&amp;arts</channel>
+  <channel site="mi.tv" site_id="br#film-arts-hd" lang="pt" xmltv_id="">Film &amp; Arts HD</channel>
+  <channel site="mi.tv" site_id="br#fish-tv-hd" lang="pt" xmltv_id="">Fish TV HD</channel>
+  <channel site="mi.tv" site_id="br#fishtv" lang="pt" xmltv_id="FishTV.br@SD">FishTV</channel>
+  <channel site="mi.tv" site_id="br#food-network" lang="pt" xmltv_id="FoodNetworkLatinAmerica.us@Brazil">Food Network</channel>
+  <channel site="mi.tv" site_id="br#food-network-hd-brasil" lang="pt" xmltv_id="">Food Network HD Brasil</channel>
+  <channel site="mi.tv" site_id="br#fox" lang="pt" xmltv_id="StarChannel.br@SD">FOX Channel</channel>
+  <channel site="mi.tv" site_id="br#fox-action" lang="pt" xmltv_id="">FOX Premium Action</channel>
+  <channel site="mi.tv" site_id="br#fox-action-hd" lang="pt" xmltv_id="">FOX Premium Action HD</channel>
+  <channel site="mi.tv" site_id="br#fox-hd" lang="pt" xmltv_id="">Star Channel HD</channel>
+  <channel site="mi.tv" site_id="br#fox-life" lang="pt" xmltv_id="StarLifeLatinAmerica.us@Brazil">FOX Life</channel>
+  <channel site="mi.tv" site_id="br#fox-life-hd" lang="pt" xmltv_id="">Star Life HD</channel>
+  <channel site="mi.tv" site_id="br#fox-news-channel" lang="pt" xmltv_id="FoxNewsChannel.us@SD">Fox News Channel</channel>
+  <channel site="mi.tv" site_id="br#fox-premium-1" lang="pt" xmltv_id="StarHitsBrasil.us@SD">Star Hits SD</channel>
+  <channel site="mi.tv" site_id="br#fox-premium-1-hd" lang="pt" xmltv_id="">FOX Premium 1 HD</channel>
+  <channel site="mi.tv" site_id="br#fox-premium-2" lang="pt" xmltv_id="">Star Hits 2 SD</channel>
+  <channel site="mi.tv" site_id="br#fox-premium-2-hd" lang="pt" xmltv_id="">FOX Premium 2 HD</channel>
+  <channel site="mi.tv" site_id="br#fox-sports" lang="pt" xmltv_id="FoxSports.br@SD">FOX Sports</channel>
+  <channel site="mi.tv" site_id="br#fox-sports-2" lang="pt" xmltv_id="FoxSports2.br@SD">FOX Sports 2</channel>
+  <channel site="mi.tv" site_id="br#fox-sports-2-hd" lang="pt" xmltv_id="">FOX Sports 2 HD</channel>
+  <channel site="mi.tv" site_id="br#fox-sports-hd" lang="pt" xmltv_id="">FOX Sports HD</channel>
+  <channel site="mi.tv" site_id="br#furb-tv" lang="pt" xmltv_id="">FURB TV</channel>
+  <channel site="mi.tv" site_id="br#futura" lang="pt" xmltv_id="CanalFutura.br@SD">Futura</channel>
+  <channel site="mi.tv" site_id="br#futura-hd" lang="pt" xmltv_id="">Futura HD</channel>
+  <channel site="mi.tv" site_id="br#fx" lang="pt" xmltv_id="FXLatinAmerica.us@Brazil">FX</channel>
+  <channel site="mi.tv" site_id="br#fx-hd" lang="pt" xmltv_id="">FX HD</channel>
+  <channel site="mi.tv" site_id="br#gazeta-hd" lang="pt" xmltv_id="">Gazeta HD</channel>
+  <channel site="mi.tv" site_id="br#glitz" lang="pt" xmltv_id="">Glitz</channel>
+  <channel site="mi.tv" site_id="br#globo-amazonas" lang="pt" xmltv_id="RedeAmazonica.br@SD">Globo Amazonas</channel>
+  <channel site="mi.tv" site_id="br#globo-anhanguera" lang="pt" xmltv_id="">Globo Anhanguera</channel>
+  <channel site="mi.tv" site_id="br#globo-belem-liberal" lang="pt" xmltv_id="TVLiberal.br@SD">Globo Belém Liberal</channel>
+  <channel site="mi.tv" site_id="br#globo-belo-horizonte" lang="pt" xmltv_id="">Globo Belo Horizonte</channel>
+  <channel site="mi.tv" site_id="br#globo-belo-horizonte-hd" lang="pt" xmltv_id="">Globo Belo Horizonte HD</channel>
+  <channel site="mi.tv" site_id="br#globo-brasilia" lang="pt" xmltv_id="TVGloboBrasilia.br@SD">Globo Brasília</channel>
+  <channel site="mi.tv" site_id="br#globo-brasilia-hd" lang="pt" xmltv_id="">Globo Brasília HD</channel>
+  <channel site="mi.tv" site_id="br#globo-brasilia-hd-1" lang="pt" xmltv_id="">Globo Brasília HD</channel>
+  <channel site="mi.tv" site_id="br#globo-hd" lang="pt" xmltv_id="RedeGlobo.br@SD">Globo HD</channel>
+  <channel site="mi.tv" site_id="br#globo-minas" lang="pt" xmltv_id="">Globo Minas</channel>
+  <channel site="mi.tv" site_id="br#globo-natal" lang="pt" xmltv_id="">Globo Natal</channel>
+  <channel site="mi.tv" site_id="br#globo-news" lang="pt" xmltv_id="GloboNews.br@SD">Globo News</channel>
+  <channel site="mi.tv" site_id="br#globo-news-hd" lang="pt" xmltv_id="">Globo News HD</channel>
+  <channel site="mi.tv" site_id="br#globo-nordeste-hd" lang="pt" xmltv_id="TVGloboNordeste.br@SD">Globo Nordeste HD</channel>
+  <channel site="mi.tv" site_id="br#globo-rbs-tv-poa" lang="pt" xmltv_id="RBSTVRS.br@SD">Globo RBS TV Poa</channel>
+  <channel site="mi.tv" site_id="br#globo-recife" lang="pt" xmltv_id="">Globo Recife</channel>
+  <channel site="mi.tv" site_id="br#globo-rio-hd" lang="pt" xmltv_id="">Globo Rio HD</channel>
+  <channel site="mi.tv" site_id="br#globo-rj" lang="pt" xmltv_id="TVGloboRiodeJaneiro.br@SD">Globo RJ</channel>
+  <channel site="mi.tv" site_id="br#globo-s-o-paulo-hd" lang="pt" xmltv_id="">Globo São Paulo HD</channel>
+  <channel site="mi.tv" site_id="br#globo-sp" lang="pt" xmltv_id="TVGloboSaoPaulo.br@SD">Globo SP</channel>
+  <channel site="mi.tv" site_id="br#globo-tv-bahia" lang="pt" xmltv_id="TVBahia.br@HD">Globo TV Bahia</channel>
+  <channel site="mi.tv" site_id="br#globo-tv-internacional" lang="pt" xmltv_id="">Globo TV Internacional</channel>
+  <channel site="mi.tv" site_id="br#globo-tv-tem-bauru" lang="pt" xmltv_id="">Globo TV Tem Bauru</channel>
+  <channel site="mi.tv" site_id="br#globo-tv-tribuna" lang="pt" xmltv_id="">Globo TV Tribuna</channel>
+  <channel site="mi.tv" site_id="br#globo-tv-vanguarda" lang="pt" xmltv_id="">Globo TV Vanguarda</channel>
+  <channel site="mi.tv" site_id="br#globosat" lang="pt" xmltv_id="MaisnaTela.br@SD">+ Globosat</channel>
+  <channel site="mi.tv" site_id="br#globosat-1" lang="pt" xmltv_id="">+ Globosat</channel>
+  <channel site="mi.tv" site_id="br#gloob" lang="pt" xmltv_id="Gloob.br@SD">Gloob</channel>
+  <channel site="mi.tv" site_id="br#gloob-hd" lang="pt" xmltv_id="">Gloob HD</channel>
+  <channel site="mi.tv" site_id="br#gloobinho" lang="pt" xmltv_id="Gloobinho.br@SD">Gloobinho</channel>
+  <channel site="mi.tv" site_id="br#gloobinho-hd" lang="pt" xmltv_id="">Gloobinho HD</channel>
+  <channel site="mi.tv" site_id="br#gnt" lang="pt" xmltv_id="GNT.br@SD">GNT</channel>
+  <channel site="mi.tv" site_id="br#gnt-hd" lang="pt" xmltv_id="">GNT HD</channel>
+  <channel site="mi.tv" site_id="br#golf-channel" lang="pt" xmltv_id="">Golf Channel</channel>
+  <channel site="mi.tv" site_id="br#golf-channel-hd" lang="pt" xmltv_id="">Golf Channel HD</channel>
+  <channel site="mi.tv" site_id="br#governo-do-estado-do-ceara-assembleia-legislativa" lang="pt" xmltv_id="">GOVERNO DO ESTADO DO CEARA ASSEMBLEIA LEGISLATIVA</channel>
+  <channel site="mi.tv" site_id="br#h2" lang="pt" xmltv_id="History2LatinAmerica.us@Brazil">History 2</channel>
+  <channel site="mi.tv" site_id="br#h2-hd" lang="pt" xmltv_id="">H2 HD</channel>
+  <channel site="mi.tv" site_id="br#hbo" lang="pt" xmltv_id="HBO.br@SD">HBO</channel>
+  <channel site="mi.tv" site_id="br#hbo2" lang="pt" xmltv_id="HBO2.br@SD">HBO2</channel>
+  <channel site="mi.tv" site_id="br#hbo-2" lang="pt" xmltv_id="">HBO 2</channel>
+  <channel site="mi.tv" site_id="br#hbo-2-hd" lang="pt" xmltv_id="">HBO 2 HD</channel>
+  <channel site="mi.tv" site_id="br#hbo-family-hd" lang="pt" xmltv_id="HBOFamily.br@SD">HBO Family HD</channel>
+  <channel site="mi.tv" site_id="br#hbo-hd" lang="pt" xmltv_id="">HBO HD</channel>
+  <channel site="mi.tv" site_id="br#hbo-plus" lang="pt" xmltv_id="">HBO Plus</channel>
+  <channel site="mi.tv" site_id="br#hbo-plus-1" lang="pt" xmltv_id="">HBO Plus</channel>
+  <channel site="mi.tv" site_id="br#hbo-plus-brasil-hd" lang="pt" xmltv_id="HBOPlus.br@SD">HBO Plus HD</channel>
+  <channel site="mi.tv" site_id="br#hbo-signature" lang="pt" xmltv_id="HBOSignature.br@SD">HBO Signature</channel>
+  <channel site="mi.tv" site_id="br#hbo-signature-1" lang="pt" xmltv_id="">HBO Signature</channel>
+  <channel site="mi.tv" site_id="br#hbo-signature-hd" lang="pt" xmltv_id="">HBO Signature HD</channel>
+  <channel site="mi.tv" site_id="br#hgtv" lang="pt" xmltv_id="HGTVLatinAmerica.us@Brazil">HGTV</channel>
+  <channel site="mi.tv" site_id="br#hgtv-hd" lang="pt" xmltv_id="">HGTV HD</channel>
+  <channel site="mi.tv" site_id="br#history-channel" lang="pt" xmltv_id="History.br@SD">History Channel</channel>
+  <channel site="mi.tv" site_id="br#history-channel-hd" lang="pt" xmltv_id="">HISTORY CHANNEL HD</channel>
+  <channel site="mi.tv" site_id="br#horizonte-tv" lang="pt" xmltv_id="TVHorizonte.br@SD">Horizonte TV</channel>
+  <channel site="mi.tv" site_id="br#hustler-tv" lang="pt" xmltv_id="">Hustler TV</channel>
+  <channel site="mi.tv" site_id="br#i-sat" lang="pt" xmltv_id="ISat.ar@Brazil">I.SAT</channel>
+  <channel site="mi.tv" site_id="br#ideal-tv" lang="pt" xmltv_id="IdealTV.br@SD">Ideal TV</channel>
+  <channel site="mi.tv" site_id="br#ideal-tv-hd" lang="pt" xmltv_id="">Ideal TV HD</channel>
+  <channel site="mi.tv" site_id="br#inter-tv-alto-litoral" lang="pt" xmltv_id="">Inter TV Alto Litoral</channel>
+  <channel site="mi.tv" site_id="br#intertv-alto-literal-hd" lang="pt" xmltv_id="InterTVAltoLitoral.br@SD">InterTV Alto Literal HD</channel>
+  <channel site="mi.tv" site_id="br#intertv-cabugi-hd" lang="pt" xmltv_id="InterTVCabugi.br@SD">InterTV Cabugi HD</channel>
+  <channel site="mi.tv" site_id="br#intertv-costa-branca-hd" lang="pt" xmltv_id="">InterTV Costa Branca HD</channel>
+  <channel site="mi.tv" site_id="br#intertv-grande-minas" lang="pt" xmltv_id="">InterTV Grande Minas</channel>
+  <channel site="mi.tv" site_id="br#intertv-grande-minas-hd" lang="pt" xmltv_id="InterTVGrandeMinas.br@SD">InterTV Grande Minas HD</channel>
+  <channel site="mi.tv" site_id="br#intertv-planicie-hd" lang="pt" xmltv_id="">InterTV Planície HD</channel>
+  <channel site="mi.tv" site_id="br#intertv-serra-mar" lang="pt" xmltv_id="">InterTV Serra Mar</channel>
+  <channel site="mi.tv" site_id="br#intertv-serra-mar-hd" lang="pt" xmltv_id="InterTVSerraPlusMar.br@SD">InterTV Serra Mar HD</channel>
+  <channel site="mi.tv" site_id="br#investigacao-discovery" lang="pt" xmltv_id="InvestigationDiscovery.br@SD">Investigação Discovery</channel>
+  <channel site="mi.tv" site_id="br#investigacao-discovery-hd" lang="pt" xmltv_id="">Investigação Discovery HD</channel>
+  <channel site="mi.tv" site_id="br#latino" lang="pt" xmltv_id="">Latino</channel>
+  <channel site="mi.tv" site_id="br#lifetime-brazil" lang="pt" xmltv_id="LifetimeLatinAmerica.us@Brazil">Lifetime Brazil</channel>
+  <channel site="mi.tv" site_id="br#lifetime-hd" lang="pt" xmltv_id="">Lifetime HD</channel>
+  <channel site="mi.tv" site_id="br#loading" lang="pt" xmltv_id="Loading.br@SD">Loading</channel>
+  <channel site="mi.tv" site_id="br#max" lang="pt" xmltv_id="">HBO Mundi</channel>
+  <channel site="mi.tv" site_id="br#max-1" lang="pt" xmltv_id="HBOMundi.br@SD">HBO Mundi</channel>
+  <channel site="mi.tv" site_id="br#max-prime" lang="pt" xmltv_id="">HBO Xtreme</channel>
+  <channel site="mi.tv" site_id="br#max-up" lang="pt" xmltv_id="HBOPop.br@SD">HBO Pop</channel>
+  <channel site="mi.tv" site_id="br#max-up-1" lang="pt" xmltv_id="">Max Up</channel>
+  <channel site="mi.tv" site_id="br#maxprime" lang="pt" xmltv_id="HBOXtreme.br@SD">Maxprime</channel>
+  <channel site="mi.tv" site_id="br#maxprime-e" lang="pt" xmltv_id="">Maxprime*e</channel>
+  <channel site="mi.tv" site_id="br#maxprime-panregional" lang="pt" xmltv_id="">MaxPrime Panregional</channel>
+  <channel site="mi.tv" site_id="br#mega-tv-brazil" lang="pt" xmltv_id="">Mega TV (Brazil)</channel>
+  <channel site="mi.tv" site_id="br#mega-tvhd" lang="pt" xmltv_id="">MEGA TVHD</channel>
+  <channel site="mi.tv" site_id="br#megapix" lang="pt" xmltv_id="Megapix.br@SD">Megapix</channel>
+  <channel site="mi.tv" site_id="br#megapix-hd" lang="pt" xmltv_id="">Megapix HD</channel>
+  <channel site="mi.tv" site_id="br#meio-norte" lang="pt" xmltv_id="RedeMeioNorte.br@SD">Meio Norte</channel>
+  <channel site="mi.tv" site_id="br#meio-norte-hd" lang="pt" xmltv_id="">Meio Norte HD</channel>
+  <channel site="mi.tv" site_id="br#mix-tv" lang="pt" xmltv_id="">MIX TV</channel>
+  <channel site="mi.tv" site_id="br#mtv" lang="pt" xmltv_id="">MTV</channel>
+  <channel site="mi.tv" site_id="br#mtv-brasil" lang="pt" xmltv_id="MTV.br@SD">MTV Brasil</channel>
+  <channel site="mi.tv" site_id="br#mtv-live-hd" lang="pt" xmltv_id="MTVLive.uk@SD">MTV Live HD</channel>
+  <channel site="mi.tv" site_id="br#multicultura-educac-o" lang="pt" xmltv_id="">MultiCultura Educação</channel>
+  <channel site="mi.tv" site_id="br#multishow" lang="pt" xmltv_id="Multishow.br@SD">Multishow</channel>
+  <channel site="mi.tv" site_id="br#multishow-hd" lang="pt" xmltv_id="">Multishow HD</channel>
+  <channel site="mi.tv" site_id="br#music-box-brasil" lang="pt" xmltv_id="MusicBoxBrazil.br@SD">Music Box Brasil</channel>
+  <channel site="mi.tv" site_id="br#music-box-brasil-hd" lang="pt" xmltv_id="">Music Box Brasil HD</channel>
+  <channel site="mi.tv" site_id="br#nat-geo-kids" lang="pt" xmltv_id="NatGeoKidsLatinAmerica.us@Brazil">Nat Geo Kids</channel>
+  <channel site="mi.tv" site_id="br#nat-geo-kids-hd" lang="pt" xmltv_id="">Nat Geo Kids HD</channel>
+  <channel site="mi.tv" site_id="br#nat-geo-wild" lang="pt" xmltv_id="">National Geographic Wild</channel>
+  <channel site="mi.tv" site_id="br#natgeo-wild-hd" lang="pt" xmltv_id="NationalGeographicWild.br@SD">NatGeo Wild HD</channel>
+  <channel site="mi.tv" site_id="br#national-geographic" lang="pt" xmltv_id="NationalGeographic.br@SD">National Geographic</channel>
+  <channel site="mi.tv" site_id="br#national-geographic-hd" lang="pt" xmltv_id="">National Geographic HD</channel>
+  <channel site="mi.tv" site_id="br#nbr" lang="pt" xmltv_id="">NBR</channel>
+  <channel site="mi.tv" site_id="br#nbr-florianopolis" lang="pt" xmltv_id="">NBR Florianopolis</channel>
+  <channel site="mi.tv" site_id="br#nhk-hd" lang="pt" xmltv_id="">NHK HD</channel>
+  <channel site="mi.tv" site_id="br#nick-hd" lang="pt" xmltv_id="">Nick HD</channel>
+  <channel site="mi.tv" site_id="br#nick-jr" lang="pt" xmltv_id="NickJr.br@SD">Nick Jr.</channel>
+  <channel site="mi.tv" site_id="br#nick-jr-hd" lang="pt" xmltv_id="">Nick Jr. HD</channel>
+  <channel site="mi.tv" site_id="br#nickelodeon" lang="pt" xmltv_id="Nickelodeon.br@SD">Nick</channel>
+  <channel site="mi.tv" site_id="br#nordestv" lang="pt" xmltv_id="">NordesTV</channel>
+  <channel site="mi.tv" site_id="br#nordestv-hd" lang="pt" xmltv_id="">NordesTV HD</channel>
+  <channel site="mi.tv" site_id="br#nsc-tv-blumenau" lang="pt" xmltv_id="">NSC TV Blumenau</channel>
+  <channel site="mi.tv" site_id="br#nsc-tv-blumenau-hd" lang="pt" xmltv_id="NSCTVBlumenau.br@SD">NSC TV Blumenau HD</channel>
+  <channel site="mi.tv" site_id="br#nsc-tv-chapeco-hd" lang="pt" xmltv_id="NSCTVChapeco.br@SD">NSC TV Chapecó HD</channel>
+  <channel site="mi.tv" site_id="br#nsc-tv-criciuma" lang="pt" xmltv_id="NSCTVCriciuma.br@SD">NSC TV Criciúma</channel>
+  <channel site="mi.tv" site_id="br#nsc-tv-florianopolis-hd" lang="pt" xmltv_id="NSCTVFlorianopolis.br@SD">NSC TV Florianópolis HD</channel>
+  <channel site="mi.tv" site_id="br#nsc-tv-joinville-hd" lang="pt" xmltv_id="NSCTVJoinville.br@SD">NSC TV Joinville HD</channel>
+  <channel site="mi.tv" site_id="br#off" lang="pt" xmltv_id="CanalOff.br@SD">Off</channel>
+  <channel site="mi.tv" site_id="br#off-hd" lang="pt" xmltv_id="">Off HD</channel>
+  <channel site="mi.tv" site_id="br#paramount-brasil-hd" lang="pt" xmltv_id="">Paramount Channel HD</channel>
+  <channel site="mi.tv" site_id="br#paramount-channel" lang="pt" xmltv_id="ParamountNetworkLatinAmerica.us@Brazil">Paramount Network</channel>
+  <channel site="mi.tv" site_id="br#play-tv" lang="pt" xmltv_id="">Play TV</channel>
+  <channel site="mi.tv" site_id="br#playboy" lang="pt" xmltv_id="PlayboyTV.br@SD">Playboy</channel>
+  <channel site="mi.tv" site_id="br#playboy-hd" lang="pt" xmltv_id="">PlayBoy HD</channel>
+  <channel site="mi.tv" site_id="br#poa-tv" lang="pt" xmltv_id="">Poa TV</channel>
+  <channel site="mi.tv" site_id="br#ponto-jus" lang="pt" xmltv_id="">Ponto Jus</channel>
+  <channel site="mi.tv" site_id="br#premiere-2" lang="pt" xmltv_id="">Premiere 2</channel>
+  <channel site="mi.tv" site_id="br#premiere-2-hd" lang="pt" xmltv_id="">Premiere 2 - HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-3" lang="pt" xmltv_id="">Premiere 3</channel>
+  <channel site="mi.tv" site_id="br#premiere-3-hd" lang="pt" xmltv_id="">PREMIERE 3 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-3-hd-1" lang="pt" xmltv_id="">Premiere 3 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-4" lang="pt" xmltv_id="">Premiere 4</channel>
+  <channel site="mi.tv" site_id="br#premiere-4-hd" lang="pt" xmltv_id="">Premiere 4 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-5-brazil" lang="pt" xmltv_id="">Premiere 5 Brazil</channel>
+  <channel site="mi.tv" site_id="br#premiere-5-hd" lang="pt" xmltv_id="">Premiere 5 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-6" lang="pt" xmltv_id="">Premiere 6</channel>
+  <channel site="mi.tv" site_id="br#premiere-6-hd" lang="pt" xmltv_id="">Premiere 6 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-7" lang="pt" xmltv_id="">Premiere 7</channel>
+  <channel site="mi.tv" site_id="br#premiere-7-hd" lang="pt" xmltv_id="">Premiere 7 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-8" lang="pt" xmltv_id="">Premiere 8</channel>
+  <channel site="mi.tv" site_id="br#premiere-8-hd" lang="pt" xmltv_id="">Premiere 8 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-9" lang="pt" xmltv_id="">Premiere 9</channel>
+  <channel site="mi.tv" site_id="br#premiere-9-hd" lang="pt" xmltv_id="">Premiere 9 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-10-hd" lang="pt" xmltv_id="">Premiere 10 HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-clubes" lang="pt" xmltv_id="PremiereClubes.br@SD">Premiere Clubes</channel>
+  <channel site="mi.tv" site_id="br#premiere-clubes-hd" lang="pt" xmltv_id="">Premiere Clubes HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-futebol-clube" lang="pt" xmltv_id="">Premiere FC</channel>
+  <channel site="mi.tv" site_id="br#premiere-futebol-clube-hd" lang="pt" xmltv_id="">Premiere FC HD</channel>
+  <channel site="mi.tv" site_id="br#premiere-hd-2" lang="pt" xmltv_id="">PREMIERE HD 2</channel>
+  <channel site="mi.tv" site_id="br#premiere-hd-4" lang="pt" xmltv_id="">Premiere HD 4</channel>
+  <channel site="mi.tv" site_id="br#premiere-hd-5" lang="pt" xmltv_id="">Premiere HD 5</channel>
+  <channel site="mi.tv" site_id="br#prime-box-brazil" lang="pt" xmltv_id="PrimeBoxBrazil.br@SD">Prime Box Brazil</channel>
+  <channel site="mi.tv" site_id="br#prime-box-brazil-hd" lang="pt" xmltv_id="">Prime Box Brazil HD</channel>
+  <channel site="mi.tv" site_id="br#puc-tv-goias-hd" lang="pt" xmltv_id="">PUC TV Goiás HD</channel>
+  <channel site="mi.tv" site_id="br#ra-tim-bum" lang="pt" xmltv_id="TVRaTimBum.br@SD">RA TIM BUM</channel>
+  <channel site="mi.tv" site_id="br#rai" lang="pt" xmltv_id="">Rai Italia</channel>
+  <channel site="mi.tv" site_id="br#rba-tv-hd" lang="pt" xmltv_id="RBATV.br@SD">RBA TV HD</channel>
+  <channel site="mi.tv" site_id="br#rbi" lang="pt" xmltv_id="RBITV.br@SD">RBI</channel>
+  <channel site="mi.tv" site_id="br#rbi-hd" lang="pt" xmltv_id="">RBI HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-caxias-do-sul-hd" lang="pt" xmltv_id="">RBS TV Caxias do Sul HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-cruz-alta-hd" lang="pt" xmltv_id="">RBS TV Cruz Alta HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-florianopolis" lang="pt" xmltv_id="">RBS TV Florianópolis</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-hd" lang="pt" xmltv_id="">RBS TV HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-porto-alegre-hd" lang="pt" xmltv_id="RBSTVPortoAlegre.br@SD">RBS TV Porto Alegre HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-rio-grande-hd" lang="pt" xmltv_id="">RBS TV Rio Grande HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-santa-cruz-do-sul-hd" lang="pt" xmltv_id="">RBS TV Santa Cruz do Sul HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-santa-maria-hd" lang="pt" xmltv_id="RBSTVSantaMaria.br@SD">RBS TV Santa Maria HD</channel>
+  <channel site="mi.tv" site_id="br#rbs-tv-uruguaiana-hd" lang="pt" xmltv_id="">RBS TV Uruguaiana HD</channel>
+  <channel site="mi.tv" site_id="br#rbti" lang="pt" xmltv_id="">RBTI</channel>
+  <channel site="mi.tv" site_id="br#rbti-hd" lang="pt" xmltv_id="">RBTI HD</channel>
+  <channel site="mi.tv" site_id="br#record" lang="pt" xmltv_id="Record.br@SD">Record TV</channel>
+  <channel site="mi.tv" site_id="br#record-aracaju" lang="pt" xmltv_id="">Record TV Aracaju</channel>
+  <channel site="mi.tv" site_id="br#record-bahia" lang="pt" xmltv_id="">Record TV Bahia</channel>
+  <channel site="mi.tv" site_id="br#record-bauru" lang="pt" xmltv_id="">Record TV Bauru</channel>
+  <channel site="mi.tv" site_id="br#record-belem" lang="pt" xmltv_id="">Record TV Belem</channel>
+  <channel site="mi.tv" site_id="br#record-brasilia" lang="pt" xmltv_id="">Record TV Brasília</channel>
+  <channel site="mi.tv" site_id="br#record-campinas" lang="pt" xmltv_id="">Record TV Campinas</channel>
+  <channel site="mi.tv" site_id="br#record-campo-grande" lang="pt" xmltv_id="">Record TV Campo Grande</channel>
+  <channel site="mi.tv" site_id="br#record-cascavel" lang="pt" xmltv_id="">Record TV Cascavel</channel>
+  <channel site="mi.tv" site_id="br#record-cuiaba" lang="pt" xmltv_id="">Record TV Cuiaba</channel>
+  <channel site="mi.tv" site_id="br#record-cuiaba-hd" lang="pt" xmltv_id="RecordTVCabralia.br@SD">Record Cuiabá HD</channel>
+  <channel site="mi.tv" site_id="br#record-curitiba" lang="pt" xmltv_id="">Record TV Curitiba</channel>
+  <channel site="mi.tv" site_id="br#record-florianopolis" lang="pt" xmltv_id="">Record TV Florianopolis</channel>
+  <channel site="mi.tv" site_id="br#record-fortaleza" lang="pt" xmltv_id="">Record TV Fortaleza</channel>
+  <channel site="mi.tv" site_id="br#record-franca" lang="pt" xmltv_id="">Record TV Franca</channel>
+  <channel site="mi.tv" site_id="br#record-goias" lang="pt" xmltv_id="">Record TV Goiás</channel>
+  <channel site="mi.tv" site_id="br#record-hd" lang="pt" xmltv_id="">Record TV HD</channel>
+  <channel site="mi.tv" site_id="br#record-international" lang="pt" xmltv_id="">Record TV International</channel>
+  <channel site="mi.tv" site_id="br#record-joao-pessoa" lang="pt" xmltv_id="">Record TV Joao Pessoa</channel>
+  <channel site="mi.tv" site_id="br#record-maceio" lang="pt" xmltv_id="">Record TV Maceio</channel>
+  <channel site="mi.tv" site_id="br#record-maringa" lang="pt" xmltv_id="">Record TV Maringa</channel>
+  <channel site="mi.tv" site_id="br#record-minas" lang="pt" xmltv_id="">Record TV Minas</channel>
+  <channel site="mi.tv" site_id="br#record-natal" lang="pt" xmltv_id="">Record TV Natal</channel>
+  <channel site="mi.tv" site_id="br#record-news" lang="pt" xmltv_id="RecordNews.br@SD">Record News</channel>
+  <channel site="mi.tv" site_id="br#record-news-hd" lang="pt" xmltv_id="">Record News HD</channel>
+  <channel site="mi.tv" site_id="br#record-porto-alegre" lang="pt" xmltv_id="">Record TV Porto Alegre</channel>
+  <channel site="mi.tv" site_id="br#record-porto-alegre-hd" lang="pt" xmltv_id="RecordRS.br@SD">Record Porto Alegre HD</channel>
+  <channel site="mi.tv" site_id="br#record-rio" lang="pt" xmltv_id="">Record TV Rio</channel>
+  <channel site="mi.tv" site_id="br#record-santos" lang="pt" xmltv_id="">Record TV Santos</channel>
+  <channel site="mi.tv" site_id="br#record-tv-brasilia-hd" lang="pt" xmltv_id="">Record TV Brasília HD</channel>
+  <channel site="mi.tv" site_id="br#record-tv-cabralia-hd" lang="pt" xmltv_id="">Record TV Cabrália HD</channel>
+  <channel site="mi.tv" site_id="br#record-tv-goias-hd" lang="pt" xmltv_id="RecordTVGoias.br@SD">Record TV Goiás HD</channel>
+  <channel site="mi.tv" site_id="br#record-tv-itapoan-hd" lang="pt" xmltv_id="RecordTVItapoan.br@SD">Record TV Itapoan HD</channel>
+  <channel site="mi.tv" site_id="br#record-tv-minas-hd" lang="pt" xmltv_id="RecordTVMinas.br@SD">Record TV Minas HD</channel>
+  <channel site="mi.tv" site_id="br#record-tv-rio-hd" lang="pt" xmltv_id="RecordTVRio.br@SD">Record TV Rio HD</channel>
+  <channel site="mi.tv" site_id="br#record-tv-rs" lang="pt" xmltv_id="">Record TV RS</channel>
+  <channel site="mi.tv" site_id="br#recordtv-belem" lang="pt" xmltv_id="RecordTVBelem.br@SD">RecordTV Belém</channel>
+  <channel site="mi.tv" site_id="br#recordtv-belem-hd" lang="pt" xmltv_id="">RecordTV Belém HD</channel>
+  <channel site="mi.tv" site_id="br#recordtv-cuiaba" lang="pt" xmltv_id="">RecordTV Cuiabá</channel>
+  <channel site="mi.tv" site_id="br#recordtv-paulista-hd" lang="pt" xmltv_id="RecordTVPaulista.br@SD">RecordTV Paulista HD</channel>
+  <channel site="mi.tv" site_id="br#recordtv-s-o-paulo-hd" lang="pt" xmltv_id="RecordTVSaoPaulo.br@SD">RecordTV São Paulo HD</channel>
+  <channel site="mi.tv" site_id="br#recordtv-tocantins" lang="pt" xmltv_id="">RecordTV Tocantins</channel>
+  <channel site="mi.tv" site_id="br#rede-21-hd" lang="pt" xmltv_id="Rede21.br@SD">Rede 21 HD</channel>
+  <channel site="mi.tv" site_id="br#rede-amazonica-manaus-hd" lang="pt" xmltv_id="RedeAmazonicaManaus.br@SD">Rede Amazônica Manaus HD</channel>
+  <channel site="mi.tv" site_id="br#rede-amazonica-rio-branco" lang="pt" xmltv_id="">Rede Amazônica Rio Branco</channel>
+  <channel site="mi.tv" site_id="br#rede-amazonica-rio-branco-hd" lang="pt" xmltv_id="">Rede Amazônica Rio Branco HD</channel>
+  <channel site="mi.tv" site_id="br#rede-boas-novas" lang="pt" xmltv_id="BoasNovas.br@SD">Rede Boas Novas</channel>
+  <channel site="mi.tv" site_id="br#rede-boas-novas-hd" lang="pt" xmltv_id="">Rede Boas Novas HD</channel>
+  <channel site="mi.tv" site_id="br#rede-brasil" lang="pt" xmltv_id="RedeBrasil.br@SD">Rede Brasil</channel>
+  <channel site="mi.tv" site_id="br#rede-brasil-hd" lang="pt" xmltv_id="">Rede Brasil HD</channel>
+  <channel site="mi.tv" site_id="br#rede-difusora-hd" lang="pt" xmltv_id="">Rede Difusora HD</channel>
+  <channel site="mi.tv" site_id="br#rede-familia" lang="pt" xmltv_id="RedeFamilia.br@SD">Rede Familia</channel>
+  <channel site="mi.tv" site_id="br#rede-familia-hd" lang="pt" xmltv_id="">Rede Familia HD</channel>
+  <channel site="mi.tv" site_id="br#rede-gazeta" lang="pt" xmltv_id="TVGazeta.br@SD">Rede Gazeta</channel>
+  <channel site="mi.tv" site_id="br#rede-genesis" lang="pt" xmltv_id="RedeGenesis.br@SD">Rede Gênesis</channel>
+  <channel site="mi.tv" site_id="br#rede-genesis-hd" lang="pt" xmltv_id="">Rede Gênesis HD</channel>
+  <channel site="mi.tv" site_id="br#rede-globo" lang="pt" xmltv_id="">Globo</channel>
+  <channel site="mi.tv" site_id="br#rede-globo-aracaju" lang="pt" xmltv_id="">Globo Aracaju</channel>
+  <channel site="mi.tv" site_id="br#rede-globo-maceio" lang="pt" xmltv_id="">Globo Maceio</channel>
+  <channel site="mi.tv" site_id="br#rede-globo-teresina" lang="pt" xmltv_id="">Globo Teresina</channel>
+  <channel site="mi.tv" site_id="br#rede-gospel" lang="pt" xmltv_id="RedeGospel.br@SD">Rede Gospel</channel>
+  <channel site="mi.tv" site_id="br#rede-gospel-hd" lang="pt" xmltv_id="">Rede Gospel HD</channel>
+  <channel site="mi.tv" site_id="br#rede-mais" lang="pt" xmltv_id="">Rede Mais</channel>
+  <channel site="mi.tv" site_id="br#rede-massa" lang="pt" xmltv_id="RedeMassa.br@SD">Rede Massa</channel>
+  <channel site="mi.tv" site_id="br#rede-mercosul" lang="pt" xmltv_id="">Rede Mercosul</channel>
+  <channel site="mi.tv" site_id="br#rede-mercosul-hd" lang="pt" xmltv_id="">Rede Mercosul HD</channel>
+  <channel site="mi.tv" site_id="br#rede-minas" lang="pt" xmltv_id="RedeMinas.br@SD">Rede Minas</channel>
+  <channel site="mi.tv" site_id="br#rede-minas-hd" lang="pt" xmltv_id="">Rede Minas HD</channel>
+  <channel site="mi.tv" site_id="br#rede-ngt-nova-geracao-de-televisao" lang="pt" xmltv_id="">Rede NGT</channel>
+  <channel site="mi.tv" site_id="br#rede-ngt-nova-geracao-de-televisao-hd" lang="pt" xmltv_id="">Rede NGT Nova Geracao de Televisao HD</channel>
+  <channel site="mi.tv" site_id="br#rede-record-cuiaba-hd" lang="pt" xmltv_id="">Rede Record Cuiaba HD</channel>
+  <channel site="mi.tv" site_id="br#rede-record-maceio-hd" lang="pt" xmltv_id="">Rede Record Maceio HD</channel>
+  <channel site="mi.tv" site_id="br#rede-record-porto-alegre-hd" lang="pt" xmltv_id="">Rede Record Porto Alegre HD</channel>
+  <channel site="mi.tv" site_id="br#rede-seculo-21" lang="pt" xmltv_id="RedeSeculo21.br@SD">Rede Século 21</channel>
+  <channel site="mi.tv" site_id="br#rede-seculo-21-hd" lang="pt" xmltv_id="">Rede Século 21 HD</channel>
+  <channel site="mi.tv" site_id="br#rede-super" lang="pt" xmltv_id="RedeSuper.br@SD">Rede Super</channel>
+  <channel site="mi.tv" site_id="br#rede-super-hd" lang="pt" xmltv_id="">Rede Super HD</channel>
+  <channel site="mi.tv" site_id="br#rede-tv" lang="pt" xmltv_id="RedeTV.br@SD">RedeTV!</channel>
+  <channel site="mi.tv" site_id="br#rede-tv-belem-hd" lang="pt" xmltv_id="">Rede TV Belem HD</channel>
+  <channel site="mi.tv" site_id="br#rede-tv-hd" lang="pt" xmltv_id="">RedeTV! HD</channel>
+  <channel site="mi.tv" site_id="br#rede-tv-pampa" lang="pt" xmltv_id="">RedeTV! Pampa</channel>
+  <channel site="mi.tv" site_id="br#rede-tv-sp" lang="pt" xmltv_id="">RedeTV! SP</channel>
+  <channel site="mi.tv" site_id="br#rede-tv-sul" lang="pt" xmltv_id="">RedeTV! Sul</channel>
+  <channel site="mi.tv" site_id="br#rede-vida" lang="pt" xmltv_id="RedeVida.br@SD">Rede Vida</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-belo-horizonte" lang="pt" xmltv_id="">Rede Vida Belo Horizonte</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-belo-horizonte-hd" lang="pt" xmltv_id="">Rede Vida Belo Horizonte HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-cascavel" lang="pt" xmltv_id="">Rede Vida Cascavel</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-cascavel-hd" lang="pt" xmltv_id="">Rede Vida Cascavel HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-cuiaba" lang="pt" xmltv_id="">Rede Vida Cuiaba</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-cuiaba-hd" lang="pt" xmltv_id="">Rede Vida Cuiaba HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-goiania" lang="pt" xmltv_id="">Rede Vida Goiania</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-goiania-hd" lang="pt" xmltv_id="">Rede Vida Goiania HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-hd" lang="pt" xmltv_id="">Rede Vida HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-porto-alegre" lang="pt" xmltv_id="">Rede Vida Porto Alegre</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-porto-alegre-hd" lang="pt" xmltv_id="">Rede Vida Porto Alegre HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-recife" lang="pt" xmltv_id="">Rede Vida Recife</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-recife-hd" lang="pt" xmltv_id="">Rede Vida Recife HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-sao-luis" lang="pt" xmltv_id="">Rede Vida Sao Luis</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-sao-luis-hd" lang="pt" xmltv_id="">Rede Vida Sao Luis HD</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-vitoria" lang="pt" xmltv_id="">Rede Vida Vitoria</channel>
+  <channel site="mi.tv" site_id="br#rede-vida-vitoria-hd" lang="pt" xmltv_id="">Rede Vida Vitoria HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-belem" lang="pt" xmltv_id="">RedeTV! Belém</channel>
+  <channel site="mi.tv" site_id="br#redetv-belo-horizonte-hd" lang="pt" xmltv_id="">RedeTV! Belo Horizonte HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-fortaleza" lang="pt" xmltv_id="">RedeTV! Fortaleza</channel>
+  <channel site="mi.tv" site_id="br#redetv-fortaleza-hd" lang="pt" xmltv_id="">RedeTV! Fortaleza HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-manaus" lang="pt" xmltv_id="">RedeTV! Manaus</channel>
+  <channel site="mi.tv" site_id="br#redetv-manaus-hd" lang="pt" xmltv_id="">RedeTV! Manaus HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-natal" lang="pt" xmltv_id="">RedeTV! Natal</channel>
+  <channel site="mi.tv" site_id="br#redetv-porto-velho" lang="pt" xmltv_id="">RedeTV! Porto Velho</channel>
+  <channel site="mi.tv" site_id="br#redetv-porto-velho-hd" lang="pt" xmltv_id="">RedeTV! Porto Velho HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-recife-hd" lang="pt" xmltv_id="">RedeTV! Recife HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-rio-de-janeiro" lang="pt" xmltv_id="">RedeTV! Rio de Janeiro</channel>
+  <channel site="mi.tv" site_id="br#redetv-rio-de-janeiro-hd" lang="pt" xmltv_id="">RedeTV! Rio de Janeiro HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-rondonia-hd" lang="pt" xmltv_id="RedeTVRondonia.br@SD">RedeTV! Rôndonia HD</channel>
+  <channel site="mi.tv" site_id="br#redetv-s-o-paulo-hd" lang="pt" xmltv_id="">RedeTV! São Paulo HD</channel>
+  <channel site="mi.tv" site_id="br#ric-tv-curitiba-hd" lang="pt" xmltv_id="">RIC TV Curitiba HD</channel>
+  <channel site="mi.tv" site_id="br#ric-tv-florianopolis-hd" lang="pt" xmltv_id="">RIC TV Florianópolis HD</channel>
+  <channel site="mi.tv" site_id="br#rit" lang="pt" xmltv_id="RedeInternacionaldeTV.br@SD">RIT</channel>
+  <channel site="mi.tv" site_id="br#rit-hd" lang="pt" xmltv_id="">RIT HD</channel>
+  <channel site="mi.tv" site_id="br#rpc-cascavel" lang="pt" xmltv_id="">RPC Cascavel</channel>
+  <channel site="mi.tv" site_id="br#rpc-curitiba" lang="pt" xmltv_id="RPCTVCuritiba.br@SD">RPC Curitiba</channel>
+  <channel site="mi.tv" site_id="br#rpc-curitiba-hd" lang="pt" xmltv_id="">RPC Curitiba HD</channel>
+  <channel site="mi.tv" site_id="br#rpc-foz-do-iguacu-hd" lang="pt" xmltv_id="RPCTVFozdoIguacu.br@SD">RPC Foz do Iguaçu HD</channel>
+  <channel site="mi.tv" site_id="br#rpc-londrina-hd" lang="pt" xmltv_id="">RPC Londrina HD</channel>
+  <channel site="mi.tv" site_id="br#rpc-maringa" lang="pt" xmltv_id="">RPC Maringá</channel>
+  <channel site="mi.tv" site_id="br#rpc-maringa-hd" lang="pt" xmltv_id="RPCTVMaringa.br@SD">RPC Maringá HD</channel>
+  <channel site="mi.tv" site_id="br#rpc-paranavai-hd" lang="pt" xmltv_id="RPCTVParanavai.br@SD">RPC Paranavaí HD</channel>
+  <channel site="mi.tv" site_id="br#rpc-ponta-grossa-hd" lang="pt" xmltv_id="RPCTVPontaGrossa.br@SD">RPC Ponta Grossa HD</channel>
+  <channel site="mi.tv" site_id="br#rtpi-brasil" lang="pt" xmltv_id="RTPmAmerica.pt@SD">RTP Mundo</channel>
+  <channel site="mi.tv" site_id="br#rtpi-radiotv-portuguesa-int-l" lang="pt" xmltv_id="">RTPi RadioTV Portuguesa Int&apos;l</channel>
+  <channel site="mi.tv" site_id="br#sbt" lang="pt" xmltv_id="SBTNacional.br@SD">SBT</channel>
+  <channel site="mi.tv" site_id="br#sbt-belem" lang="pt" xmltv_id="">SBT Belem</channel>
+  <channel site="mi.tv" site_id="br#sbt-belem-hd" lang="pt" xmltv_id="">SBT Belem HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-belo-horizonte" lang="pt" xmltv_id="">SBT Belo Horizonte</channel>
+  <channel site="mi.tv" site_id="br#sbt-brasilia" lang="pt" xmltv_id="">SBT Brasilia</channel>
+  <channel site="mi.tv" site_id="br#sbt-brasilia-hd" lang="pt" xmltv_id="">SBT Brasília HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-cascavel" lang="pt" xmltv_id="">SBT Cascavel</channel>
+  <channel site="mi.tv" site_id="br#sbt-criciuma" lang="pt" xmltv_id="">SBT Criciuma</channel>
+  <channel site="mi.tv" site_id="br#sbt-cuiaba" lang="pt" xmltv_id="">SBT Cuiabá</channel>
+  <channel site="mi.tv" site_id="br#sbt-cuiaba-hd" lang="pt" xmltv_id="">SBT Cuiabá HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-florianopolis" lang="pt" xmltv_id="">SBT Florianopolis</channel>
+  <channel site="mi.tv" site_id="br#sbt-goiania-tv-serra-dourada" lang="pt" xmltv_id="">SBT Goiania TV Serra Dourada</channel>
+  <channel site="mi.tv" site_id="br#sbt-hd" lang="pt" xmltv_id="">SBT HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-juiz-de-fora" lang="pt" xmltv_id="">SBT Juiz de Fora</channel>
+  <channel site="mi.tv" site_id="br#sbt-maceio" lang="pt" xmltv_id="">SBT Maceio</channel>
+  <channel site="mi.tv" site_id="br#sbt-manaus" lang="pt" xmltv_id="">SBT Manaus</channel>
+  <channel site="mi.tv" site_id="br#sbt-maringa" lang="pt" xmltv_id="">SBT Maringa</channel>
+  <channel site="mi.tv" site_id="br#sbt-ms" lang="pt" xmltv_id="">SBT MS</channel>
+  <channel site="mi.tv" site_id="br#sbt-ms-hd" lang="pt" xmltv_id="SBTMS.br@SD">SBT MS HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-natal" lang="pt" xmltv_id="">SBT Natal</channel>
+  <channel site="mi.tv" site_id="br#sbt-para" lang="pt" xmltv_id="SBTPara.br@SD">SBT Pará</channel>
+  <channel site="mi.tv" site_id="br#sbt-piaui" lang="pt" xmltv_id="">SBT Piaui</channel>
+  <channel site="mi.tv" site_id="br#sbt-rio" lang="pt" xmltv_id="SBTRio.br@SD">SBT Rio</channel>
+  <channel site="mi.tv" site_id="br#sbt-rio-hd" lang="pt" xmltv_id="">SBT Rio HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-rs" lang="pt" xmltv_id="">SBT RS</channel>
+  <channel site="mi.tv" site_id="br#sbt-rs-hd" lang="pt" xmltv_id="">SBT RS HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-s-o-paulo" lang="pt" xmltv_id="">SBT São Paulo</channel>
+  <channel site="mi.tv" site_id="br#sbt-s-o-paulo-hd" lang="pt" xmltv_id="">SBT São Paulo HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-salvador" lang="pt" xmltv_id="">SBT Salvador</channel>
+  <channel site="mi.tv" site_id="br#sbt-santa-catarina-hd" lang="pt" xmltv_id="">SBT Santa Catarina HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-sergipe" lang="pt" xmltv_id="">SBT Sergipe</channel>
+  <channel site="mi.tv" site_id="br#sbt-sergipe-hd" lang="pt" xmltv_id="">SBT Sergipe HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-tocantins" lang="pt" xmltv_id="">SBT Tocantins</channel>
+  <channel site="mi.tv" site_id="br#sbt-tocantins-1" lang="pt" xmltv_id="">SBT Tocantins HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-tv-ponta-verde-hd" lang="pt" xmltv_id="">SBT TV Ponta Verde HD</channel>
+  <channel site="mi.tv" site_id="br#sbt-vitoria" lang="pt" xmltv_id="">SBT Vitoria</channel>
+  <channel site="mi.tv" site_id="br#sesctv" lang="pt" xmltv_id="SESCTV.br@SD">Sesctv</channel>
+  <channel site="mi.tv" site_id="br#sex-zone" lang="pt" xmltv_id="">Sex Zone</channel>
+  <channel site="mi.tv" site_id="br#sex-zone-hd" lang="pt" xmltv_id="">Sex Zone HD</channel>
+  <channel site="mi.tv" site_id="br#sexprive-brasileirinhas" lang="pt" xmltv_id="">SexPrive Brasileirinhas</channel>
+  <channel site="mi.tv" site_id="br#sextreme-brazil" lang="pt" xmltv_id="Sextreme.br@SD">Sextreme Brazil</channel>
+  <channel site="mi.tv" site_id="br#sexy-hot" lang="pt" xmltv_id="SexyHot.br@SD">Sexy Hot</channel>
+  <channel site="mi.tv" site_id="br#sexy-hot-hd" lang="pt" xmltv_id="">Sexy Hot HD</channel>
+  <channel site="mi.tv" site_id="br#shopbuy" lang="pt" xmltv_id="">Shopbuy</channel>
+  <channel site="mi.tv" site_id="br#sic" lang="pt" xmltv_id="SICInternacional.pt@SD">SIC</channel>
+  <channel site="mi.tv" site_id="br#sic-internacional" lang="pt" xmltv_id="">SIC Internacional</channel>
+  <channel site="mi.tv" site_id="br#sic-tv" lang="pt" xmltv_id="SICTV.br@SD">SIC TV</channel>
+  <channel site="mi.tv" site_id="br#sic-tv-hd" lang="pt" xmltv_id="">SIC TV HD</channel>
+  <channel site="mi.tv" site_id="br#sonlife-broadcasting-network" lang="pt" xmltv_id="SBNTVInternational.us@SD">SonLife Broadcasting Network</channel>
+  <channel site="mi.tv" site_id="br#sony" lang="pt" xmltv_id="SonyChannel.br@SD">Sony</channel>
+  <channel site="mi.tv" site_id="br#sony-hd" lang="pt" xmltv_id="">Sony HD</channel>
+  <channel site="mi.tv" site_id="br#space" lang="pt" xmltv_id="Space.ar@Brazil">Space</channel>
+  <channel site="mi.tv" site_id="br#space-hd" lang="pt" xmltv_id="">Space HD</channel>
+  <channel site="mi.tv" site_id="br#sportv" lang="pt" xmltv_id="SporTV.br@SD">SporTV</channel>
+  <channel site="mi.tv" site_id="br#sportv2" lang="pt" xmltv_id="SporTV2.br@SD">SporTV2</channel>
+  <channel site="mi.tv" site_id="br#sportv2-hd" lang="pt" xmltv_id="">SporTV2 HD</channel>
+  <channel site="mi.tv" site_id="br#sportv3" lang="pt" xmltv_id="SporTV3.br@SD">SporTV3</channel>
+  <channel site="mi.tv" site_id="br#sportv3-hd" lang="pt" xmltv_id="">SporTV3 HD</channel>
+  <channel site="mi.tv" site_id="br#sportv-hd" lang="pt" xmltv_id="">SporTV HD</channel>
+  <channel site="mi.tv" site_id="br#studio-universal" lang="pt" xmltv_id="StudioUniversalLatinAmerica.us@Brazil">Studio Universal</channel>
+  <channel site="mi.tv" site_id="br#studio-universal-hd" lang="pt" xmltv_id="">Studio Universal HD</channel>
+  <channel site="mi.tv" site_id="br#sucesso" lang="pt" xmltv_id="">Sucesso</channel>
+  <channel site="mi.tv" site_id="br#sundance-hd-brasil" lang="pt" xmltv_id="">Sundance HD Brasil</channel>
+  <channel site="mi.tv" site_id="br#syfy" lang="pt" xmltv_id="SyfyLatinAmerica.us@Brazil">Syfy</channel>
+  <channel site="mi.tv" site_id="br#syfy-hd" lang="pt" xmltv_id="">Syfy HD</channel>
+  <channel site="mi.tv" site_id="br#tbs" lang="pt" xmltv_id="TBSLatinAmerica.us@Brazil">TBS</channel>
+  <channel site="mi.tv" site_id="br#tbs-hd" lang="pt" xmltv_id="">TBS HD</channel>
+  <channel site="mi.tv" site_id="br#tcm" lang="pt" xmltv_id="TCMLatinAmerica.us@Brazil">TCM</channel>
+  <channel site="mi.tv" site_id="br#telecine-action" lang="pt" xmltv_id="TelecineAction.br@SD">Telecine Action</channel>
+  <channel site="mi.tv" site_id="br#telecine-action-hd" lang="pt" xmltv_id="">Telecine Action HD</channel>
+  <channel site="mi.tv" site_id="br#telecine-cult" lang="pt" xmltv_id="TelecineCult.br@SD">Telecine Cult</channel>
+  <channel site="mi.tv" site_id="br#telecine-cult-hd" lang="pt" xmltv_id="">Telecine Cult HD</channel>
+  <channel site="mi.tv" site_id="br#telecine-fun" lang="pt" xmltv_id="TelecineFun.br@SD">Telecine Fun</channel>
+  <channel site="mi.tv" site_id="br#telecine-fun-hd" lang="pt" xmltv_id="">Telecine Fun HD</channel>
+  <channel site="mi.tv" site_id="br#telecine-pipoca" lang="pt" xmltv_id="TelecinePipoca.br@SD">Telecine Pipoca</channel>
+  <channel site="mi.tv" site_id="br#telecine-pipoca-hd" lang="pt" xmltv_id="">Telecine Pipoca HD</channel>
+  <channel site="mi.tv" site_id="br#telecine-premium" lang="pt" xmltv_id="TelecinePremium.br@SD">Telecine Premium</channel>
+  <channel site="mi.tv" site_id="br#telecine-premium-hd" lang="pt" xmltv_id="">Telecine Premium HD</channel>
+  <channel site="mi.tv" site_id="br#telecine-touch" lang="pt" xmltv_id="TelecineTouch.br@SD">Telecine Touch</channel>
+  <channel site="mi.tv" site_id="br#telecine-touch-hd" lang="pt" xmltv_id="">Telecine Touch HD</channel>
+  <channel site="mi.tv" site_id="br#telefe" lang="pt" xmltv_id="">Telefe</channel>
+  <channel site="mi.tv" site_id="br#telesur" lang="pt" xmltv_id="">TeleSur</channel>
+  <channel site="mi.tv" site_id="br#terra-viva" lang="pt" xmltv_id="TerraViva.br@SD">Terra Viva</channel>
+  <channel site="mi.tv" site_id="br#terra-viva-hd" lang="pt" xmltv_id="">Terra Viva HD</channel>
+  <channel site="mi.tv" site_id="br#tlc" lang="pt" xmltv_id="TLCLatinAmerica.us@Brazil">TLC</channel>
+  <channel site="mi.tv" site_id="br#tlc-hd" lang="pt" xmltv_id="">TLC HD</channel>
+  <channel site="mi.tv" site_id="br#tnt" lang="pt" xmltv_id="TNTLatinAmerica.us@Brazil">TNT</channel>
+  <channel site="mi.tv" site_id="br#tnt-hd" lang="pt" xmltv_id="">TNT HD</channel>
+  <channel site="mi.tv" site_id="br#tnt-series" lang="pt" xmltv_id="TNTSeriesLatinAmerica.us@Brazil">TNT Series</channel>
+  <channel site="mi.tv" site_id="br#tnt-series-hd" lang="pt" xmltv_id="">TNT Series HD</channel>
+  <channel site="mi.tv" site_id="br#tooncast" lang="pt" xmltv_id="Tooncast.us@SD">Tooncast</channel>
+  <channel site="mi.tv" site_id="br#trace-brazuca" lang="pt" xmltv_id="TraceBrazuca.fr@SD">Trace Brazuca</channel>
+  <channel site="mi.tv" site_id="br#travel-box-brazil" lang="pt" xmltv_id="TravelBoxBrazil.br@SD">Travel Box Brazil</channel>
+  <channel site="mi.tv" site_id="br#travel-box-brazil-hd" lang="pt" xmltv_id="">Travel Box Brazil HD</channel>
+  <channel site="mi.tv" site_id="br#trutv" lang="pt" xmltv_id="truTV.br@SD">TruTV</channel>
+  <channel site="mi.tv" site_id="br#trutv-hd" lang="pt" xmltv_id="">truTV HD</channel>
+  <channel site="mi.tv" site_id="br#tv5" lang="pt" xmltv_id="">TV5</channel>
+  <channel site="mi.tv" site_id="br#tv-5" lang="pt" xmltv_id="">TV 5</channel>
+  <channel site="mi.tv" site_id="br#tv-a-critica" lang="pt" xmltv_id="TVACritica.br@SD">TV A Crítica</channel>
+  <channel site="mi.tv" site_id="br#tv-a-critica-hd" lang="pt" xmltv_id="">TV A Crítica HD</channel>
+  <channel site="mi.tv" site_id="br#tv-al" lang="pt" xmltv_id="">TV AL</channel>
+  <channel site="mi.tv" site_id="br#tv-aldeia" lang="pt" xmltv_id="">TV Aldeia</channel>
+  <channel site="mi.tv" site_id="br#tv-alesp" lang="pt" xmltv_id="TVALESP.br@SD">TV ALESP</channel>
+  <channel site="mi.tv" site_id="br#tv-allamanda" lang="pt" xmltv_id="">TV Allamanda</channel>
+  <channel site="mi.tv" site_id="br#tv-allamanda-hd" lang="pt" xmltv_id="">TV Allamanda HD</channel>
+  <channel site="mi.tv" site_id="br#tv-alterosa" lang="pt" xmltv_id="">TV Alterosa</channel>
+  <channel site="mi.tv" site_id="br#tv-alterosa-hd" lang="pt" xmltv_id="">TV Alterosa HD</channel>
+  <channel site="mi.tv" site_id="br#tv-alvorada-do-sul" lang="pt" xmltv_id="">TV Alvorada do Sul</channel>
+  <channel site="mi.tv" site_id="br#tv-alvorada-do-sul-hd" lang="pt" xmltv_id="">TV Alvorada do Sul HD</channel>
+  <channel site="mi.tv" site_id="br#tv-amapa" lang="pt" xmltv_id="TVAmapa.br@SD">TV Amapá</channel>
+  <channel site="mi.tv" site_id="br#tv-amapa-hd" lang="pt" xmltv_id="">TV Amapá HD</channel>
+  <channel site="mi.tv" site_id="br#tv-amazonia" lang="pt" xmltv_id="">TV Amazônia</channel>
+  <channel site="mi.tv" site_id="br#tv-amazonia-hd" lang="pt" xmltv_id="">TV Amazônia HD</channel>
+  <channel site="mi.tv" site_id="br#tv-ambiental" lang="pt" xmltv_id="">TV Ambiental</channel>
+  <channel site="mi.tv" site_id="br#tv-anhaguera-catal-o" lang="pt" xmltv_id="">TV Anhaguera Catalão</channel>
+  <channel site="mi.tv" site_id="br#tv-anhanguera-hd" lang="pt" xmltv_id="TVAnhangueraGoiania.br@SD">TV Anhanguera HD</channel>
+  <channel site="mi.tv" site_id="br#tv-anhanguera-luziania" lang="pt" xmltv_id="">TV Anhanguera Luziânia</channel>
+  <channel site="mi.tv" site_id="br#tv-anhanguera-palmas" lang="pt" xmltv_id="">TV Anhanguera Palmas</channel>
+  <channel site="mi.tv" site_id="br#tv-anhanguera-palmas-hd" lang="pt" xmltv_id="">TV Anhanguera Palmas HD</channel>
+  <channel site="mi.tv" site_id="br#tv-anhanguera-rio-verde" lang="pt" xmltv_id="">TV Anhanguera Rio Verde</channel>
+  <channel site="mi.tv" site_id="br#tv-antena-10" lang="pt" xmltv_id="TVAntena10.br@SD">TV Antena 10</channel>
+  <channel site="mi.tv" site_id="br#tv-antena-10-hd" lang="pt" xmltv_id="">TV Antena 10 HD</channel>
+  <channel site="mi.tv" site_id="br#tv-aparecida" lang="pt" xmltv_id="TVAparecida.br@SD">TV Aparecida</channel>
+  <channel site="mi.tv" site_id="br#tv-aparecida-hd" lang="pt" xmltv_id="">TV Aparecida HD</channel>
+  <channel site="mi.tv" site_id="br#tv-aperipe" lang="pt" xmltv_id="">TV Aperipê</channel>
+  <channel site="mi.tv" site_id="br#tv-aperipe-hd" lang="pt" xmltv_id="">TV Aperipê HD</channel>
+  <channel site="mi.tv" site_id="br#tv-apoio-hd" lang="pt" xmltv_id="">TV Apoio HD</channel>
+  <channel site="mi.tv" site_id="br#tv-arapuan" lang="pt" xmltv_id="">TV Arapuan</channel>
+  <channel site="mi.tv" site_id="br#tv-arapuan-hd" lang="pt" xmltv_id="">TV Arapuan HD</channel>
+  <channel site="mi.tv" site_id="br#tv-aratu" lang="pt" xmltv_id="TVAratu.br@SD">TV Aratu</channel>
+  <channel site="mi.tv" site_id="br#tv-aratu-hd" lang="pt" xmltv_id="">TV Aratu HD</channel>
+  <channel site="mi.tv" site_id="br#tv-ariquemes-hd" lang="pt" xmltv_id="">TV Ariquemes HD</channel>
+  <channel site="mi.tv" site_id="br#tv-asa-branca-hd" lang="pt" xmltv_id="">TV Asa Branca HD</channel>
+  <channel site="mi.tv" site_id="br#tv-assembleia-de-minas-gerais" lang="pt" xmltv_id="TVAssembleiaMinasGerais.br@SD">TV Assembleia de Minas Gerais</channel>
+  <channel site="mi.tv" site_id="br#tv-atalaia" lang="pt" xmltv_id="TVAtalaia.br@SD">TV Atalaia</channel>
+  <channel site="mi.tv" site_id="br#tv-atalaia-hd" lang="pt" xmltv_id="">TV Atalaia HD</channel>
+  <channel site="mi.tv" site_id="br#tv-bahia-hd" lang="pt" xmltv_id="">TV Bahia HD</channel>
+  <channel site="mi.tv" site_id="br#tv-boa-vista" lang="pt" xmltv_id="">TV Boa Vista</channel>
+  <channel site="mi.tv" site_id="br#tv-boa-vista-hd" lang="pt" xmltv_id="">TV Boa Vista HD</channel>
+  <channel site="mi.tv" site_id="br#tv-borborema" lang="pt" xmltv_id="">TV Borborema</channel>
+  <channel site="mi.tv" site_id="br#tv-brasil" lang="pt" xmltv_id="TVBrasil.br@SD">TV Brasil</channel>
+  <channel site="mi.tv" site_id="br#tv-brasil-hd" lang="pt" xmltv_id="">TV Brasil HD</channel>
+  <channel site="mi.tv" site_id="br#tv-brasil-rio-de-janeiro" lang="pt" xmltv_id="">TV BRASIL RIO DE JANEIRO</channel>
+  <channel site="mi.tv" site_id="br#tv-brasil-rio-de-janeiro-hd" lang="pt" xmltv_id="">TV BRASIL RIO DE JANEIRO HD</channel>
+  <channel site="mi.tv" site_id="br#tv-brasil-s-o-paulo" lang="pt" xmltv_id="">TV BRASIL SÃO PAULO</channel>
+  <channel site="mi.tv" site_id="br#tv-brasil-s-o-paulo-hd" lang="pt" xmltv_id="">TV BRASIL SÃO PAULO HD</channel>
+  <channel site="mi.tv" site_id="br#tv-brasilia" lang="pt" xmltv_id="">TV Brasília</channel>
+  <channel site="mi.tv" site_id="br#tv-brasilia-hd" lang="pt" xmltv_id="">TV Brasília HD</channel>
+  <channel site="mi.tv" site_id="br#tv-cabo-branco" lang="pt" xmltv_id="TVCaboBranco.br@SD">TV Cabo Branco</channel>
+  <channel site="mi.tv" site_id="br#tv-cabo-branco-hd" lang="pt" xmltv_id="">TV Cabo Branco HD</channel>
+  <channel site="mi.tv" site_id="br#tv-camara" lang="pt" xmltv_id="TVCamara.br@SD">TV Câmara</channel>
+  <channel site="mi.tv" site_id="br#tv-camara-hd" lang="pt" xmltv_id="">TV Câmara HD</channel>
+  <channel site="mi.tv" site_id="br#tv-capixaba" lang="pt" xmltv_id="TVCapixaba.br@SD">TV Capixaba</channel>
+  <channel site="mi.tv" site_id="br#tv-capixaba-hd" lang="pt" xmltv_id="">TV Capixaba HD</channel>
+  <channel site="mi.tv" site_id="br#tv-catarina" lang="pt" xmltv_id="">TV Catarina?</channel>
+  <channel site="mi.tv" site_id="br#tv-catarina-hd" lang="pt" xmltv_id="">TV Catarina HD</channel>
+  <channel site="mi.tv" site_id="br#tv-ceara" lang="pt" xmltv_id="TVCeara.br@SD">TV Ceará</channel>
+  <channel site="mi.tv" site_id="br#tv-ceara-hd" lang="pt" xmltv_id="">TV Ceará HD</channel>
+  <channel site="mi.tv" site_id="br#tv-cei" lang="pt" xmltv_id="">TV Cei</channel>
+  <channel site="mi.tv" site_id="br#tv-centro-america" lang="pt" xmltv_id="">TV Centro América</channel>
+  <channel site="mi.tv" site_id="br#tv-centro-america-cuiaba" lang="pt" xmltv_id="TVCentroAmericaCuiaba.br@SD">TV Centro América Cuiabá</channel>
+  <channel site="mi.tv" site_id="br#tv-centro-america-cuiaba-hd" lang="pt" xmltv_id="">TV Centro América Cuiabá HD</channel>
+  <channel site="mi.tv" site_id="br#tv-centro-america-tangara-da-serra" lang="pt" xmltv_id="">TV Centro América Tangará da Serra</channel>
+  <channel site="mi.tv" site_id="br#tv-cidadania" lang="pt" xmltv_id="">TV Cidadania</channel>
+  <channel site="mi.tv" site_id="br#tv-cidade" lang="pt" xmltv_id="">TV Cidade</channel>
+  <channel site="mi.tv" site_id="br#tv-cidade-1" lang="pt" xmltv_id="">TV Cidade</channel>
+  <channel site="mi.tv" site_id="br#tv-cidade-hd" lang="pt" xmltv_id="">TV Cidade HD</channel>
+  <channel site="mi.tv" site_id="br#tv-cidade-s-o-luis-hd" lang="pt" xmltv_id="TVCidadeSaoLuiz.br@SD">TV Cidade São Luis HD</channel>
+  <channel site="mi.tv" site_id="br#tv-cidade-verde-hd" lang="pt" xmltv_id="TVCidadeVerdeCuiaba.br@SD">TV Cidade Verde HD</channel>
+  <channel site="mi.tv" site_id="br#tv-climatempo" lang="pt" xmltv_id="">TV Climatempo</channel>
+  <channel site="mi.tv" site_id="br#tv-clube" lang="pt" xmltv_id="TVClube.br@SD">TV Clube</channel>
+  <channel site="mi.tv" site_id="br#tv-clube-hd" lang="pt" xmltv_id="">TV Clube HD</channel>
+  <channel site="mi.tv" site_id="br#tv-clube-hd-1" lang="pt" xmltv_id="">TV Clube HD</channel>
+  <channel site="mi.tv" site_id="br#tv-comunicac-es-interativas-hd" lang="pt" xmltv_id="">TV Comunicações Interativas HD</channel>
+  <channel site="mi.tv" site_id="br#tv-comunitaria" lang="pt" xmltv_id="">TV Comunitária</channel>
+  <channel site="mi.tv" site_id="br#tv-correio" lang="pt" xmltv_id="TVCorreio.br@SD">TV Correio</channel>
+  <channel site="mi.tv" site_id="br#tv-correio-hd" lang="pt" xmltv_id="">TV Correio HD</channel>
+  <channel site="mi.tv" site_id="br#tv-diario" lang="pt" xmltv_id="TVDiario.br@SD">TV Diário</channel>
+  <channel site="mi.tv" site_id="br#tv-diario-1" lang="pt" xmltv_id="">TV Diário</channel>
+  <channel site="mi.tv" site_id="br#tv-diario-hd" lang="pt" xmltv_id="">TV Diário HD</channel>
+  <channel site="mi.tv" site_id="br#tv-difusora-s-o-luis" lang="pt" xmltv_id="TVDifusoraSaoLuis.br@SD">TV Difusora São Luís</channel>
+  <channel site="mi.tv" site_id="br#tv-educativa" lang="pt" xmltv_id="">TV Educativa</channel>
+  <channel site="mi.tv" site_id="br#tv-educativa-da-bahia-hd" lang="pt" xmltv_id="">TV Educativa da Bahia HD</channel>
+  <channel site="mi.tv" site_id="br#tv-educativa-de-porto-alegre-hd" lang="pt" xmltv_id="">TV Educativa de Porto Alegre HD</channel>
+  <channel site="mi.tv" site_id="br#tv-em-tempo-hd" lang="pt" xmltv_id="TVEmTempo.br@SD">TV Em Tempo HD</channel>
+  <channel site="mi.tv" site_id="br#tv-equinocio" lang="pt" xmltv_id="">TV Equinócio</channel>
+  <channel site="mi.tv" site_id="br#tv-equinocio-hd" lang="pt" xmltv_id="">TV Equinócio HD</channel>
+  <channel site="mi.tv" site_id="br#tv-escola" lang="pt" xmltv_id="TVEscola.br@SD">TV Escola</channel>
+  <channel site="mi.tv" site_id="br#tv-feliz-hd" lang="pt" xmltv_id="">TV Feliz HD</channel>
+  <channel site="mi.tv" site_id="br#tv-fronteira" lang="pt" xmltv_id="">TV Fronteira</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta" lang="pt" xmltv_id="">TV Gazeta</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-alagoas-hd" lang="pt" xmltv_id="">TV Gazeta HD</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-de-alagoas" lang="pt" xmltv_id="">TV Gazeta</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-hd" lang="pt" xmltv_id="">TV Gazeta HD</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-noroeste" lang="pt" xmltv_id="">TV Gazeta Noroeste</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-norte" lang="pt" xmltv_id="">TV Gazeta Norte</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-rio-branco" lang="pt" xmltv_id="">TV Gazeta Rio Branco</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-rio-branco-hd" lang="pt" xmltv_id="">TV Gazeta Rio Branco HD</channel>
+  <channel site="mi.tv" site_id="br#tv-gazeta-sul" lang="pt" xmltv_id="">TV Gazeta Sul</channel>
+  <channel site="mi.tv" site_id="br#tv-globo-panorama" lang="pt" xmltv_id="">TV Globo Panorama</channel>
+  <channel site="mi.tv" site_id="br#tv-grande-rio" lang="pt" xmltv_id="">TV Grande Rio</channel>
+  <channel site="mi.tv" site_id="br#tv-guajara-mirim" lang="pt" xmltv_id="">TV Guajará-Mirim</channel>
+  <channel site="mi.tv" site_id="br#tv-guara-hd" lang="pt" xmltv_id="TVGuara.br@SD">TV Guará HD</channel>
+  <channel site="mi.tv" site_id="br#tv-iguacu-hd" lang="pt" xmltv_id="TVIguacu.br@SD">TV Iguaçu HD</channel>
+  <channel site="mi.tv" site_id="br#tv-imperial" lang="pt" xmltv_id="">TV Imperial</channel>
+  <channel site="mi.tv" site_id="br#tv-imperial-hd" lang="pt" xmltv_id="">TV Imperial HD</channel>
+  <channel site="mi.tv" site_id="br#tv-integrac-o" lang="pt" xmltv_id="">TV Integração</channel>
+  <channel site="mi.tv" site_id="br#tv-integrac-o-araxa" lang="pt" xmltv_id="">TV Integração Araxá</channel>
+  <channel site="mi.tv" site_id="br#tv-integrac-o-uberaba" lang="pt" xmltv_id="">TV Integração Uberaba</channel>
+  <channel site="mi.tv" site_id="br#tv-integrac-o-uberlandia-hd" lang="pt" xmltv_id="">TV Integração Uberlândia HD</channel>
+  <channel site="mi.tv" site_id="br#tv-interativa" lang="pt" xmltv_id="">TV Interativa</channel>
+  <channel site="mi.tv" site_id="br#tv-interativa-hd" lang="pt" xmltv_id="">TV Interativa HD</channel>
+  <channel site="mi.tv" site_id="br#tv-itacoatiara" lang="pt" xmltv_id="">TV Itacoatiara</channel>
+  <channel site="mi.tv" site_id="br#tv-itarare" lang="pt" xmltv_id="">TV Itararé</channel>
+  <channel site="mi.tv" site_id="br#tv-jangadeiro" lang="pt" xmltv_id="TVJangadeiro.br@SD">TV Jangadeiro</channel>
+  <channel site="mi.tv" site_id="br#tv-jangadeiro-hd" lang="pt" xmltv_id="">TV Jangadeiro HD</channel>
+  <channel site="mi.tv" site_id="br#tv-ji-parana-hd" lang="pt" xmltv_id="">TV Ji-Paraná HD</channel>
+  <channel site="mi.tv" site_id="br#tv-jornal" lang="pt" xmltv_id="TVJornalCaruaru.br@SD">TV Jornal</channel>
+  <channel site="mi.tv" site_id="br#tv-jornal-hd" lang="pt" xmltv_id="">TV Jornal HD</channel>
+  <channel site="mi.tv" site_id="br#tv-justica" lang="pt" xmltv_id="">TV Justiça</channel>
+  <channel site="mi.tv" site_id="br#tv-justica-1" lang="pt" xmltv_id="TVJustica.br@SD">TV JUSTIÇA</channel>
+  <channel site="mi.tv" site_id="br#tv-liberal" lang="pt" xmltv_id="">TV Liberal</channel>
+  <channel site="mi.tv" site_id="br#tv-liberal-castanhal" lang="pt" xmltv_id="">TV Liberal Castanhal</channel>
+  <channel site="mi.tv" site_id="br#tv-liberal-hd" lang="pt" xmltv_id="">TV Liberal HD</channel>
+  <channel site="mi.tv" site_id="br#tv-liberal-paragominas" lang="pt" xmltv_id="">TV Liberal Paragominas</channel>
+  <channel site="mi.tv" site_id="br#tv-liberal-parauapebas" lang="pt" xmltv_id="">TV Liberal Parauapebas</channel>
+  <channel site="mi.tv" site_id="br#tv-liberal-redenc-o" lang="pt" xmltv_id="">TV Liberal Redenção</channel>
+  <channel site="mi.tv" site_id="br#tv-macapa" lang="pt" xmltv_id="">TV Macapá</channel>
+  <channel site="mi.tv" site_id="br#tv-macapa-hd" lang="pt" xmltv_id="">TV Macapá HD</channel>
+  <channel site="mi.tv" site_id="br#tv-maior-redetv-pb" lang="pt" xmltv_id="">TV MAIOR - (RedeTV PB)</channel>
+  <channel site="mi.tv" site_id="br#tv-manaira" lang="pt" xmltv_id="">TV Manaíra</channel>
+  <channel site="mi.tv" site_id="br#tv-manaira-hd" lang="pt" xmltv_id="">TV Manaira HD</channel>
+  <channel site="mi.tv" site_id="br#tv-mar-alagoas" lang="pt" xmltv_id="">TV Mar Alagoas</channel>
+  <channel site="mi.tv" site_id="br#tv-maranhense" lang="pt" xmltv_id="">TV Maranhense</channel>
+  <channel site="mi.tv" site_id="br#tv-maranhense-hd" lang="pt" xmltv_id="">TV Maranhense HD</channel>
+  <channel site="mi.tv" site_id="br#tv-meridional" lang="pt" xmltv_id="">TV Meridional</channel>
+  <channel site="mi.tv" site_id="br#tv-meridional-hd" lang="pt" xmltv_id="">TV Meridional HD</channel>
+  <channel site="mi.tv" site_id="br#tv-mirante-cocais-hd" lang="pt" xmltv_id="">TV Mirante Cocais HD</channel>
+  <channel site="mi.tv" site_id="br#tv-mirante-s-o-luis" lang="pt" xmltv_id="">TV Mirante São Luís</channel>
+  <channel site="mi.tv" site_id="br#tv-mirante-s-o-luis-hd" lang="pt" xmltv_id="">TV Mirante São Luis HD</channel>
+  <channel site="mi.tv" site_id="br#tv-mirante-santa-ines" lang="pt" xmltv_id="">TV Mirante Santa Inês</channel>
+  <channel site="mi.tv" site_id="br#tv-morena" lang="pt" xmltv_id="">TV Morena</channel>
+  <channel site="mi.tv" site_id="br#tv-morena-corumba" lang="pt" xmltv_id="">TV Morena Corumbá</channel>
+  <channel site="mi.tv" site_id="br#tv-morena-hd" lang="pt" xmltv_id="">TV Morena HD</channel>
+  <channel site="mi.tv" site_id="br#tv-morena-ponta-por" lang="pt" xmltv_id="">TV Morena Ponta Porã</channel>
+  <channel site="mi.tv" site_id="br#tv-ms-hd" lang="pt" xmltv_id="">TV MS HD</channel>
+  <channel site="mi.tv" site_id="br#tv-mundial" lang="pt" xmltv_id="">TV Mundial</channel>
+  <channel site="mi.tv" site_id="br#tv-mundial-hd" lang="pt" xmltv_id="">TV Mundial HD</channel>
+  <channel site="mi.tv" site_id="br#tv-novo-tempo" lang="pt" xmltv_id="TVNovoTempo.br@SD">TV Novo Tempo</channel>
+  <channel site="mi.tv" site_id="br#tv-novo-tempo-hd" lang="pt" xmltv_id="">TV Novo Tempo HD</channel>
+  <channel site="mi.tv" site_id="br#tv-o-povo" lang="pt" xmltv_id="">TV O Povo</channel>
+  <channel site="mi.tv" site_id="br#tv-o-povo-hd" lang="pt" xmltv_id="">Canal FDR HD</channel>
+  <channel site="mi.tv" site_id="br#tv-omega" lang="pt" xmltv_id="">TV Omega</channel>
+  <channel site="mi.tv" site_id="br#tv-pajucara" lang="pt" xmltv_id="TVPajucara.br@SD">TV Pajuçara</channel>
+  <channel site="mi.tv" site_id="br#tv-pajucara-hd" lang="pt" xmltv_id="">TV Pajuçara HD</channel>
+  <channel site="mi.tv" site_id="br#tv-pampa-hd" lang="pt" xmltv_id="TVPampa.br@SD">TV Pampa HD</channel>
+  <channel site="mi.tv" site_id="br#tv-pantanal" lang="pt" xmltv_id="">TV Pantanal</channel>
+  <channel site="mi.tv" site_id="br#tv-pantanal-hd" lang="pt" xmltv_id="">TV Pantanal HD</channel>
+  <channel site="mi.tv" site_id="br#tv-paraiba" lang="pt" xmltv_id="">TV Paraíba</channel>
+  <channel site="mi.tv" site_id="br#tv-paraiba-hd" lang="pt" xmltv_id="">TV Paraíba HD</channel>
+  <channel site="mi.tv" site_id="br#tv-paranaiba-hd" lang="pt" xmltv_id="TVParanaiba.br@SD">TV Paranaíba HD</channel>
+  <channel site="mi.tv" site_id="br#tv-parintins" lang="pt" xmltv_id="">TV Parintins</channel>
+  <channel site="mi.tv" site_id="br#tv-parintins-hd" lang="pt" xmltv_id="">TV Parintins HD</channel>
+  <channel site="mi.tv" site_id="br#tv-ponta-negra" lang="pt" xmltv_id="TVPontaNegra.br@SD">TV Ponta Negra</channel>
+  <channel site="mi.tv" site_id="br#tv-ponta-negra-hd" lang="pt" xmltv_id="">TV Ponta Negra HD</channel>
+  <channel site="mi.tv" site_id="br#tv-ra-tim-bum-hd" lang="pt" xmltv_id="">TV Rá Tim Bum! HD</channel>
+  <channel site="mi.tv" site_id="br#tv-rio-branco" lang="pt" xmltv_id="">TV Rio Branco</channel>
+  <channel site="mi.tv" site_id="br#tv-rio-branco-hd" lang="pt" xmltv_id="">TV Rio Branco HD</channel>
+  <channel site="mi.tv" site_id="br#tv-rio-sul" lang="pt" xmltv_id="">TV Rio Sul</channel>
+  <channel site="mi.tv" site_id="br#tv-rio-sul-1" lang="pt" xmltv_id="">TV Rio Sul</channel>
+  <channel site="mi.tv" site_id="br#tv-rio-sul-hd" lang="pt" xmltv_id="TVRioSul.br@SD">TV Rio Sul HD</channel>
+  <channel site="mi.tv" site_id="br#tv-rondonia" lang="pt" xmltv_id="TVRondonia.br@SD">TV Rondônia</channel>
+  <channel site="mi.tv" site_id="br#tv-rondonia-hd" lang="pt" xmltv_id="">TV Rondônia HD</channel>
+  <channel site="mi.tv" site_id="br#tv-roraima-hd" lang="pt" xmltv_id="">TV Roraima HD</channel>
+  <channel site="mi.tv" site_id="br#tv-s-o-luis" lang="pt" xmltv_id="">TV São Luís</channel>
+  <channel site="mi.tv" site_id="br#tv-s-o-luis-hd" lang="pt" xmltv_id="">TV São Luis HD</channel>
+  <channel site="mi.tv" site_id="br#tv-santa-cruz" lang="pt" xmltv_id="">TV Santa Cruz</channel>
+  <channel site="mi.tv" site_id="br#tv-santa-cruz-hd" lang="pt" xmltv_id="TVSantaCruz.br@SD">TV Santa Cruz HD</channel>
+  <channel site="mi.tv" site_id="br#tv-senado" lang="pt" xmltv_id="TVSenado.br@SD">TV SENADO</channel>
+  <channel site="mi.tv" site_id="br#tv-senado-hd" lang="pt" xmltv_id="">TV Senado HD</channel>
+  <channel site="mi.tv" site_id="br#tv-sergipe-hd" lang="pt" xmltv_id="TVSergipe.br@SD">TV Sergipe HD</channel>
+  <channel site="mi.tv" site_id="br#tv-serra-dourada-hd" lang="pt" xmltv_id="TVSerraDourada.br@SD">TV Serra Dourada HD</channel>
+  <channel site="mi.tv" site_id="br#tv-sorocaba" lang="pt" xmltv_id="">TV Sorocaba</channel>
+  <channel site="mi.tv" site_id="br#tv-sudoeste-hd" lang="pt" xmltv_id="">TV Sudoeste HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tambau" lang="pt" xmltv_id="">TV Tambaú</channel>
+  <channel site="mi.tv" site_id="br#tv-tambau-hd" lang="pt" xmltv_id="">TV Tambaú HD</channel>
+  <channel site="mi.tv" site_id="br#tv-taroba-londrina-hd" lang="pt" xmltv_id="">TV Tarobá Londrina HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tem-itapetininga" lang="pt" xmltv_id="">TV TEM Itapetininga</channel>
+  <channel site="mi.tv" site_id="br#tv-tem-sorocaba-1" lang="pt" xmltv_id="">TV TEM Sorocaba</channel>
+  <channel site="mi.tv" site_id="br#tv-tem-sorocaba-hd" lang="pt" xmltv_id="">TV TEM Sorocaba HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tribuna-1" lang="pt" xmltv_id="TVTribuna.br@SD">TV Tribuna</channel>
+  <channel site="mi.tv" site_id="br#tv-tribuna-hd" lang="pt" xmltv_id="">TV Tribuna HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tribuna-hd-1" lang="pt" xmltv_id="">TV Tribuna HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tribuna-hd-2" lang="pt" xmltv_id="">TV Tribuna HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tropical" lang="pt" xmltv_id="TVTropical.br@SD">TV Tropical</channel>
+  <channel site="mi.tv" site_id="br#tv-tropical-1" lang="pt" xmltv_id="">TV Tropical</channel>
+  <channel site="mi.tv" site_id="br#tv-tropical-hd" lang="pt" xmltv_id="">TV Tropical HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tropical-hd-1" lang="pt" xmltv_id="">TV Tropical HD</channel>
+  <channel site="mi.tv" site_id="br#tv-tucuju" lang="pt" xmltv_id="">TV Tucuju</channel>
+  <channel site="mi.tv" site_id="br#tv-ufsc-hd" lang="pt" xmltv_id="">TV UFSC HD</channel>
+  <channel site="mi.tv" site_id="br#tv-uni-o" lang="pt" xmltv_id="TVUniaoFortaleza.br@SD">TV União</channel>
+  <channel site="mi.tv" site_id="br#tv-uni-o-hd" lang="pt" xmltv_id="">TV União HD</channel>
+  <channel site="mi.tv" site_id="br#tv-universidade-de-porto-alegre" lang="pt" xmltv_id="">TV Universidade de Porto Alegre</channel>
+  <channel site="mi.tv" site_id="br#tv-vanguarda-hd" lang="pt" xmltv_id="">TV Vanguarda HD</channel>
+  <channel site="mi.tv" site_id="br#tv-verdes-mares-1" lang="pt" xmltv_id="TVVerdesMares.br@SD">TV Verdes Mares</channel>
+  <channel site="mi.tv" site_id="br#tv-verdes-mares-cariri" lang="pt" xmltv_id="">TV Verdes Mares Cariri</channel>
+  <channel site="mi.tv" site_id="br#tv-verdes-mares-hd" lang="pt" xmltv_id="">TV Verdes Mares HD</channel>
+  <channel site="mi.tv" site_id="br#tv-vitoria" lang="pt" xmltv_id="">TV Vitória</channel>
+  <channel site="mi.tv" site_id="br#tv-vitoria-hd" lang="pt" xmltv_id="">TV Vitória HD</channel>
+  <channel site="mi.tv" site_id="br#tvci-tv-comunicacoes-interativas-ltda" lang="pt" xmltv_id="">TVCI-TV COMUNICACOES INTERATIVAS LTDA</channel>
+  <channel site="mi.tv" site_id="br#tve-1" lang="pt" xmltv_id="TVERS.br@SD">TVE</channel>
+  <channel site="mi.tv" site_id="br#tve-bahia" lang="pt" xmltv_id="TVEBahia.br@SD">TVE Bahia</channel>
+  <channel site="mi.tv" site_id="br#tvt" lang="pt" xmltv_id="TVT.br@SD">TVT</channel>
+  <channel site="mi.tv" site_id="br#tvt-hd" lang="pt" xmltv_id="">TVT HD</channel>
+  <channel site="mi.tv" site_id="br#universal" lang="pt" xmltv_id="UniversalTVLatinAmerica.us@Brazil">Universal</channel>
+  <channel site="mi.tv" site_id="br#universal-hd" lang="pt" xmltv_id="">Universal HD</channel>
+  <channel site="mi.tv" site_id="br#univesp-tv" lang="pt" xmltv_id="UnivespTV.br@SD">Univesp TV</channel>
+  <channel site="mi.tv" site_id="br#venus-tv-sd" lang="pt" xmltv_id="">Venus TV SD</channel>
+  <channel site="mi.tv" site_id="br#vh1" lang="pt" xmltv_id="MTV00s.uk@SD">VH1</channel>
+  <channel site="mi.tv" site_id="br#vh1-hd" lang="pt" xmltv_id="">VH1 HD</channel>
+  <channel site="mi.tv" site_id="br#vh1-megahits" lang="pt" xmltv_id="">VH1 Megahits</channel>
+  <channel site="mi.tv" site_id="br#vh-1-megahits-brazil" lang="pt" xmltv_id="">VH 1 Megahits Brazil</channel>
+  <channel site="mi.tv" site_id="br#viva" lang="pt" xmltv_id="CanalViva.br@SD">VIVA</channel>
+  <channel site="mi.tv" site_id="br#viva-hd" lang="pt" xmltv_id="">Viva HD</channel>
+  <channel site="mi.tv" site_id="br#warner-channel" lang="pt" xmltv_id="WarnerChannel.us@Brazil">Warner Channel</channel>
+  <channel site="mi.tv" site_id="br#warner-channel-hd" lang="pt" xmltv_id="">Warner Channel HD</channel>
+  <channel site="mi.tv" site_id="br#woohoo" lang="pt" xmltv_id="WooHoo.br@SD">WooHoo</channel>
+  <channel site="mi.tv" site_id="br#woohoo-hd" lang="pt" xmltv_id="">WooHoo HD</channel>
+  <channel site="mi.tv" site_id="br#zoomoo" lang="pt" xmltv_id="ZooMoo.sg@SD">Zoomoo</channel>
+  <channel site="mi.tv" site_id="br#zoomoo-hd" lang="pt" xmltv_id="">ZooMoo Kids HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch28" lang="pt" xmltv_id="">REDE 21</channel>
+  <channel site="vivoplay.com.br" site_id="lch29" lang="pt" xmltv_id="">TV CÂMARA</channel>
+  <channel site="vivoplay.com.br" site_id="lch32" lang="pt" xmltv_id="">TV Aberta</channel>
+  <channel site="vivoplay.com.br" site_id="lch36" lang="pt" xmltv_id="">Canal Universitário</channel>
+  <channel site="vivoplay.com.br" site_id="lch39" lang="pt" xmltv_id="">Discovery Theater</channel>
+  <channel site="vivoplay.com.br" site_id="lch48" lang="pt" xmltv_id="">Canal Educação</channel>
+  <channel site="vivoplay.com.br" site_id="lch49" lang="pt" xmltv_id="">ESPN 3</channel>
+  <channel site="vivoplay.com.br" site_id="lch56" lang="pt" xmltv_id="">Modo Viagem</channel>
+  <channel site="vivoplay.com.br" site_id="lch57" lang="pt" xmltv_id="">Globo SP HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch70" lang="pt" xmltv_id="">TV JUSTIÇA</channel>
+  <channel site="vivoplay.com.br" site_id="lch75" lang="pt" xmltv_id="">CBI</channel>
+  <channel site="vivoplay.com.br" site_id="lch76" lang="pt" xmltv_id="">HBO Pop HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch79" lang="pt" xmltv_id="">Megapix HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch81" lang="pt" xmltv_id="">BIS HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch86" lang="pt" xmltv_id="">Canal Gov</channel>
+  <channel site="vivoplay.com.br" site_id="lch95" lang="pt" xmltv_id="">Record HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch98" lang="pt" xmltv_id="">RedeTV! HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch102" lang="pt" xmltv_id="">TV SENADO</channel>
+  <channel site="vivoplay.com.br" site_id="lch104" lang="pt" xmltv_id="">SBT HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch108" lang="pt" xmltv_id="">Space HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch111" lang="pt" xmltv_id="">Telecine Action HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch112" lang="pt" xmltv_id="">Telecine Pipoca HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch119" lang="pt" xmltv_id="">Telecine HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch123" lang="pt" xmltv_id="">Premiere</channel>
+  <channel site="vivoplay.com.br" site_id="lch126" lang="pt" xmltv_id="">TNT</channel>
+  <channel site="vivoplay.com.br" site_id="lch128" lang="pt" xmltv_id="">Adult Swim</channel>
+  <channel site="vivoplay.com.br" site_id="lch142" lang="pt" xmltv_id="">Premiere 2</channel>
+  <channel site="vivoplay.com.br" site_id="lch143" lang="pt" xmltv_id="">Band HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch144" lang="pt" xmltv_id="">ESPN 4</channel>
+  <channel site="vivoplay.com.br" site_id="lch147" lang="pt" xmltv_id="">Gloob HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch149" lang="pt" xmltv_id="">History HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch150" lang="pt" xmltv_id="">A&amp;E HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch151" lang="pt" xmltv_id="">OFF HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch152" lang="pt" xmltv_id="">Sony HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch154" lang="pt" xmltv_id="">Telecine Touch HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch155" lang="pt" xmltv_id="">Telecine Fun HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch157" lang="pt" xmltv_id="">Warner HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch158" lang="pt" xmltv_id="">AXN HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch182" lang="pt" xmltv_id="">HBO HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch183" lang="pt" xmltv_id="">Curta!</channel>
+  <channel site="vivoplay.com.br" site_id="lch196" lang="pt" xmltv_id="">CNT</channel>
+  <channel site="vivoplay.com.br" site_id="lch204" lang="pt" xmltv_id="">RIT</channel>
+  <channel site="vivoplay.com.br" site_id="lch211" lang="pt" xmltv_id="">ESPN</channel>
+  <channel site="vivoplay.com.br" site_id="lch213" lang="pt" xmltv_id="">Globo News HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch214" lang="pt" xmltv_id="">GNT HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch215" lang="pt" xmltv_id="">Multishow</channel>
+  <channel site="vivoplay.com.br" site_id="lch216" lang="pt" xmltv_id="">Sportv</channel>
+  <channel site="vivoplay.com.br" site_id="lch217" lang="pt" xmltv_id="">Sportv 2</channel>
+  <channel site="vivoplay.com.br" site_id="lch218" lang="pt" xmltv_id="">Telecine Cult HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch459" lang="pt" xmltv_id="">HBO2</channel>
+  <channel site="vivoplay.com.br" site_id="lch460" lang="pt" xmltv_id="">HBO Family HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch461" lang="pt" xmltv_id="">HBO Signature HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch462" lang="pt" xmltv_id="">HBO Plus HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch464" lang="pt" xmltv_id="">ESPN 2</channel>
+  <channel site="vivoplay.com.br" site_id="lch467" lang="pt" xmltv_id="">Canal Teste 2</channel>
+  <channel site="vivoplay.com.br" site_id="lch469" lang="pt" xmltv_id="">MTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch649" lang="pt" xmltv_id="">Comedy Central HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch653" lang="pt" xmltv_id="">TNT Novelas</channel>
+  <channel site="vivoplay.com.br" site_id="lch677" lang="pt" xmltv_id="">Globoplay Novelas</channel>
+  <channel site="vivoplay.com.br" site_id="lch769" lang="pt" xmltv_id="">Discovery HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch770" lang="pt" xmltv_id="">Discovery Kids HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch771" lang="pt" xmltv_id="">Discovery Home&amp;Health HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch772" lang="pt" xmltv_id="">ID</channel>
+  <channel site="vivoplay.com.br" site_id="lch773" lang="pt" xmltv_id="">Cartoon HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch855" lang="pt" xmltv_id="">ESPN 5</channel>
+  <channel site="vivoplay.com.br" site_id="lch867" lang="pt" xmltv_id="">Band Campinas HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch870" lang="pt" xmltv_id="">EPTV Campinas HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch875" lang="pt" xmltv_id="">VTV SBT HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch891" lang="pt" xmltv_id="">Gazeta HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch894" lang="pt" xmltv_id="">TV Clube HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch897" lang="pt" xmltv_id="">Band Vale HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch900" lang="pt" xmltv_id="">EPTV Ribeirão HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch902" lang="pt" xmltv_id="">TV Vanguarda HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch904" lang="pt" xmltv_id="">Record Litoral HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch907" lang="pt" xmltv_id="">SBT Ribeirão HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch911" lang="pt" xmltv_id="">TVB Band HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch912" lang="pt" xmltv_id="">TV Câmara de Ribeirão</channel>
+  <channel site="vivoplay.com.br" site_id="lch914" lang="pt" xmltv_id="">Boa Vontade SJC</channel>
+  <channel site="vivoplay.com.br" site_id="lch917" lang="pt" xmltv_id="">TVB Campinas HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch919" lang="pt" xmltv_id="">TV Tribuna Santos HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch920" lang="pt" xmltv_id="">Rede Século 22</channel>
+  <channel site="vivoplay.com.br" site_id="lch921" lang="pt" xmltv_id="">VTV SBT HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch929" lang="pt" xmltv_id="">Canal Brasil HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch930" lang="pt" xmltv_id="">Cultura HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch932" lang="pt" xmltv_id="">Cinemax HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch933" lang="pt" xmltv_id="">HBO Mundi HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch934" lang="pt" xmltv_id="">Nickelodeon HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch936" lang="pt" xmltv_id="">Universal TV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch937" lang="pt" xmltv_id="">Premiere 3</channel>
+  <channel site="vivoplay.com.br" site_id="lch949" lang="pt" xmltv_id="">Paramount Network HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch1210" lang="pt" xmltv_id="">SporTV 3</channel>
+  <channel site="vivoplay.com.br" site_id="lch1211" lang="pt" xmltv_id="">Combate</channel>
+  <channel site="vivoplay.com.br" site_id="lch1237" lang="pt" xmltv_id="">TVT SD</channel>
+  <channel site="vivoplay.com.br" site_id="lch1242" lang="pt" xmltv_id="">Discovery World</channel>
+  <channel site="vivoplay.com.br" site_id="lch1252" lang="pt" xmltv_id="">TLC HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch1253" lang="pt" xmltv_id="">Discovery Turbo HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch1314" lang="pt" xmltv_id="">Comutação</channel>
+  <channel site="vivoplay.com.br" site_id="lch1315" lang="pt" xmltv_id="">Record Interior HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch1316" lang="pt" xmltv_id="">TV Thathi</channel>
+  <channel site="vivoplay.com.br" site_id="lch1358" lang="pt" xmltv_id="">Santa Cecília TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch1995" lang="pt" xmltv_id="">Premiere 4</channel>
+  <channel site="vivoplay.com.br" site_id="lch1996" lang="pt" xmltv_id="">Premiere 5</channel>
+  <channel site="vivoplay.com.br" site_id="lch2000" lang="pt" xmltv_id="">Canal de Testes</channel>
+  <channel site="vivoplay.com.br" site_id="lch2045" lang="pt" xmltv_id="">Fox News</channel>
+  <channel site="vivoplay.com.br" site_id="lch2055" lang="pt" xmltv_id="">Lifetime HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2064" lang="pt" xmltv_id="">Chef TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch2066" lang="pt" xmltv_id="">C3 TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch2067" lang="pt" xmltv_id="">CNNi</channel>
+  <channel site="vivoplay.com.br" site_id="lch2071" lang="pt" xmltv_id="">DW</channel>
+  <channel site="vivoplay.com.br" site_id="lch2073" lang="pt" xmltv_id="">E! HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2080" lang="pt" xmltv_id="">Studio Universal</channel>
+  <channel site="vivoplay.com.br" site_id="lch2090" lang="pt" xmltv_id="">RAI</channel>
+  <channel site="vivoplay.com.br" site_id="lch2091" lang="pt" xmltv_id="">Record News</channel>
+  <channel site="vivoplay.com.br" site_id="lch2093" lang="pt" xmltv_id="">USA</channel>
+  <channel site="vivoplay.com.br" site_id="lch2102" lang="pt" xmltv_id="">Tooncast</channel>
+  <channel site="vivoplay.com.br" site_id="lch2104" lang="pt" xmltv_id="">TV5Monde</channel>
+  <channel site="vivoplay.com.br" site_id="lch2105" lang="pt" xmltv_id="">TVE</channel>
+  <channel site="vivoplay.com.br" site_id="lch2106" lang="pt" xmltv_id="">Woohoo</channel>
+  <channel site="vivoplay.com.br" site_id="lch2172" lang="pt" xmltv_id="">SIC Internacional</channel>
+  <channel site="vivoplay.com.br" site_id="lch2199" lang="pt" xmltv_id="">Animal Planet</channel>
+  <channel site="vivoplay.com.br" site_id="lch2393" lang="pt" xmltv_id="">TV Osasco</channel>
+  <channel site="vivoplay.com.br" site_id="lch2397" lang="pt" xmltv_id="">Record Paulista HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2398" lang="pt" xmltv_id="">TV Sorocaba HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2399" lang="pt" xmltv_id="">TV TEM Sorocaba HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2426" lang="pt" xmltv_id="">TV Câmara Sorocaba</channel>
+  <channel site="vivoplay.com.br" site_id="lch2427" lang="pt" xmltv_id="">Canal Comunitário de Santos</channel>
+  <channel site="vivoplay.com.br" site_id="lch2428" lang="pt" xmltv_id="">TV Câmara Campinas</channel>
+  <channel site="vivoplay.com.br" site_id="lch2429" lang="pt" xmltv_id="">TV Camara de SJC</channel>
+  <channel site="vivoplay.com.br" site_id="lch2432" lang="pt" xmltv_id="">TV Câmara Piracicaba</channel>
+  <channel site="vivoplay.com.br" site_id="lch2434" lang="pt" xmltv_id="">TV Ativa</channel>
+  <channel site="vivoplay.com.br" site_id="lch2435" lang="pt" xmltv_id="">TV Câmara de Valinhos</channel>
+  <channel site="vivoplay.com.br" site_id="lch2436" lang="pt" xmltv_id="">TVR Regional</channel>
+  <channel site="vivoplay.com.br" site_id="lch2437" lang="pt" xmltv_id="">TV Câmara de Americana</channel>
+  <channel site="vivoplay.com.br" site_id="lch2439" lang="pt" xmltv_id="">Premiere 8</channel>
+  <channel site="vivoplay.com.br" site_id="lch2440" lang="pt" xmltv_id="">Premiere 6</channel>
+  <channel site="vivoplay.com.br" site_id="lch2441" lang="pt" xmltv_id="">Premiere 7</channel>
+  <channel site="vivoplay.com.br" site_id="lch2442" lang="pt" xmltv_id="">Bloomberg HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2443" lang="pt" xmltv_id="">TV RÁ Tim Bum</channel>
+  <channel site="vivoplay.com.br" site_id="lch2444" lang="pt" xmltv_id="">Prime Box Brazil HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2449" lang="pt" xmltv_id="">History 2</channel>
+  <channel site="vivoplay.com.br" site_id="lch2716" lang="pt" xmltv_id="">Polishop</channel>
+  <channel site="vivoplay.com.br" site_id="lch2791" lang="pt" xmltv_id="">Nick Jr. HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2792" lang="pt" xmltv_id="">Arte 1 HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch2793" lang="pt" xmltv_id="">TNT Séries</channel>
+  <channel site="vivoplay.com.br" site_id="lch2794" lang="pt" xmltv_id="">Cartoonito</channel>
+  <channel site="vivoplay.com.br" site_id="lch2795" lang="pt" xmltv_id="">Bandnews</channel>
+  <channel site="vivoplay.com.br" site_id="lch2818" lang="pt" xmltv_id="">TV Univap SJC</channel>
+  <channel site="vivoplay.com.br" site_id="lch2887" lang="pt" xmltv_id="">HDCM2</channel>
+  <channel site="vivoplay.com.br" site_id="lch2889" lang="pt" xmltv_id="">Futura HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3081" lang="pt" xmltv_id="">Globo RPC HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3082" lang="pt" xmltv_id="">Rede Massa HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3083" lang="pt" xmltv_id="">SBT Rio HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3084" lang="pt" xmltv_id="">Globo Rio</channel>
+  <channel site="vivoplay.com.br" site_id="lch3085" lang="pt" xmltv_id="">Record Rio HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3087" lang="pt" xmltv_id="">Band Rio HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3088" lang="pt" xmltv_id="">RIC TV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3089" lang="pt" xmltv_id="">Band Curitiba HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3099" lang="pt" xmltv_id="">CNT Americana</channel>
+  <channel site="vivoplay.com.br" site_id="lch3100" lang="pt" xmltv_id="">NGT</channel>
+  <channel site="vivoplay.com.br" site_id="lch3101" lang="pt" xmltv_id="">Rede Família</channel>
+  <channel site="vivoplay.com.br" site_id="lch3131" lang="pt" xmltv_id="">SBT Nova Friburgo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3132" lang="pt" xmltv_id="">TV Rede Mais Varginha</channel>
+  <channel site="vivoplay.com.br" site_id="lch3133" lang="pt" xmltv_id="">TV Rio Sul HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3134" lang="pt" xmltv_id="">EPTV Sul de Minas</channel>
+  <channel site="vivoplay.com.br" site_id="lch3135" lang="pt" xmltv_id="">TV Diário Mogi das Cruzes HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3136" lang="pt" xmltv_id="">Band Minas BH HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3138" lang="pt" xmltv_id="">TV Alterosa</channel>
+  <channel site="vivoplay.com.br" site_id="lch3144" lang="pt" xmltv_id="">TV Tribuna HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3145" lang="pt" xmltv_id="">Band Brasília HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3146" lang="pt" xmltv_id="">Band Rio Interior HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3147" lang="pt" xmltv_id="">Band Paulista HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3148" lang="pt" xmltv_id="">TV TEM Bauru HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3149" lang="pt" xmltv_id="">Globo Brasília HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3151" lang="pt" xmltv_id="">Record Brasília HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3152" lang="pt" xmltv_id="">TV Clube</channel>
+  <channel site="vivoplay.com.br" site_id="lch3154" lang="pt" xmltv_id="">SBT Brasília HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3155" lang="pt" xmltv_id="">SBT Central HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3156" lang="pt" xmltv_id="">TV Jornal</channel>
+  <channel site="vivoplay.com.br" site_id="lch3157" lang="pt" xmltv_id="">TV TEM Itapetininga HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3159" lang="pt" xmltv_id="">TV TEM SJRP HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3160" lang="pt" xmltv_id="">Record TV Rio Preto HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3161" lang="pt" xmltv_id="">Record RS HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3162" lang="pt" xmltv_id="">Record TV Cabralia HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3163" lang="pt" xmltv_id="">Ulbra TV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3164" lang="pt" xmltv_id="">Band RS HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3165" lang="pt" xmltv_id="">SBT Interior HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3166" lang="pt" xmltv_id="">RBS TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3167" lang="pt" xmltv_id="">SBT RS HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3169" lang="pt" xmltv_id="">TV Pampa HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3171" lang="pt" xmltv_id="">Band Bahia HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3180" lang="pt" xmltv_id="">SCC SBT HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3181" lang="pt" xmltv_id="">TV Cidade Verde HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3182" lang="pt" xmltv_id="">NSC TV Florianópolis TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3184" lang="pt" xmltv_id="">Band Teresina HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3185" lang="pt" xmltv_id="">TV Catarina HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3186" lang="pt" xmltv_id="">NDTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3187" lang="pt" xmltv_id="">TV Antena 10 HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3189" lang="pt" xmltv_id="">Rede Sim</channel>
+  <channel site="vivoplay.com.br" site_id="lch3190" lang="pt" xmltv_id="">TV Gazeta HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3191" lang="pt" xmltv_id="">Rede TV! ES HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3192" lang="pt" xmltv_id="">TV Vitória HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3193" lang="pt" xmltv_id="">TV Tribuna HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3196" lang="pt" xmltv_id="">EPTV Central São Carlos HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3286" lang="pt" xmltv_id="">Discovery Science HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3372" lang="pt" xmltv_id="">RIC TV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3374" lang="pt" xmltv_id="">TV Globo Belo Horizonte HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3375" lang="pt" xmltv_id="">Band Ceará</channel>
+  <channel site="vivoplay.com.br" site_id="lch3376" lang="pt" xmltv_id="">RPC HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3377" lang="pt" xmltv_id="">Record TV Minas BH</channel>
+  <channel site="vivoplay.com.br" site_id="lch3378" lang="pt" xmltv_id="">TV Verdes Mares HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3379" lang="pt" xmltv_id="">Fish TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3380" lang="pt" xmltv_id="">TV Alterosa HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3381" lang="pt" xmltv_id="">TV Goiás HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3382" lang="pt" xmltv_id="">TV Bahia HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3383" lang="pt" xmltv_id="">TV Goiânia HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3384" lang="pt" xmltv_id="">Record TV Itapoan HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3385" lang="pt" xmltv_id="">TV Tambaú HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3388" lang="pt" xmltv_id="">TV Jornal HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3389" lang="pt" xmltv_id="">TV Cidade HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3391" lang="pt" xmltv_id="">TV Anhanguera Goiânia HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3392" lang="pt" xmltv_id="">TV Globo Recife HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3393" lang="pt" xmltv_id="">TV Serra Dourada HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3394" lang="pt" xmltv_id="">TV Correio HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3395" lang="pt" xmltv_id="">TV Tarobá HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3396" lang="pt" xmltv_id="">TV Jangadeiro HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3397" lang="pt" xmltv_id="">TV Manaíra HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3398" lang="pt" xmltv_id="">TV Cidade HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3399" lang="pt" xmltv_id="">TV Alterosa HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3400" lang="pt" xmltv_id="">TV Aratu HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3401" lang="pt" xmltv_id="">Rede Século 21</channel>
+  <channel site="vivoplay.com.br" site_id="lch3469" lang="pt" xmltv_id="">TV Alterosa Leste HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3470" lang="pt" xmltv_id="">Inter TV dos Vales HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3471" lang="pt" xmltv_id="">TV Leste</channel>
+  <channel site="vivoplay.com.br" site_id="lch3472" lang="pt" xmltv_id="">TV Tibagi HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3473" lang="pt" xmltv_id="">RPC Maringá HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3474" lang="pt" xmltv_id="">RIC TV Maringá</channel>
+  <channel site="vivoplay.com.br" site_id="lch3475" lang="pt" xmltv_id="">TV Maringá HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3476" lang="pt" xmltv_id="">TV Campo Grande HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3477" lang="pt" xmltv_id="">TV Morena HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3478" lang="pt" xmltv_id="">Rede MS</channel>
+  <channel site="vivoplay.com.br" site_id="lch3479" lang="pt" xmltv_id="">TV Interativa</channel>
+  <channel site="vivoplay.com.br" site_id="lch3480" lang="pt" xmltv_id="">TV Gazeta Sul HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3481" lang="pt" xmltv_id="">RBS TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3544" lang="pt" xmltv_id="">FashionTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3545" lang="pt" xmltv_id="">ESPN 6</channel>
+  <channel site="vivoplay.com.br" site_id="lch3546" lang="pt" xmltv_id="">Rede Vida HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3548" lang="pt" xmltv_id="">NSC TV Chapecó - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3549" lang="pt" xmltv_id="">NDTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3550" lang="pt" xmltv_id="">TV Integração</channel>
+  <channel site="vivoplay.com.br" site_id="lch3648" lang="pt" xmltv_id="">TV Aparecida HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3649" lang="pt" xmltv_id="">TV Brasil HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3650" lang="pt" xmltv_id="">NHK HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3651" lang="pt" xmltv_id="">Travel Box Brazil HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3652" lang="pt" xmltv_id="">Canção Nova</channel>
+  <channel site="vivoplay.com.br" site_id="lch3653" lang="pt" xmltv_id="">Curta! HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3736" lang="pt" xmltv_id="">Chef TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3737" lang="pt" xmltv_id="">RBS TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3750" lang="pt" xmltv_id="">TV Alterosa HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3751" lang="pt" xmltv_id="">TV Integração HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3765" lang="pt" xmltv_id="">TV Sucesso HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3808" lang="pt" xmltv_id="">Band Cuiabá HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3809" lang="pt" xmltv_id="">TV Vila Real</channel>
+  <channel site="vivoplay.com.br" site_id="lch3811" lang="pt" xmltv_id="">Dog TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3813" lang="pt" xmltv_id="">SBT Cuiabá HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3815" lang="pt" xmltv_id="">TV Em Tempo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3816" lang="pt" xmltv_id="">Rede Amazônica</channel>
+  <channel site="vivoplay.com.br" site_id="lch3817" lang="pt" xmltv_id="">Record Manaus</channel>
+  <channel site="vivoplay.com.br" site_id="lch3819" lang="pt" xmltv_id="">Band Manaus</channel>
+  <channel site="vivoplay.com.br" site_id="lch3824" lang="pt" xmltv_id="">SBT Tocantins HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3825" lang="pt" xmltv_id="">Record TV Tocantins HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3826" lang="pt" xmltv_id="">NSC TV Joinville - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3827" lang="pt" xmltv_id="">TV Pampa HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3828" lang="pt" xmltv_id="">TV Sergipe HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3829" lang="pt" xmltv_id="">NDTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3830" lang="pt" xmltv_id="">NSC TV Blumenau - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3832" lang="pt" xmltv_id="">RBS TV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3833" lang="pt" xmltv_id="">NDTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3834" lang="pt" xmltv_id="">RBS TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3836" lang="pt" xmltv_id="">TV Atalaia HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3837" lang="pt" xmltv_id="">NDTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3845" lang="pt" xmltv_id="">RBS TV Pelotas - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3846" lang="pt" xmltv_id="">TV Pampa Sul HD - Rede TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3847" lang="pt" xmltv_id="">SBT Belém HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3848" lang="pt" xmltv_id="">TV Liberal Belém HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3849" lang="pt" xmltv_id="">Record TV Belém HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3852" lang="pt" xmltv_id="">TV Difusora HD - SBT</channel>
+  <channel site="vivoplay.com.br" site_id="lch3853" lang="pt" xmltv_id="">TV Mirante HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3855" lang="pt" xmltv_id="">TV Metropolitana HD - Band</channel>
+  <channel site="vivoplay.com.br" site_id="lch3857" lang="pt" xmltv_id="">TV Vitoriosa HD - SBT</channel>
+  <channel site="vivoplay.com.br" site_id="lch3858" lang="pt" xmltv_id="">TV Integração HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3859" lang="pt" xmltv_id="">TV Paranaíba HD - Record TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch3860" lang="pt" xmltv_id="">Band Triângulo HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3861" lang="pt" xmltv_id="">SBT Vale</channel>
+  <channel site="vivoplay.com.br" site_id="lch3862" lang="pt" xmltv_id="">Record Tocantins</channel>
+  <channel site="vivoplay.com.br" site_id="lch3872" lang="pt" xmltv_id="">Gloobinho HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3874" lang="pt" xmltv_id="">Food Network HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3914" lang="pt" xmltv_id="">Band Maceió HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3915" lang="pt" xmltv_id="">TV Ponta Verde HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3917" lang="pt" xmltv_id="">TV Pajuçara HD - Record</channel>
+  <channel site="vivoplay.com.br" site_id="lch3928" lang="pt" xmltv_id="">TV Tarobá Cascavel HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3929" lang="pt" xmltv_id="">TV Integração HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch3930" lang="pt" xmltv_id="">Record - RIC TV OESTE</channel>
+  <channel site="vivoplay.com.br" site_id="lch3931" lang="pt" xmltv_id="">SBT - Rede Massa TV Naipi</channel>
+  <channel site="vivoplay.com.br" site_id="lch3932" lang="pt" xmltv_id="">TV Alterosa HD - SBT</channel>
+  <channel site="vivoplay.com.br" site_id="lch3933" lang="pt" xmltv_id="">RPC Paranavaí HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3934" lang="pt" xmltv_id="">TV Globo - RPC Cascavel</channel>
+  <channel site="vivoplay.com.br" site_id="lch3960" lang="pt" xmltv_id="">HGTV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch3966" lang="pt" xmltv_id="">TV Gazeta Noroeste</channel>
+  <channel site="vivoplay.com.br" site_id="lch3967" lang="pt" xmltv_id="">TV Gazeta Norte</channel>
+  <channel site="vivoplay.com.br" site_id="lch4034" lang="pt" xmltv_id="">Rede Massa HD - SBT</channel>
+  <channel site="vivoplay.com.br" site_id="lch4035" lang="pt" xmltv_id="">RPC HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch4039" lang="pt" xmltv_id="">SBT Rondonópolis HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4044" lang="pt" xmltv_id="">TV Cidade Rondonópolis HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4050" lang="pt" xmltv_id="">Rede Brasil HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4068" lang="pt" xmltv_id="">CNN Brasil HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4071" lang="pt" xmltv_id="">REDETV HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4073" lang="pt" xmltv_id="">RPC Foz do Iguaçu HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch4074" lang="pt" xmltv_id="">Inter TV Planicíe - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch4078" lang="pt" xmltv_id="">RBS TV Santa Rosa - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch4080" lang="pt" xmltv_id="">NSC TV Criciúma - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch4084" lang="pt" xmltv_id="">TV Capital HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4085" lang="pt" xmltv_id="">TV Cidade de SINOP</channel>
+  <channel site="vivoplay.com.br" site_id="lch4089" lang="pt" xmltv_id="">Inter TV Alto Litoral - Globo HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4103" lang="pt" xmltv_id="">Trace Brasil</channel>
+  <channel site="vivoplay.com.br" site_id="lch4104" lang="pt" xmltv_id="">Agro+</channel>
+  <channel site="vivoplay.com.br" site_id="lch4112" lang="pt" xmltv_id="">MTV LIVE</channel>
+  <channel site="vivoplay.com.br" site_id="lch4117" lang="pt" xmltv_id="">TV Borborema HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4122" lang="pt" xmltv_id="">TV Gazeta HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch4123" lang="pt" xmltv_id="">Inter TV Grande Minas</channel>
+  <channel site="vivoplay.com.br" site_id="lch4125" lang="pt" xmltv_id="">NSC TV Centro Oeste - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch4131" lang="pt" xmltv_id="">TV Ponta Negra HD - SBT</channel>
+  <channel site="vivoplay.com.br" site_id="lch4132" lang="pt" xmltv_id="">TV Tropical HD - Record</channel>
+  <channel site="vivoplay.com.br" site_id="lch4133" lang="pt" xmltv_id="">Band Natal HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch5480" lang="pt" xmltv_id="">Music Box Brazil</channel>
+  <channel site="vivoplay.com.br" site_id="lch5486" lang="pt" xmltv_id="">TESTE 7</channel>
+  <channel site="vivoplay.com.br" site_id="lch5487" lang="pt" xmltv_id="">TESTE 8</channel>
+  <channel site="vivoplay.com.br" site_id="lch5488" lang="pt" xmltv_id="">TESTE 9</channel>
+  <channel site="vivoplay.com.br" site_id="lch5489" lang="pt" xmltv_id="">TESTE 10</channel>
+  <channel site="vivoplay.com.br" site_id="lch5492" lang="pt" xmltv_id="">Cultura HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch5552" lang="pt" xmltv_id="">Sabor &amp; Arte</channel>
+  <channel site="vivoplay.com.br" site_id="lch5553" lang="pt" xmltv_id="">Terra Viva</channel>
+  <channel site="vivoplay.com.br" site_id="lch5554" lang="pt" xmltv_id="">TV Novo Tempo</channel>
+  <channel site="vivoplay.com.br" site_id="lch5555" lang="pt" xmltv_id="">RPC Guarapuava HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch5557" lang="pt" xmltv_id="">TV Integração HD - TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch5573" lang="pt" xmltv_id="">Jovem Pan News</channel>
+  <channel site="vivoplay.com.br" site_id="lch5574" lang="pt" xmltv_id="">Golf Channel</channel>
+  <channel site="vivoplay.com.br" site_id="lch5576" lang="pt" xmltv_id="">COM Brasil</channel>
+  <channel site="vivoplay.com.br" site_id="lch5577" lang="pt" xmltv_id="">BBC World</channel>
+  <channel site="vivoplay.com.br" site_id="lch5578" lang="pt" xmltv_id="">Eurochannel</channel>
+  <channel site="vivoplay.com.br" site_id="lch5580" lang="pt" xmltv_id="">AMC</channel>
+  <channel site="vivoplay.com.br" site_id="lch5581" lang="pt" xmltv_id="">Film &amp; Arts</channel>
+  <channel site="vivoplay.com.br" site_id="lch5596" lang="pt" xmltv_id="">RBS TV Erechim- TV Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch5629" lang="pt" xmltv_id="">Dreamworks</channel>
+  <channel site="vivoplay.com.br" site_id="lch5630" lang="pt" xmltv_id="">dumdum</channel>
+  <channel site="vivoplay.com.br" site_id="lch5631" lang="pt" xmltv_id="">Box Kids</channel>
+  <channel site="vivoplay.com.br" site_id="lch5670" lang="pt" xmltv_id="">Premiere 9</channel>
+  <channel site="vivoplay.com.br" site_id="lch5673" lang="pt" xmltv_id="">RBS TV Bagé - Globo</channel>
+  <channel site="vivoplay.com.br" site_id="lch5685" lang="pt" xmltv_id="">Band</channel>
+  <channel site="vivoplay.com.br" site_id="lch6232" lang="pt" xmltv_id="">Markket</channel>
+  <channel site="vivoplay.com.br" site_id="lch6242" lang="pt" xmltv_id="">Sportv 4K</channel>
+  <channel site="vivoplay.com.br" site_id="lch6284" lang="pt" xmltv_id="">Canal Rural</channel>
+  <channel site="vivoplay.com.br" site_id="lch6285" lang="pt" xmltv_id="">Canal do Criador</channel>
+  <channel site="vivoplay.com.br" site_id="lch6356" lang="pt" xmltv_id="">SONY Movies</channel>
+  <channel site="vivoplay.com.br" site_id="lch6485" lang="pt" xmltv_id="">BM&amp;C</channel>
+  <channel site="vivoplay.com.br" site_id="lch6520" lang="pt" xmltv_id="">RBI</channel>
+  <channel site="vivoplay.com.br" site_id="lch6535" lang="pt" xmltv_id="">Yupi</channel>
+  <channel site="vivoplay.com.br" site_id="lch6540" lang="pt" xmltv_id="">LMC+</channel>
+  <channel site="vivoplay.com.br" site_id="lch6618" lang="pt" xmltv_id="">CNN</channel>
+  <channel site="vivoplay.com.br" site_id="lch6936" lang="pt" xmltv_id="">Canal de Eventos</channel>
+  <channel site="vivoplay.com.br" site_id="lch6995" lang="pt" xmltv_id="">NSports</channel>
+  <channel site="vivoplay.com.br" site_id="lch6996" lang="pt" xmltv_id="">LIVE TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch7023" lang="pt" xmltv_id="">TV Cultura Paulista</channel>
+  <channel site="vivoplay.com.br" site_id="lch7062" lang="pt" xmltv_id="">Universal Premiere</channel>
+  <channel site="vivoplay.com.br" site_id="lch7063" lang="pt" xmltv_id="">Universal Reality</channel>
+  <channel site="vivoplay.com.br" site_id="lch7064" lang="pt" xmltv_id="">CNN Money</channel>
+  <channel site="vivoplay.com.br" site_id="lch7065" lang="pt" xmltv_id="">TIMES EXCLUSIVO CNBC</channel>
+  <channel site="vivoplay.com.br" site_id="lch7066" lang="pt" xmltv_id="">UOL</channel>
+  <channel site="vivoplay.com.br" site_id="lch7120" lang="pt" xmltv_id="">SportyNet</channel>
+  <channel site="vivoplay.com.br" site_id="lch7121" lang="pt" xmltv_id="">SportyNet +</channel>
+  <channel site="vivoplay.com.br" site_id="lch7141" lang="pt" xmltv_id="">HBO Xtreme HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch7142" lang="pt" xmltv_id="">TCM</channel>
+  <channel site="vivoplay.com.br" site_id="lch7143" lang="pt" xmltv_id="">SBT</channel>
+  <channel site="vivoplay.com.br" site_id="lch7144" lang="pt" xmltv_id="">Rede TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch7145" lang="pt" xmltv_id="">Record</channel>
+  <channel site="vivoplay.com.br" site_id="lch7154" lang="pt" xmltv_id="">Play TV</channel>
+  <channel site="vivoplay.com.br" site_id="lch7155" lang="pt" xmltv_id="">TBC</channel>
+  <channel site="vivoplay.com.br" site_id="lch7156" lang="pt" xmltv_id="">CNN Brasil</channel>
+  <channel site="vivoplay.com.br" site_id="lch7179" lang="pt" xmltv_id="">Xsports</channel>
+  <channel site="vivoplay.com.br" site_id="lch7180" lang="pt" xmltv_id="">Bandsports HD</channel>
+  <channel site="vivoplay.com.br" site_id="lch7181" lang="pt" xmltv_id="">CNN Brasil</channel>
+  <channel site="vivoplay.com.br" site_id="lch7182" lang="pt" xmltv_id="">GE</channel>
+  <channel site="vivoplay.com.br" site_id="lch7183" lang="pt" xmltv_id="">RB News</channel>
+  <channel site="vivoplay.com.br" site_id="lch7184" lang="pt" xmltv_id="">RBTV</channel>
+  <channel site="vivoplay.com.br" site_id="lch7185" lang="pt" xmltv_id="">TV Evangelizar</channel>
+  <channel site="vivoplay.com.br" site_id="lch7194" lang="pt" xmltv_id="">Travel &amp; Food</channel>
+  <channel site="vivoplay.com.br" site_id="lch7195" lang="pt" xmltv_id="">Woohoo Surf</channel>
+  <channel site="vivoplay.com.br" site_id="lch7196" lang="pt" xmltv_id="">SBT News</channel>
+  <channel site="x1co.com.br" site_id="nickonline.br" lang="pt" xmltv_id="NickOnline.br@HD">NickOnline</channel>
+</channels>
