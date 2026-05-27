@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
+import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
 
 export default function SeriesDetails() {
@@ -55,10 +56,19 @@ export default function SeriesDetails() {
           <p className="mt-3 text-sm text-slate-400">
             {series.seasons.length} temporadas{series.firstAirYear ? ` - ${series.firstAirYear}` : ''}
           </p>
-          <button onClick={() => setEditing(true)} className="mt-8 inline-flex items-center gap-2 rounded bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/16">
-            <Pencil size={17} />
-            Editar
-          </button>
+          <div className="mt-8 flex flex-wrap gap-3">
+            <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/16">
+              <Pencil size={17} />
+              Editar
+            </button>
+            <FavoriteButton
+              type="series"
+              id={series.id}
+              initial={series.isFavorite}
+              label
+              onChange={(next) => setSeries((current) => current ? { ...current, isFavorite: next } : current)}
+            />
+          </div>
         </div>
       </section>
 
@@ -79,15 +89,27 @@ export default function SeriesDetails() {
 
         <div className="divide-y divide-white/10 overflow-hidden rounded border border-white/10 bg-white/5">
           {currentSeason?.episodes?.map((episode) => (
-            <Link key={episode.id} to={`/watch/episode/${episode.id}`} className="flex items-center gap-4 p-4 transition hover:bg-white/8">
-              <div className="grid size-12 shrink-0 place-items-center rounded bg-white text-ink">
-                <Play size={18} fill="currentColor" />
+            <Link key={episode.id} to={`/watch/episode/${episode.id}`} className="group flex items-center gap-4 p-4 transition hover:bg-white/8">
+              <div className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded bg-white/8 text-white sm:w-28">
+                {episode.posterUrl ? (
+                  <img src={episode.posterUrl} alt={episode.title} className="size-full object-cover" loading="lazy" />
+                ) : (
+                  <Play size={18} fill="currentColor" />
+                )}
+                <span className="absolute inset-0 grid place-items-center bg-black/18 opacity-0 transition group-hover:opacity-100">
+                  <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
+                    <Play size={16} fill="currentColor" />
+                  </span>
+                </span>
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-white">
                   {episode.episodeNumber}. {episode.title}
                 </p>
-                <p className="mt-1 truncate text-sm text-slate-400">{episode.displayTitle}</p>
+                <p className="mt-1 truncate text-sm text-slate-400">
+                  {episode.displayTitle}
+                  {episode.sourceCount > 1 ? ` - ${episode.sourceCount} opcoes` : ''}
+                </p>
               </div>
             </Link>
           ))}

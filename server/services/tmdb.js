@@ -1,6 +1,6 @@
 import { db, getSetting } from '../db.js';
 import { extractMetadataTitle } from '../parser/m3uParser.js';
-import { normalizeTitle } from '../utils/normalize.js';
+import { compactSpaces, normalizeTitle, padNumber } from '../utils/normalize.js';
 
 const TMDB_API_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
@@ -162,7 +162,92 @@ function mapMovieResult(item, score = null) {
   };
 }
 
-function mapSeriesResult(item, score = null) {
+function mapSeasonSummary(season) {
+  return {
+    seasonNumber: Number(season.season_number),
+    title: season.name || '',
+    posterUrl: buildImageUrl(season.poster_path, 'w500'),
+    episodes: []
+  };
+}
+
+function mapSeasonDetails(season) {
+  const seasonNumber = Number(season.season_number);
+  return {
+    ...mapSeasonSummary(season),
+    episodes: (season.episodes || [])
+      .map((episode) => ({
+        seasonNumber,
+        episodeNumber: Number(episode.episode_number),
+        title: compactSpaces(episode.name || ''),
+        overview: episode.overview || null,
+        posterUrl: buildImageUrl(episode.still_path, 'w500')
+      }))
+      .filter((episode) => (
+        Number.isInteger(episode.seasonNumber)
+        && Number.isInteger(episode.episodeNumber)
+        && episode.episodeNumber > 0
+      ))
+  };
+}
+
+function mergeSeasonDetails(primary, fallback) {
+  if (!fallback) return primary;
+  const fallbackEpisodes = new Map((fallback.episodes || []).map((episode) => [episode.episodeNumber, episode]));
+  const episodes = (primary.episodes?.length ? primary.episodes : fallback.episodes || []).map((episode) => {
+    const fallbackEpisode = fallbackEpisodes.get(episode.episodeNumber);
+    const primaryTitleUseful = isUsefulEpisodeTitle(episode.title, episode.episodeNumber);
+    return {
+      ...episode,
+      title: primaryTitleUseful ? episode.title : fallbackEpisode?.title || episode.title,
+      overview: episode.overview || fallbackEpisode?.overview || null,
+      posterUrl: episode.posterUrl || fallbackEpisode?.posterUrl || null
+    };
+  });
+
+  return {
+    ...primary,
+    title: primary.title || fallback.title,
+    posterUrl: primary.posterUrl || fallback.posterUrl,
+    episodes
+  };
+}
+
+async function getSeasonDetails(tmdbId, seasons = [], allowedSeasonNumbers = []) {
+  const allowed = new Set(allowedSeasonNumbers.map(Number).filter(Number.isInteger));
+  const language = getTmdbConfig().language || 'pt-BR';
+  const candidates = seasons
+    .map(mapSeasonSummary)
+    .filter((season) => (
+      Number.isInteger(season.seasonNumber)
+      && season.seasonNumber >= 0
+      && (!allowed.size || allowed.has(season.seasonNumber))
+    ));
+
+  const details = [];
+  for (const season of candidates) {
+    try {
+      const data = await tmdbFetch(`/tv/${tmdbId}/season/${season.seasonNumber}`);
+      let detail = mapSeasonDetails(data);
+
+      if (language.toLowerCase() !== 'en-us' && detail.episodes.some((episode) => !isUsefulEpisodeTitle(episode.title, episode.episodeNumber))) {
+        try {
+          const fallback = await tmdbFetch(`/tv/${tmdbId}/season/${season.seasonNumber}`, { language: 'en-US' });
+          detail = mergeSeasonDetails(detail, mapSeasonDetails(fallback));
+        } catch {
+          // Keep the configured language result when the fallback is unavailable.
+        }
+      }
+
+      details.push(detail);
+    } catch {
+      details.push(season);
+    }
+  }
+  return details;
+}
+
+function mapSeriesResult(item, score = null, seasons = null) {
   return {
     tmdbId: item.id,
     title: item.name || '',
@@ -172,7 +257,10 @@ function mapSeriesResult(item, score = null) {
     backdropUrl: buildImageUrl(item.backdrop_path, 'original'),
     firstAirYear: getYear(item.first_air_date),
     score,
-    voteCount: item.vote_count || 0
+    voteCount: item.vote_count || 0,
+    seasons: seasons || (item.seasons || [])
+      .map(mapSeasonSummary)
+      .filter((season) => Number.isInteger(season.seasonNumber) && season.seasonNumber >= 0 && (season.posterUrl || season.title))
   };
 }
 
@@ -194,11 +282,86 @@ export async function searchTmdbCandidates(type, rawTitle) {
     .slice(0, 12);
 }
 
-export async function getTmdbById(type, tmdbId) {
+export async function getTmdbById(type, tmdbId, options = {}) {
   const kind = type === 'series' ? 'series' : 'movie';
   const endpoint = kind === 'series' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
   const item = await tmdbFetch(endpoint);
-  return kind === 'series' ? mapSeriesResult(item, 100) : mapMovieResult(item, 100);
+  if (kind !== 'series') return mapMovieResult(item, 100);
+
+  const seasons = options.includeEpisodes
+    ? await getSeasonDetails(tmdbId, item.seasons || [], options.seasonNumbers || [])
+    : null;
+  return mapSeriesResult(item, 100, seasons);
+}
+
+function scorePersonResult(person, rawName) {
+  const expected = normalizeTitle(rawName);
+  const personName = normalizeTitle(person.name || '');
+  let score = Number(person.popularity || 0);
+  if (personName === expected) score += 120;
+  if (personName.includes(expected) || expected.includes(personName)) score += 35;
+  if (person.known_for_department === 'Acting') score += 25;
+  score += Math.min(20, Number((person.known_for || []).length) * 4);
+  return score;
+}
+
+export async function searchTmdbPersonCredits(rawName) {
+  const query = compactSpaces(rawName || '');
+  if (normalizeTitle(query).length < 3) {
+    return { people: [], movies: [], series: [] };
+  }
+
+  const data = await tmdbFetch('/search/person', {
+    query,
+    include_adult: false,
+    page: 1
+  });
+
+  const people = (data.results || [])
+    .map((person) => ({ person, score: scorePersonResult(person, query) }))
+    .filter(({ person }) => person.id && person.name)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 3)
+    .map(({ person, score }) => ({
+      tmdbId: person.id,
+      name: person.name,
+      score
+    }));
+
+  const movies = new Map();
+  const series = new Map();
+
+  function addCredit(map, credit, person) {
+    if (!credit?.id || !credit.media_type) return;
+    if (!map.has(credit.id)) {
+      map.set(credit.id, {
+        tmdbId: credit.id,
+        personName: person.name,
+        character: credit.character || '',
+        popularity: Number(credit.popularity || 0),
+        rank: map.size
+      });
+    }
+  }
+
+  for (const person of people) {
+    try {
+      const credits = await tmdbFetch(`/person/${person.tmdbId}/combined_credits`);
+      for (const credit of credits.cast || []) {
+        if (credit.media_type === 'movie') addCredit(movies, credit, person);
+        if (credit.media_type === 'tv') addCredit(series, credit, person);
+      }
+    } catch {
+      // Keep title search working even when a person credits request fails.
+    }
+  }
+
+  const byPopularity = (a, b) => b.popularity - a.popularity || a.rank - b.rank;
+  return {
+    people,
+    movies: [...movies.values()].sort(byPopularity),
+    series: [...series.values()].sort(byPopularity)
+  };
 }
 
 export function updateMovieMetadata(id, match, force = false) {
@@ -230,31 +393,116 @@ export function updateMovieMetadata(id, match, force = false) {
 }
 
 export function updateSeriesMetadata(id, match, force = false) {
-  db.prepare(`
-    UPDATE series SET
-      title = COALESCE(NULLIF(?, ''), title),
-      poster_url = CASE WHEN ? OR poster_url IS NULL OR poster_url = '' THEN COALESCE(?, poster_url) ELSE poster_url END,
-      backdrop_url = COALESCE(?, backdrop_url),
-      overview = COALESCE(?, overview),
-      original_title = COALESCE(?, original_title),
-      first_air_year = COALESCE(?, first_air_year),
-      tmdb_id = COALESCE(?, tmdb_id),
-      tmdb_score = COALESCE(?, tmdb_score),
-      metadata_updated_at = datetime('now')
-    WHERE id = ?
-  `).run(
-    match.title,
-    force ? 1 : 0,
-    match.posterUrl,
-    match.backdropUrl,
-    match.overview,
-    match.originalTitle,
-    match.firstAirYear,
-    match.tmdbId,
-    match.score,
-    id
-  );
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    db.prepare(`
+      UPDATE series SET
+        title = COALESCE(NULLIF(?, ''), title),
+        poster_url = CASE WHEN ? OR poster_url IS NULL OR poster_url = '' THEN COALESCE(?, poster_url) ELSE poster_url END,
+        backdrop_url = COALESCE(?, backdrop_url),
+        overview = COALESCE(?, overview),
+        original_title = COALESCE(?, original_title),
+        first_air_year = COALESCE(?, first_air_year),
+        tmdb_id = COALESCE(?, tmdb_id),
+        tmdb_score = COALESCE(?, tmdb_score),
+        metadata_updated_at = datetime('now')
+      WHERE id = ?
+    `).run(
+      match.title,
+      force ? 1 : 0,
+      match.posterUrl,
+      match.backdropUrl,
+      match.overview,
+      match.originalTitle,
+      match.firstAirYear,
+      match.tmdbId,
+      match.score,
+      id
+    );
+
+    const seriesTitle = db.prepare('SELECT title FROM series WHERE id = ?').get(id)?.title || match.title || '';
+    const selectEpisode = db.prepare(`
+      SELECT id, title, display_title AS displayTitle, poster_url AS posterUrl
+      FROM episodes
+      WHERE series_id = ? AND season_number = ? AND episode_number = ?
+      LIMIT 1
+    `);
+    const updateEpisode = db.prepare(`
+      UPDATE episodes SET
+        title = CASE WHEN ? THEN ? ELSE title END,
+        display_title = CASE WHEN ? THEN ? ELSE display_title END,
+        poster_url = CASE WHEN ? OR poster_url IS NULL OR poster_url = '' THEN COALESCE(?, poster_url) ELSE poster_url END
+      WHERE id = ?
+    `);
+
+    for (const season of match.seasons || []) {
+      db.prepare(`
+        UPDATE seasons SET
+          title = COALESCE(NULLIF(?, ''), title),
+          poster_url = CASE WHEN ? OR poster_url IS NULL OR poster_url = '' THEN COALESCE(?, poster_url) ELSE poster_url END
+        WHERE series_id = ? AND season_number = ?
+      `).run(
+        season.title,
+        force ? 1 : 0,
+        season.posterUrl,
+        id,
+        season.seasonNumber
+      );
+
+      for (const episode of season.episodes || []) {
+        const episodeTitle = compactSpaces(episode.title || '');
+        if (!isUsefulEpisodeTitle(episodeTitle, episode.episodeNumber) && !episode.posterUrl) continue;
+
+        const current = selectEpisode.get(id, season.seasonNumber, episode.episodeNumber);
+        if (!current) continue;
+
+        const shouldUpdateTitle = isUsefulEpisodeTitle(episodeTitle, episode.episodeNumber)
+          && shouldReplaceEpisodeTitle(current.title, seriesTitle, episode.episodeNumber, force);
+        const displayTitle = `${seriesTitle} S${padNumber(season.seasonNumber)}E${padNumber(episode.episodeNumber)} - ${episodeTitle}`;
+
+        updateEpisode.run(
+          shouldUpdateTitle ? 1 : 0,
+          episodeTitle,
+          shouldUpdateTitle ? 1 : 0,
+          displayTitle,
+          force ? 1 : 0,
+          episode.posterUrl,
+          current.id
+        );
+      }
+    }
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
   syncSearchIndex('series', id);
+}
+
+function isUsefulEpisodeTitle(title = '', episodeNumber = 0) {
+  const normalized = normalizeTitle(title);
+  if (!normalized) return false;
+  const number = Number(episodeNumber) || 0;
+  return ![
+    'tba',
+    'a confirmar',
+    `episode ${number}`,
+    `episodio ${number}`,
+    `episodio ${padNumber(number)}`
+  ].includes(normalized);
+}
+
+function shouldReplaceEpisodeTitle(currentTitle = '', seriesTitle = '', episodeNumber = 0, force = false) {
+  if (force) return true;
+  const normalized = normalizeTitle(currentTitle);
+  if (!normalized) return true;
+  const number = Number(episodeNumber) || 0;
+  if (normalized === normalizeTitle(seriesTitle)) return true;
+  return [
+    `episode ${number}`,
+    `episodio ${number}`,
+    `episodio ${padNumber(number)}`
+  ].includes(normalized);
 }
 
 function syncSearchIndex(type, id) {

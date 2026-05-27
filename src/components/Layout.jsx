@@ -1,4 +1,4 @@
-import { AlertTriangle, Film, Home, MonitorPlay, Search, Settings, Tv } from 'lucide-react';
+import { AlertTriangle, Film, Home, MonitorPlay, Search, Settings, Star, Tv } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 
@@ -7,6 +7,7 @@ const navItems = [
   { to: '/filmes', label: 'Filmes', icon: Film },
   { to: '/series', label: 'Series', icon: MonitorPlay },
   { to: '/canais', label: 'Canais', icon: Tv },
+  { to: '/favoritos', label: 'Favoritos', icon: Star },
   { to: '/problemas', label: 'Problemas', icon: AlertTriangle }
 ];
 
@@ -56,7 +57,7 @@ export default function Layout() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-              placeholder="Buscar"
+              placeholder="Buscar titulo ou ator"
             />
           </form>
 

@@ -60,15 +60,40 @@ export default function AdminPage() {
   }, [tokenState]);
 
   useEffect(() => {
-    if (!enrichJob || !['queued', 'running'].includes(enrichJob.status)) return undefined;
+    if (!tokenState) return undefined;
+
+    let cancelled = false;
+    const loadActiveJob = () => {
+      apiFetch('/tmdb/enrich/active')
+        .then((data) => {
+          if (!cancelled && data.job) setEnrichJob(data.job);
+        })
+        .catch(() => {});
+    };
+
+    loadActiveJob();
+    const timer = setInterval(() => {
+      if (!enrichJob || ['done', 'error', 'stopped'].includes(enrichJob.status)) {
+        loadActiveJob();
+      }
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [enrichJob, tokenState]);
+
+  useEffect(() => {
+    if (!enrichJob || !['queued', 'running', 'paused'].includes(enrichJob.status)) return undefined;
     const timer = setInterval(() => {
       apiFetch(`/tmdb/enrich/${enrichJob.id}`)
         .then((data) => {
           setEnrichJob(data.job);
-          if (['done', 'error'].includes(data.job.status)) refreshStats();
+          if (['done', 'error', 'stopped'].includes(data.job.status)) refreshStats();
         })
         .catch((err) => setTmdbMessage(err.message));
-    }, 1200);
+    }, enrichJob.status === 'paused' ? 5000 : 1200);
     return () => clearInterval(timer);
   }, [enrichJob]);
 
@@ -302,12 +327,13 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
+      <div className="mb-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-7">
         <StatBox label="Filmes" value={stats?.movies ?? 0} />
         <StatBox label="Series" value={stats?.series ?? 0} />
         <StatBox label="Temporadas" value={stats?.seasons ?? 0} />
         <StatBox label="Episodios" value={stats?.episodes ?? 0} />
         <StatBox label="Canais" value={stats?.channels ?? 0} />
+        <StatBox label="Fontes" value={stats?.sources ?? 0} />
         <StatBox label="Categorias" value={stats?.categories ?? 0} />
       </div>
 
@@ -390,6 +416,7 @@ export default function AdminPage() {
                 <p>Temporadas: {job.imported.seasons}</p>
                 <p>Episodios: {job.imported.episodes}</p>
                 <p>Canais: {job.imported.channels}</p>
+                <p>Opcoes de link: {job.imported.sources || 0}</p>
               </div>
 
               {job.errorSamples?.length > 0 && (
@@ -597,7 +624,7 @@ export default function AdminPage() {
             <button
               type="button"
               onClick={startTmdbEnrichment}
-              disabled={busy || enrichJob?.status === 'running'}
+              disabled={busy || ['queued', 'running', 'paused'].includes(enrichJob?.status)}
               className="inline-flex items-center gap-2 rounded bg-brand px-5 py-3 text-sm font-black text-white hover:bg-red-600 disabled:opacity-60"
             >
               <Image size={17} />

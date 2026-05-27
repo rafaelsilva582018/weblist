@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import { apiFetch, mediaLink, watchLink } from '../api.js';
 import ContentRow from '../components/ContentRow.jsx';
 import EmptyState from '../components/EmptyState.jsx';
+import FavoriteButton from '../components/FavoriteButton.jsx';
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -42,6 +43,29 @@ export default function Home() {
   const featuredItems = data.featuredItems?.length ? data.featuredItems : data.featured ? [data.featured] : [];
   const featured = featuredItems[featuredIndex % featuredItems.length];
 
+  function updateFavoriteInHome(target, next) {
+    const updateItem = (item) => (
+      item?.type === target?.type && item?.id === target?.id ? { ...item, isFavorite: next } : item
+    );
+    const updateItems = (items) => items?.map(updateItem) || items;
+
+    setData((current) => current ? {
+      ...current,
+      featured: updateItem(current.featured),
+      featuredItems: updateItems(current.featuredItems),
+      continueWatching: updateItems(current.continueWatching),
+      continueMoviesSeries: updateItems(current.continueMoviesSeries),
+      continueChannels: updateItems(current.continueChannels),
+      favorites: next
+        ? updateItems(current.favorites)
+        : current.favorites?.filter((item) => !(item.type === target.type && item.id === target.id)),
+      randomMovies: updateItems(current.randomMovies),
+      randomSeries: updateItems(current.randomSeries),
+      liveChannels: updateItems(current.liveChannels),
+      rows: current.rows?.map((row) => ({ ...row, items: updateItems(row.items) }))
+    } : current);
+  }
+
   return (
     <div>
       {featured && (
@@ -76,6 +100,14 @@ export default function Home() {
                   <Info size={18} />
                   Detalhes
                 </Link>
+                <FavoriteButton
+                  type={featured.type}
+                  id={featured.id}
+                  initial={featured.isFavorite}
+                  label
+                  onChange={(next) => updateFavoriteInHome(featured, next)}
+                  className="border-white/20"
+                />
               </div>
               {featuredItems.length > 1 && (
                 <div className="mt-7 flex gap-2">
@@ -96,12 +128,14 @@ export default function Home() {
       )}
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <ContentRow title="Continue assistindo" items={data.continueWatching} />
-        <ContentRow title="Filmes recentes" items={data.recentMovies} />
-        <ContentRow title="Series recentes" items={data.recentSeries} />
-        <ContentRow title="Canais ao vivo" items={data.liveChannels} />
+        <ContentRow title="Meus favoritos" items={data.favorites} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Continue assistindo filmes e series" items={data.continueMoviesSeries || data.continueWatching} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Continue assistindo canais" items={data.continueChannels} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Filmes aleatorios" items={data.randomMovies || data.recentMovies} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Series aleatorias" items={data.randomSeries || data.recentSeries} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Canais ao vivo" items={data.liveChannels} onFavoriteChange={updateFavoriteInHome} />
         {data.rows.map((row) => (
-          <ContentRow key={`${row.type}-${row.title}`} title={row.title} items={row.items} />
+          <ContentRow key={`${row.type}-${row.title}`} title={row.title} items={row.items} onFavoriteChange={updateFavoriteInHome} />
         ))}
       </div>
     </div>

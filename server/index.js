@@ -7,12 +7,13 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { clearLibrary, db, ensureSearchIndex, getSetting, getStats, initDatabase, projectRoot, rebuildSearchIndex, setSetting, uploadsDir } from './db.js';
-import { getEnrichJob, queueTmdbEnrichment, updateEnrichJob } from './services/enricher.js';
+import { getActiveEnrichJob, getEnrichJob, queueTmdbEnrichment, updateEnrichJob } from './services/enricher.js';
 import { attachCurrentPrograms, getChannelGuide, getCurrentProgram, getEpgJob, getEpgStatus, getNextProgram, queueEpgImport } from './services/epg.js';
 import { getImportJob, queueImport } from './services/importer.js';
 import { getIptvOrgEpgJob, queueIptvOrgEpgImport } from './services/iptvOrgEpg.js';
-import { getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
+import { getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, searchTmdbPersonCredits, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
 import { normalizeTitle } from './utils/normalize.js';
+import { startAutoTmdbEnrichment } from './services/autoTmdb.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3333);
@@ -157,6 +158,259 @@ function streamFormat(url = '') {
   return 'auto';
 }
 
+function sourceHost(streamUrl = '') {
+  try {
+    return new URL(streamUrl).host.replace(/^www\./i, '');
+  } catch {
+    return '';
+  }
+}
+
+function getStreamSources(contentType, contentId, fallbackUrl = '') {
+  const rows = db.prepare(`
+    SELECT
+      id,
+      COALESCE(NULLIF(label, ''), 'Opcao') AS label,
+      stream_url AS streamUrl,
+      source_host AS sourceHost,
+      is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = ? AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `).all(contentType, contentId);
+
+  const sources = rows.length ? rows : (fallbackUrl ? [{
+    id: null,
+    label: 'Opcao 1',
+    streamUrl: fallbackUrl,
+    sourceHost: sourceHost(fallbackUrl),
+    isPrimary: 1
+  }] : []);
+
+  return sources.map((source, index) => ({
+    ...source,
+    label: source.label === 'Opcao' ? `Opcao ${index + 1}` : source.label,
+    sourceHost: source.sourceHost || sourceHost(source.streamUrl),
+    isPrimary: Boolean(source.isPrimary)
+  }));
+}
+
+function publicSources(sources) {
+  return sources.map(({ streamUrl, ...source }) => source);
+}
+
+function pickStreamSource(sources, requestedSource) {
+  const sourceId = Number(requestedSource || 0);
+  if (sourceId) {
+    const selected = sources.find((source) => Number(source.id) === sourceId);
+    if (selected) return selected;
+  }
+  return sources.find((source) => source.isPrimary) || sources[0] || null;
+}
+
+const favoriteTables = {
+  movie: 'movies',
+  series: 'series',
+  channel: 'channels'
+};
+
+function normalizeFavoriteType(type) {
+  const value = String(type || '').toLowerCase();
+  return favoriteTables[value] ? value : null;
+}
+
+function contentExists(type, id) {
+  const table = favoriteTables[type];
+  if (!table) return false;
+  return Boolean(db.prepare(`SELECT id FROM ${table} WHERE id = ?`).get(id));
+}
+
+function isFavorite(userId, type, id) {
+  return Boolean(db.prepare(`
+    SELECT 1
+    FROM favorites
+    WHERE user_id = ? AND content_type = ? AND content_id = ?
+  `).get(userId, type, id));
+}
+
+function listFavorites(userId, { type = 'all', limit = 60, page = 1 }) {
+  const filterType = type === 'all' ? null : normalizeFavoriteType(type);
+  if (type !== 'all' && !filterType) {
+    return { items: [], pagination: paginationMeta(0, page, limit) };
+  }
+
+  const offset = (page - 1) * limit;
+  const includedTypes = filterType ? [filterType] : ['movie', 'series', 'channel'];
+  const parts = [];
+  const params = [];
+
+  if (includedTypes.includes('movie')) {
+    parts.push(`
+      SELECT
+        f.created_at AS favoritedAt,
+        m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.imported_at AS importedAt,
+        m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear, NULL AS firstAirYear,
+        c.id AS categoryId, c.name AS category, 1 AS isFavorite
+      FROM favorites f
+      JOIN movies m ON m.id = f.content_id
+      LEFT JOIN categories c ON c.id = m.category_id
+      WHERE f.user_id = ? AND f.content_type = 'movie'
+    `);
+    params.push(userId);
+  }
+
+  if (includedTypes.includes('series')) {
+    parts.push(`
+      SELECT
+        f.created_at AS favoritedAt,
+        s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.imported_at AS importedAt,
+        s.backdrop_url AS backdropUrl, s.overview, NULL AS releaseYear, s.first_air_year AS firstAirYear,
+        c.id AS categoryId, c.name AS category, 1 AS isFavorite
+      FROM favorites f
+      JOIN series s ON s.id = f.content_id
+      LEFT JOIN categories c ON c.id = s.category_id
+      WHERE f.user_id = ? AND f.content_type = 'series'
+    `);
+    params.push(userId);
+  }
+
+  if (includedTypes.includes('channel')) {
+    parts.push(`
+      SELECT
+        f.created_at AS favoritedAt,
+        ch.id, 'channel' AS type, ch.title, ch.logo_url AS posterUrl, ch.imported_at AS importedAt,
+        NULL AS backdropUrl, NULL AS overview, NULL AS releaseYear, NULL AS firstAirYear,
+        c.id AS categoryId, c.name AS category, 1 AS isFavorite
+      FROM favorites f
+      JOIN channels ch ON ch.id = f.content_id
+      LEFT JOIN categories c ON c.id = ch.category_id
+      WHERE f.user_id = ? AND f.content_type = 'channel'
+    `);
+    params.push(userId);
+  }
+
+  const countParams = [userId];
+  const countTypeClause = filterType ? 'AND content_type = ?' : '';
+  if (filterType) countParams.push(filterType);
+  const total = db.prepare(`
+    SELECT COUNT(*) AS total
+    FROM favorites
+    WHERE user_id = ? ${countTypeClause}
+  `).get(...countParams).total;
+
+  if (!parts.length || total === 0) {
+    return { items: [], pagination: paginationMeta(total, page, limit) };
+  }
+
+  const items = db.prepare(`
+    SELECT *
+    FROM (${parts.join(' UNION ALL ')})
+    ORDER BY favoritedAt DESC
+    LIMIT ? OFFSET ?
+  `).all(...params, limit, offset);
+
+  return { items: attachCurrentPrograms(items), pagination: paginationMeta(total, page, limit) };
+}
+
+function queryMoviesByTmdbCredits(credits = [], { category = '', metadata = 'all', year = '', hideAdult = true, userId = 1 }) {
+  if (!credits.length) return [];
+  const creditMap = new Map(credits.map((credit, index) => [Number(credit.tmdbId), { ...credit, rank: index }]));
+  const where = [`m.tmdb_id IN (${credits.map(() => '?').join(',')})`];
+  const params = credits.map((credit) => Number(credit.tmdbId));
+  addSearchFilters({ where, params, alias: 'm', type: 'movie', q: '', category, metadata, year, hideAdult });
+
+  return db.prepare(`
+    SELECT
+      m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.imported_at AS importedAt,
+      m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear, m.tmdb_id AS tmdbId,
+      c.id AS categoryId, c.name AS category,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
+    FROM movies m
+    LEFT JOIN categories c ON c.id = m.category_id
+    ${whereClause(where)}
+  `).all(userId, ...params)
+    .map((item) => {
+      const credit = creditMap.get(Number(item.tmdbId));
+      return {
+        ...item,
+        matchSource: 'actor',
+        actorName: credit?.personName || '',
+        character: credit?.character || '',
+        actorRank: credit?.rank ?? 9999
+      };
+    })
+    .sort((a, b) => a.actorRank - b.actorRank || a.title.localeCompare(b.title));
+}
+
+function querySeriesByTmdbCredits(credits = [], { category = '', metadata = 'all', year = '', hideAdult = true, userId = 1 }) {
+  if (!credits.length) return [];
+  const creditMap = new Map(credits.map((credit, index) => [Number(credit.tmdbId), { ...credit, rank: index }]));
+  const where = [`s.tmdb_id IN (${credits.map(() => '?').join(',')})`];
+  const params = credits.map((credit) => Number(credit.tmdbId));
+  addSearchFilters({ where, params, alias: 's', type: 'series', q: '', category, metadata, year, hideAdult });
+
+  return db.prepare(`
+    SELECT
+      s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.imported_at AS importedAt,
+      s.backdrop_url AS backdropUrl, s.overview, s.first_air_year AS firstAirYear, s.tmdb_id AS tmdbId,
+      c.id AS categoryId, c.name AS category,
+      COUNT(DISTINCT seasons.id) AS seasonCount,
+      COUNT(DISTINCT episodes.id) AS episodeCount,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'series' AND f.content_id = s.id) AS isFavorite
+    FROM series s
+    LEFT JOIN categories c ON c.id = s.category_id
+    LEFT JOIN seasons ON seasons.series_id = s.id
+    LEFT JOIN episodes ON episodes.series_id = s.id
+    ${whereClause(where)}
+    GROUP BY s.id
+  `).all(userId, ...params)
+    .map((item) => {
+      const credit = creditMap.get(Number(item.tmdbId));
+      return {
+        ...item,
+        matchSource: 'actor',
+        actorName: credit?.personName || '',
+        character: credit?.character || '',
+        actorRank: credit?.rank ?? 9999
+      };
+    })
+    .sort((a, b) => a.actorRank - b.actorRank || a.title.localeCompare(b.title));
+}
+
+async function findPersonCreditMatches({ q, type = 'all', category = '', metadata = 'all', year = '', hideAdult = true, userId = 1 }) {
+  if (!q || normalizeTitle(q).length < 3 || type === 'channel') return [];
+
+  try {
+    const credits = await searchTmdbPersonCredits(q);
+    const items = [];
+    if (type === 'all' || type === 'movie') {
+      items.push(...queryMoviesByTmdbCredits(credits.movies, { category, metadata, year, hideAdult, userId }));
+    }
+    if (type === 'all' || type === 'series') {
+      items.push(...querySeriesByTmdbCredits(credits.series, { category, metadata, year, hideAdult, userId }));
+    }
+    return items;
+  } catch {
+    return [];
+  }
+}
+
+function mergeSearchItems(items, extraItems) {
+  const seen = new Set(items.map((item) => `${item.type}:${item.id}`));
+  const merged = [...items];
+  let added = 0;
+
+  for (const item of extraItems) {
+    const key = `${item.type}:${item.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    merged.push(item);
+    added += 1;
+  }
+
+  return { items: merged, added };
+}
+
 function mediaSearch({ q = '', type = 'all', limit = 30 }) {
   const raw = String(q || '').trim();
   const normalized = normalizeTitle(raw);
@@ -253,7 +507,7 @@ function updateManualMetadata({ type, id, title = '', overview = '', posterUrl =
   rebuildSearchIndex();
 }
 
-function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page = 1, metadata = 'all', year = '', hideAdult = true }) {
+function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page = 1, metadata = 'all', year = '', hideAdult = true, userId = 1 }) {
   const where = [];
   const params = [];
   addSearchFilters({ where, params, alias: 'm', type: 'movie', q, category, metadata, year, hideAdult });
@@ -262,20 +516,22 @@ function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page
   const order = {
     name: 'm.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, m.title COLLATE NOCASE ASC',
-    imported: 'm.imported_at DESC, m.id DESC'
+    imported: 'm.imported_at DESC, m.id DESC',
+    random: 'RANDOM()'
   }[sort] || 'm.imported_at DESC, m.id DESC';
 
   const items = db.prepare(`
     SELECT
       m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.imported_at AS importedAt,
       m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear, m.tmdb_id AS tmdbId,
-      c.id AS categoryId, c.name AS category
+      c.id AS categoryId, c.name AS category,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
     FROM movies m
     LEFT JOIN categories c ON c.id = m.category_id
     ${whereClause(where)}
     ORDER BY ${order}
     LIMIT ? OFFSET ?
-  `).all(...params, limit, offset);
+  `).all(userId, ...params, limit, offset);
   const total = db.prepare(`
     SELECT COUNT(*) AS total
     FROM movies m
@@ -286,7 +542,7 @@ function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page
   return { items, pagination: paginationMeta(total, page, limit) };
 }
 
-function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page = 1, metadata = 'all', year = '', hideAdult = true }) {
+function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page = 1, metadata = 'all', year = '', hideAdult = true, userId = 1 }) {
   const where = [];
   const params = [];
   addSearchFilters({ where, params, alias: 's', type: 'series', q, category, metadata, year, hideAdult });
@@ -295,7 +551,8 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
   const order = {
     name: 's.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, s.title COLLATE NOCASE ASC',
-    imported: 's.imported_at DESC, s.id DESC'
+    imported: 's.imported_at DESC, s.id DESC',
+    random: 'RANDOM()'
   }[sort] || 's.imported_at DESC, s.id DESC';
 
   const items = db.prepare(`
@@ -304,7 +561,8 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
       s.backdrop_url AS backdropUrl, s.overview, s.first_air_year AS firstAirYear, s.tmdb_id AS tmdbId,
       c.id AS categoryId, c.name AS category,
       COUNT(DISTINCT seasons.id) AS seasonCount,
-      COUNT(episodes.id) AS episodeCount
+      COUNT(DISTINCT episodes.id) AS episodeCount,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'series' AND f.content_id = s.id) AS isFavorite
     FROM series s
     LEFT JOIN categories c ON c.id = s.category_id
     LEFT JOIN seasons ON seasons.series_id = s.id
@@ -313,7 +571,7 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
     GROUP BY s.id
     ORDER BY ${order}
     LIMIT ? OFFSET ?
-  `).all(...params, limit, offset);
+  `).all(userId, ...params, limit, offset);
   const total = db.prepare(`
     SELECT COUNT(*) AS total
     FROM series s
@@ -324,7 +582,7 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
   return { items, pagination: paginationMeta(total, page, limit) };
 }
 
-function listChannels({ q = '', category = '', sort = 'imported', limit = 40, page = 1, hideAdult = true }) {
+function listChannels({ q = '', category = '', sort = 'imported', limit = 40, page = 1, hideAdult = true, userId = 1 }) {
   const where = [];
   const params = [];
   addSearchFilters({ where, params, alias: 'ch', type: 'channel', q, category, hideAdult });
@@ -333,19 +591,21 @@ function listChannels({ q = '', category = '', sort = 'imported', limit = 40, pa
   const order = {
     name: 'ch.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, ch.title COLLATE NOCASE ASC',
-    imported: 'ch.imported_at DESC, ch.id DESC'
+    imported: 'ch.imported_at DESC, ch.id DESC',
+    random: 'RANDOM()'
   }[sort] || 'ch.imported_at DESC, ch.id DESC';
 
   const items = db.prepare(`
     SELECT
       ch.id, 'channel' AS type, ch.title, ch.logo_url AS posterUrl, ch.imported_at AS importedAt,
-      c.id AS categoryId, c.name AS category
+      c.id AS categoryId, c.name AS category,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'channel' AND f.content_id = ch.id) AS isFavorite
     FROM channels ch
     LEFT JOIN categories c ON c.id = ch.category_id
     ${whereClause(where)}
     ORDER BY ${order}
     LIMIT ? OFFSET ?
-  `).all(...params, limit, offset);
+  `).all(userId, ...params, limit, offset);
   const total = db.prepare(`
     SELECT COUNT(*) AS total
     FROM channels ch
@@ -356,11 +616,17 @@ function listChannels({ q = '', category = '', sort = 'imported', limit = 40, pa
   return { items: attachCurrentPrograms(items), pagination: paginationMeta(total, page, limit) };
 }
 
-function getContinueWatching(userId) {
+function getContinueWatching(userId, mode = 'all') {
+  const typeFilter = {
+    media: "AND content_type IN ('movie', 'episode') AND position > 5",
+    channels: "AND content_type = 'channel'",
+    all: "AND (content_type = 'channel' OR position > 5)"
+  }[mode] || "AND (content_type = 'channel' OR position > 5)";
+
   const progressRows = db.prepare(`
     SELECT *
     FROM watch_progress
-    WHERE user_id = ? AND position > 5
+    WHERE user_id = ? ${typeFilter}
     ORDER BY updated_at DESC
     LIMIT 20
   `).all(userId);
@@ -369,9 +635,11 @@ function getContinueWatching(userId) {
   for (const row of progressRows) {
     if (row.content_type === 'movie') {
       const item = db.prepare(`
-      SELECT id, 'movie' AS type, title, poster_url AS posterUrl, backdrop_url AS backdropUrl
+      SELECT
+        id, 'movie' AS type, title, poster_url AS posterUrl, backdrop_url AS backdropUrl,
+        EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = movies.id) AS isFavorite
         FROM movies WHERE id = ?
-      `).get(row.content_id);
+      `).get(userId, row.content_id);
       if (item) items.push({ ...item, progress: row });
       continue;
     }
@@ -379,9 +647,11 @@ function getContinueWatching(userId) {
     if (row.content_type === 'episode') {
       const item = db.prepare(`
         SELECT
-          e.id, 'episode' AS type, e.title, e.display_title AS displayTitle, e.poster_url AS posterUrl,
+          e.id, 'episode' AS type, e.title, e.display_title AS displayTitle,
+          COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
           s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl
         FROM episodes e
+        JOIN seasons se ON se.id = e.season_id
         JOIN series s ON s.id = e.series_id
         WHERE e.id = ?
       `).get(row.content_id);
@@ -391,14 +661,16 @@ function getContinueWatching(userId) {
 
     if (row.content_type === 'channel') {
       const item = db.prepare(`
-        SELECT id, 'channel' AS type, title, logo_url AS posterUrl
+        SELECT
+          id, 'channel' AS type, title, logo_url AS posterUrl,
+          EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'channel' AND f.content_id = channels.id) AS isFavorite
         FROM channels WHERE id = ?
-      `).get(row.content_id);
+      `).get(userId, row.content_id);
       if (item) items.push({ ...item, progress: row });
     }
   }
 
-  return items;
+  return mode === 'channels' ? attachCurrentPrograms(items) : items;
 }
 
 function getFeaturedItems() {
@@ -472,12 +744,12 @@ function getFeaturedItems() {
         AND s.title NOT LIKE '%erot%' COLLATE NOCASE
         AND s.title NOT LIKE '%18+%' COLLATE NOCASE
     )
-    ORDER BY importedAt DESC, id DESC
+    ORDER BY RANDOM()
     LIMIT 5
   `).all();
 }
 
-function getCategoryRows() {
+function getCategoryRows(userId = 1) {
   const rows = [];
   const movieCategories = db.prepare(`
     SELECT c.id, c.name, COUNT(m.id) AS total, MAX(m.imported_at) AS recent
@@ -487,7 +759,7 @@ function getCategoryRows() {
       AND c.name NOT LIKE '%Adult%' COLLATE NOCASE
       AND c.name NOT LIKE '%XXX%' COLLATE NOCASE
     GROUP BY c.id
-    ORDER BY recent DESC
+    ORDER BY RANDOM()
     LIMIT 5
   `).all();
 
@@ -495,7 +767,7 @@ function getCategoryRows() {
     rows.push({
       title: category.name,
       type: 'movie',
-      items: listMovies({ category: category.id, sort: 'imported', limit: 18 }).items
+      items: listMovies({ category: category.id, sort: 'random', limit: 18, userId }).items
     });
   }
 
@@ -505,7 +777,7 @@ function getCategoryRows() {
     JOIN series s ON s.category_id = c.id
     WHERE c.type = 'series'
     GROUP BY c.id
-    ORDER BY recent DESC
+    ORDER BY RANDOM()
     LIMIT 4
   `).all();
 
@@ -513,7 +785,7 @@ function getCategoryRows() {
     rows.push({
       title: `${category.name} - series`,
       type: 'series',
-      items: listSeries({ category: category.id, sort: 'imported', limit: 18 }).items
+      items: listSeries({ category: category.id, sort: 'random', limit: 18, userId }).items
     });
   }
 
@@ -620,6 +892,10 @@ app.post('/api/tmdb/enrich', requireAdmin, (req, res) => {
   }
 });
 
+app.get('/api/tmdb/enrich/active', requireAdmin, (req, res) => {
+  res.json({ job: getActiveEnrichJob() });
+});
+
 app.get('/api/tmdb/enrich/:id', requireAdmin, (req, res) => {
   const job = getEnrichJob(req.params.id);
   if (!job) return res.status(404).json({ error: 'Atualizacao nao encontrada' });
@@ -647,7 +923,13 @@ app.post('/api/tmdb/apply', requireAdmin, asyncRoute(async (req, res) => {
   const force = req.body.force !== false;
   if (!id || !tmdbId) return res.status(400).json({ error: 'Selecao TMDB invalida' });
 
-  const match = await getTmdbById(type, tmdbId);
+  const seasonNumbers = type === 'series'
+    ? db.prepare('SELECT season_number AS seasonNumber FROM seasons WHERE series_id = ? ORDER BY season_number ASC').all(id).map((season) => season.seasonNumber)
+    : [];
+  const match = await getTmdbById(type, tmdbId, {
+    includeEpisodes: type === 'series',
+    seasonNumbers
+  });
   if (type === 'series') {
     updateSeriesMetadata(id, match, force);
   } else {
@@ -761,6 +1043,47 @@ app.get('/api/categories', (req, res) => {
   res.json({ categories });
 });
 
+app.get('/api/favorites', (req, res) => {
+  const userId = getLocalUserId(req);
+  const result = listFavorites(userId, {
+    type: String(req.query.type || 'all'),
+    limit: parseLimit(req.query.limit, 60, 120),
+    page: parsePage(req.query.page)
+  });
+  res.json(result);
+});
+
+app.post('/api/favorites', (req, res) => {
+  const userId = getLocalUserId(req);
+  const type = normalizeFavoriteType(req.body.type);
+  const id = Number(req.body.id);
+
+  if (!type || !id) return res.status(400).json({ error: 'Favorito invalido' });
+  if (!contentExists(type, id)) return res.status(404).json({ error: 'Item nao encontrado' });
+
+  db.prepare(`
+    INSERT OR IGNORE INTO favorites (user_id, content_type, content_id)
+    VALUES (?, ?, ?)
+  `).run(userId, type, id);
+
+  res.json({ ok: true, isFavorite: true });
+});
+
+app.delete('/api/favorites/:type/:id', (req, res) => {
+  const userId = getLocalUserId(req);
+  const type = normalizeFavoriteType(req.params.type);
+  const id = Number(req.params.id);
+
+  if (!type || !id) return res.status(400).json({ error: 'Favorito invalido' });
+
+  db.prepare(`
+    DELETE FROM favorites
+    WHERE user_id = ? AND content_type = ? AND content_id = ?
+  `).run(userId, type, id);
+
+  res.json({ ok: true, isFavorite: false });
+});
+
 app.get('/api/home', (req, res) => {
   const userId = getLocalUserId(req);
   const featuredItems = getFeaturedItems();
@@ -768,15 +1091,19 @@ app.get('/api/home', (req, res) => {
     featured: featuredItems[0] || null,
     featuredItems,
     continueWatching: getContinueWatching(userId),
-    recentMovies: listMovies({ sort: 'imported', limit: 20 }).items,
-    recentSeries: listSeries({ sort: 'imported', limit: 20 }).items,
-    liveChannels: listChannels({ sort: 'imported', limit: 20 }).items,
-    rows: getCategoryRows(),
+    continueMoviesSeries: getContinueWatching(userId, 'media'),
+    continueChannels: getContinueWatching(userId, 'channels'),
+    favorites: listFavorites(userId, { limit: 20 }).items,
+    randomMovies: listMovies({ sort: 'random', limit: 20, userId }).items,
+    randomSeries: listSeries({ sort: 'random', limit: 20, userId }).items,
+    liveChannels: listChannels({ sort: 'random', limit: 20, userId }).items,
+    rows: getCategoryRows(userId),
     stats: getStats()
   });
 });
 
 app.get('/api/movies', (req, res) => {
+  const userId = getLocalUserId(req);
   const result = listMovies({
     q: String(req.query.q || ''),
     category: String(req.query.category || ''),
@@ -785,12 +1112,14 @@ app.get('/api/movies', (req, res) => {
     year: String(req.query.year || ''),
     hideAdult: shouldHideAdult(req.query.hideAdult),
     limit: parseLimit(req.query.limit),
-    page: parsePage(req.query.page)
+    page: parsePage(req.query.page),
+    userId
   });
   res.json(result);
 });
 
 app.get('/api/movies/:id', (req, res) => {
+  const userId = getLocalUserId(req);
   const movie = db.prepare(`
     SELECT
       m.id, 'movie' AS type, m.title, m.stream_url AS streamUrl, m.poster_url AS posterUrl,
@@ -803,10 +1132,12 @@ app.get('/api/movies/:id', (req, res) => {
   `).get(req.params.id);
 
   if (!movie) return res.status(404).json({ error: 'Filme nao encontrado' });
-  res.json({ movie });
+  const sources = getStreamSources('movie', movie.id, movie.streamUrl);
+  res.json({ movie: { ...movie, isFavorite: isFavorite(userId, 'movie', movie.id), sources: publicSources(sources), sourceCount: sources.length } });
 });
 
 app.get('/api/series', (req, res) => {
+  const userId = getLocalUserId(req);
   const result = listSeries({
     q: String(req.query.q || ''),
     category: String(req.query.category || ''),
@@ -815,12 +1146,14 @@ app.get('/api/series', (req, res) => {
     year: String(req.query.year || ''),
     hideAdult: shouldHideAdult(req.query.hideAdult),
     limit: parseLimit(req.query.limit),
-    page: parsePage(req.query.page)
+    page: parsePage(req.query.page),
+    userId
   });
   res.json(result);
 });
 
 app.get('/api/series/:id', (req, res) => {
+  const userId = getLocalUserId(req);
   const series = db.prepare(`
     SELECT
       s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.backdrop_url AS backdropUrl,
@@ -835,7 +1168,7 @@ app.get('/api/series/:id', (req, res) => {
   if (!series) return res.status(404).json({ error: 'Serie nao encontrada' });
 
   const seasons = db.prepare(`
-    SELECT id, season_number AS seasonNumber, title
+    SELECT id, season_number AS seasonNumber, title, poster_url AS posterUrl
     FROM seasons
     WHERE series_id = ?
     ORDER BY season_number ASC
@@ -843,11 +1176,17 @@ app.get('/api/series/:id', (req, res) => {
 
   const episodes = db.prepare(`
     SELECT
-      id, season_id AS seasonId, season_number AS seasonNumber, episode_number AS episodeNumber,
-      title, display_title AS displayTitle, poster_url AS posterUrl
-    FROM episodes
-    WHERE series_id = ?
-    ORDER BY season_number ASC, episode_number ASC, title COLLATE NOCASE ASC
+      e.id, e.season_id AS seasonId, e.season_number AS seasonNumber, e.episode_number AS episodeNumber,
+      e.title, e.display_title AS displayTitle,
+      COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
+      COUNT(ss.id) AS sourceCount
+    FROM episodes e
+    JOIN seasons se ON se.id = e.season_id
+    JOIN series s ON s.id = e.series_id
+    LEFT JOIN stream_sources ss ON ss.content_type = 'episode' AND ss.content_id = e.id
+    WHERE e.series_id = ?
+    GROUP BY e.id
+    ORDER BY e.season_number ASC, e.episode_number ASC, e.title COLLATE NOCASE ASC
   `).all(series.id);
 
   const bySeason = new Map(seasons.map((season) => [season.id, { ...season, episodes: [] }]));
@@ -855,17 +1194,19 @@ app.get('/api/series/:id', (req, res) => {
     bySeason.get(episode.seasonId)?.episodes.push(episode);
   }
 
-  res.json({ series: { ...series, seasons: [...bySeason.values()] } });
+  res.json({ series: { ...series, isFavorite: isFavorite(userId, 'series', series.id), seasons: [...bySeason.values()] } });
 });
 
 app.get('/api/channels', (req, res) => {
+  const userId = getLocalUserId(req);
   const result = listChannels({
     q: String(req.query.q || ''),
     category: String(req.query.category || ''),
     sort: String(req.query.sort || 'imported'),
     hideAdult: shouldHideAdult(req.query.hideAdult),
     limit: parseLimit(req.query.limit, 60, 200),
-    page: parsePage(req.query.page)
+    page: parsePage(req.query.page),
+    userId
   });
   res.json(result);
 });
@@ -881,7 +1222,8 @@ app.get('/api/channels/:id/epg', (req, res) => {
   });
 });
 
-app.get('/api/search', (req, res) => {
+app.get('/api/search', asyncRoute(async (req, res) => {
+  const userId = getLocalUserId(req);
   const q = String(req.query.q || '').trim();
   const type = String(req.query.type || 'all');
   const category = String(req.query.category || '');
@@ -890,33 +1232,35 @@ app.get('/api/search', (req, res) => {
   const hideAdult = shouldHideAdult(req.query.hideAdult);
   const limit = parseLimit(req.query.limit, 40, 120);
   const page = parsePage(req.query.page);
-  const perTypeLimit = type === 'all' ? Math.ceil(page * limit / 3) : page * limit;
+  const perTypeLimit = page * limit;
   const results = [];
 
   if (!q) return res.json({ items: [] });
   let total = 0;
   if (type === 'all' || type === 'movie') {
-    const result = listMovies({ q, category, metadata, year, hideAdult, limit: perTypeLimit });
+    const result = listMovies({ q, category, metadata, year, hideAdult, limit: perTypeLimit, userId });
     results.push(...result.items);
     total += result.pagination.total;
   }
   if (type === 'all' || type === 'series') {
-    const result = listSeries({ q, category, metadata, year, hideAdult, limit: perTypeLimit });
+    const result = listSeries({ q, category, metadata, year, hideAdult, limit: perTypeLimit, userId });
     results.push(...result.items);
     total += result.pagination.total;
   }
   if (type === 'all' || type === 'channel') {
-    const result = listChannels({ q, category, hideAdult, limit: perTypeLimit });
+    const result = listChannels({ q, category, hideAdult, limit: perTypeLimit, userId });
     results.push(...result.items);
     total += result.pagination.total;
   }
 
+  const personMatches = await findPersonCreditMatches({ q, type, category, metadata, year, hideAdult, userId });
+  const merged = mergeSearchItems(results, personMatches);
   const start = (page - 1) * limit;
   res.json({
-    items: results.slice(start, start + limit),
-    pagination: paginationMeta(total, page, limit)
+    items: merged.items.slice(start, start + limit),
+    pagination: paginationMeta(total + merged.added, page, limit)
   });
-});
+}));
 
 app.get('/api/problems', requireAdmin, (req, res) => {
   const limit = parseLimit(req.query.limit, 40, 120);
@@ -988,6 +1332,7 @@ app.get('/api/problems', requireAdmin, (req, res) => {
 });
 
 app.get('/api/play/:type/:id', (req, res) => {
+  const userId = getLocalUserId(req);
   const type = req.params.type;
   const id = Number(req.params.id);
 
@@ -998,7 +1343,19 @@ app.get('/api/play/:type/:id', (req, res) => {
       FROM movies WHERE id = ?
     `).get(id);
     if (!movie) return res.status(404).json({ error: 'Filme nao encontrado' });
-    return res.json({ item: { ...movie, streamFormat: streamFormat(movie.streamUrl) } });
+    const sources = getStreamSources('movie', movie.id, movie.streamUrl);
+    const selectedSource = pickStreamSource(sources, req.query.source);
+    const streamUrl = selectedSource?.streamUrl || movie.streamUrl;
+    return res.json({
+      item: {
+        ...movie,
+        streamUrl,
+        streamFormat: streamFormat(streamUrl),
+        sources: publicSources(sources),
+        activeSourceId: selectedSource?.id || null,
+        isFavorite: isFavorite(userId, 'movie', movie.id)
+      }
+    });
   }
 
   if (type === 'channel') {
@@ -1007,13 +1364,20 @@ app.get('/api/play/:type/:id', (req, res) => {
       FROM channels WHERE id = ?
     `).get(id);
     if (!channel) return res.status(404).json({ error: 'Canal nao encontrado' });
-    const format = streamFormat(channel.streamUrl);
+    const sources = getStreamSources('channel', channel.id, channel.streamUrl);
+    const selectedSource = pickStreamSource(sources, req.query.source);
+    const directStreamUrl = selectedSource?.streamUrl || channel.streamUrl;
+    const format = streamFormat(directStreamUrl);
+    const sourceQuery = selectedSource?.id ? `?source=${selectedSource.id}` : '';
     return res.json({
       item: {
         ...channel,
-        directStreamUrl: channel.streamUrl,
-        streamUrl: format === 'mpegts' ? `/api/stream/channel/${channel.id}` : channel.streamUrl,
+        directStreamUrl,
+        streamUrl: format === 'mpegts' ? `/api/stream/channel/${channel.id}${sourceQuery}` : directStreamUrl,
         streamFormat: format,
+        sources: publicSources(sources),
+        activeSourceId: selectedSource?.id || null,
+        isFavorite: isFavorite(userId, 'channel', channel.id),
         currentProgram: getCurrentProgram(channel.id),
         nextProgram: getNextProgram(channel.id),
         guide: getChannelGuide(channel.id, 8)
@@ -1025,10 +1389,13 @@ app.get('/api/play/:type/:id', (req, res) => {
     const episode = db.prepare(`
       SELECT
         e.id, 'episode' AS type, e.title, e.display_title AS displayTitle, e.stream_url AS streamUrl,
-        e.poster_url AS posterUrl, e.series_id AS seriesId, e.season_number AS seasonNumber,
-        e.episode_number AS episodeNumber, s.title AS seriesTitle, s.backdrop_url AS backdropUrl,
+        COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
+        e.series_id AS seriesId, e.season_number AS seasonNumber,
+        e.episode_number AS episodeNumber, s.title AS seriesTitle,
+        COALESCE(NULLIF(s.backdrop_url, ''), NULLIF(se.backdrop_url, ''), NULLIF(s.poster_url, '')) AS backdropUrl,
         s.overview AS seriesOverview
       FROM episodes e
+      JOIN seasons se ON se.id = e.season_id
       JOIN series s ON s.id = e.series_id
       WHERE e.id = ?
     `).get(id);
@@ -1043,7 +1410,20 @@ app.get('/api/play/:type/:id', (req, res) => {
       LIMIT 1
     `).get(episode.seriesId, episode.seasonNumber, episode.seasonNumber, episode.episodeNumber);
 
-    return res.json({ item: { ...episode, title: episode.displayTitle, streamFormat: streamFormat(episode.streamUrl), nextEpisode } });
+    const sources = getStreamSources('episode', episode.id, episode.streamUrl);
+    const selectedSource = pickStreamSource(sources, req.query.source);
+    const streamUrl = selectedSource?.streamUrl || episode.streamUrl;
+    return res.json({
+      item: {
+        ...episode,
+        title: episode.displayTitle,
+        streamUrl,
+        streamFormat: streamFormat(streamUrl),
+        sources: publicSources(sources),
+        activeSourceId: selectedSource?.id || null,
+        nextEpisode
+      }
+    });
   }
 
   return res.status(400).json({ error: 'Tipo invalido' });
@@ -1052,6 +1432,9 @@ app.get('/api/play/:type/:id', (req, res) => {
 app.get('/api/stream/channel/:id', asyncRoute(async (req, res) => {
   const channel = db.prepare('SELECT id, title, stream_url AS streamUrl FROM channels WHERE id = ?').get(req.params.id);
   if (!channel) return res.status(404).json({ error: 'Canal nao encontrado' });
+  const sources = getStreamSources('channel', channel.id, channel.streamUrl);
+  const selectedSource = pickStreamSource(sources, req.query.source);
+  const directStreamUrl = selectedSource?.streamUrl || channel.streamUrl;
 
   const controller = new AbortController();
   let closed = false;
@@ -1067,7 +1450,7 @@ app.get('/api/stream/channel/:id', asyncRoute(async (req, res) => {
 
   while (!closed && !res.destroyed) {
     try {
-      const upstream = await fetch(channel.streamUrl, {
+      const upstream = await fetch(directStreamUrl, {
         signal: controller.signal,
         headers: {
           'User-Agent': 'VLC/3.0.20 LibVLC/3.0.20',
@@ -1176,4 +1559,5 @@ if (fs.existsSync(distPath)) {
 
 app.listen(port, () => {
   console.log(`Weblist API em http://localhost:${port}`);
+  startAutoTmdbEnrichment();
 });

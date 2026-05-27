@@ -1,0 +1,26 @@
+services:
+  weblist:
+    build: .
+    container_name: weblist
+    restart: unless-stopped
+    ports:
+      - "3333:3333"
+    environment:
+      NODE_ENV: production
+      PORT: 3333
+      JWT_SECRET: ${JWT_SECRET:-troque-este-segredo}
+      TMDB_API_KEY: ${TMDB_API_KEY:-}
+      TMDB_ACCESS_TOKEN: ${TMDB_ACCESS_TOKEN:-}
+      TMDB_LANGUAGE: ${TMDB_LANGUAGE:-pt-BR}
+      AUTO_TMDB_ENABLED: ${AUTO_TMDB_ENABLED:-true}
+      AUTO_TMDB_RUN_ON_START: ${AUTO_TMDB_RUN_ON_START:-true}
+      AUTO_TMDB_START_DELAY_SECONDS: ${AUTO_TMDB_START_DELAY_SECONDS:-45}
+      AUTO_TMDB_INTERVAL_MINUTES: ${AUTO_TMDB_INTERVAL_MINUTES:-360}
+      AUTO_TMDB_BATCH_SIZE: ${AUTO_TMDB_BATCH_SIZE:-1000}
+      AUTO_TMDB_RUN_ALL: ${AUTO_TMDB_RUN_ALL:-true}
+      AUTO_TMDB_FORCE: ${AUTO_TMDB_FORCE:-false}
+      AUTO_TMDB_DELAY_MS: ${AUTO_TMDB_DELAY_MS:-160}
+      AUTO_TMDB_RETRY_DAYS: ${AUTO_TMDB_RETRY_DAYS:-14}
+    volumes:
+      - ./server/data:/app/server/data
+      - ./server/uploads:/app/server/uploads

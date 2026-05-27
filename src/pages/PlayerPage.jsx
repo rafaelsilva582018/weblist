@@ -1,9 +1,10 @@
 import Hls from 'hls.js';
 import mpegts from 'mpegts.js';
-import { ArrowLeft, CalendarDays, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
+import FavoriteButton from '../components/FavoriteButton.jsx';
 
 function isHlsUrl(url = '') {
   return /\.m3u8(\?|#|$)/i.test(url);
@@ -26,6 +27,8 @@ const liveRestartCooldownMs = 8000;
 export default function PlayerPage() {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sourceParam = searchParams.get('source') || '';
   const videoRef = useRef(null);
   const shellRef = useRef(null);
   const mediaPlayerRef = useRef(null);
@@ -54,6 +57,8 @@ export default function PlayerPage() {
   const hideTimerRef = useRef(null);
   const isLive = type === 'channel' || item?.streamFormat === 'mpegts';
   const hasGuide = item?.guide?.length > 0;
+  const sourceOptions = item?.sources || [];
+  const favoriteType = type === 'movie' || type === 'channel' ? type : null;
 
   function getLiveBufferedAhead(video = videoRef.current) {
     if (!video?.buffered?.length) return 0;
@@ -79,25 +84,27 @@ export default function PlayerPage() {
 
   const saveProgress = useCallback(() => {
     const video = videoRef.current;
-    if (!video || !item || type === 'channel') return;
+    if (!video || !item) return;
 
-    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const duration = type === 'channel' ? 0 : Number.isFinite(video.duration) ? video.duration : 0;
+    const position = type === 'channel' ? Math.max(1, video.currentTime || 0) : video.currentTime || 0;
     apiFetch('/progress', {
       method: 'POST',
       body: {
         type,
         id: Number(id),
-        position: video.currentTime || 0,
+        position,
         duration
       }
     }).catch(() => {});
   }, [id, item, type]);
 
   useEffect(() => {
-    apiFetch(`/play/${type}/${id}`)
+    const sourceQuery = sourceParam ? `?source=${encodeURIComponent(sourceParam)}` : '';
+    apiFetch(`/play/${type}/${id}${sourceQuery}`)
       .then((data) => setItem(data.item))
       .catch((err) => setError(err.message));
-  }, [id, type]);
+  }, [id, sourceParam, type]);
 
   useEffect(() => {
     if (!item?.streamUrl || !videoRef.current) return undefined;
@@ -259,12 +266,15 @@ export default function PlayerPage() {
       setCurrent(video.currentTime || 0);
       setDuration(Number.isFinite(video.duration) ? video.duration : 0);
       const now = Date.now();
-      if (type !== 'channel' && now - lastSaveRef.current > 5000) {
+      if (now - lastSaveRef.current > 5000) {
         lastSaveRef.current = now;
         saveProgress();
       }
     };
-    const onPlay = () => setIsPlaying(true);
+    const onPlay = () => {
+      setIsPlaying(true);
+      if (type === 'channel') saveProgress();
+    };
     const onPause = () => setIsPlaying(false);
     const onVolume = () => {
       setVolume(video.volume);
@@ -447,6 +457,17 @@ export default function PlayerPage() {
     setMuted(video.muted);
   }
 
+  function changeSource(value) {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('source', value);
+    else next.delete('source');
+    pendingLivePlayRef.current = false;
+    shouldResumeLiveRef.current = false;
+    setLiveBuffering(false);
+    setIsPlaying(false);
+    setSearchParams(next, { replace: true });
+  }
+
   function toggleMute() {
     const video = videoRef.current;
     if (!video) return;
@@ -527,9 +548,17 @@ export default function PlayerPage() {
             <ArrowLeft size={18} />
             Voltar
           </button>
-          <button onClick={fullscreen} className="grid size-10 place-items-center rounded bg-black/64 text-white backdrop-blur hover:bg-black/80" title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}>
-            {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
-          </button>
+          <div className="flex items-center gap-2">
+            <FavoriteButton
+              type={favoriteType}
+              id={item?.id}
+              initial={item?.isFavorite}
+              onChange={(next) => setItem((current) => current ? { ...current, isFavorite: next } : current)}
+            />
+            <button onClick={fullscreen} className="grid size-10 place-items-center rounded bg-black/64 text-white backdrop-blur hover:bg-black/80" title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}>
+              {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
+            </button>
+          </div>
         </div>
 
         <div className="mt-4 max-w-3xl">
@@ -644,6 +673,22 @@ export default function PlayerPage() {
               </div>
             )}
             <div className="ml-auto flex items-center gap-2">
+              {sourceOptions.length > 1 && (
+                <label className="flex h-10 max-w-[190px] items-center gap-2 rounded bg-white/10 px-2 text-white hover:bg-white/16" title="Opcoes de link">
+                  <Server size={17} className="shrink-0" />
+                  <select
+                    value={item?.activeSourceId || ''}
+                    onChange={(event) => changeSource(event.target.value)}
+                    className="min-w-0 bg-transparent text-xs font-bold outline-none"
+                  >
+                    {sourceOptions.map((source, index) => (
+                      <option key={source.id || `source-${index}`} value={source.id || ''} className="bg-ink text-white">
+                        {source.label || `Opcao ${index + 1}`}{source.sourceHost ? ` - ${source.sourceHost}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
               {hasGuide && (
                 <button onClick={() => setGuideOpen((value) => !value)} className={`grid size-10 place-items-center rounded text-white hover:bg-white/16 ${guideOpen ? 'bg-ocean/80 text-ink' : 'bg-white/10'}`} title="Guia">
                   <CalendarDays size={18} />

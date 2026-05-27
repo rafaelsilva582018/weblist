@@ -1,0 +1,11 @@
+node_modules
+dist
+.git
+.env
+*.log
+server/data/*.sqlite
+server/data/*.sqlite-*
+server/uploads/*
+Lista.m3u
+Lista-mesclada-sem-duplicados.m3u
+sample/*.m3u

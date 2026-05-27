@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import AdminPage from './pages/AdminPage.jsx';
 import CatalogPage from './pages/CatalogPage.jsx';
+import FavoritesPage from './pages/FavoritesPage.jsx';
 import Home from './pages/Home.jsx';
 import MovieDetails from './pages/MovieDetails.jsx';
 import PlayerPage from './pages/PlayerPage.jsx';
@@ -18,6 +19,7 @@ export default function App() {
           <Route path="/filmes" element={<CatalogPage type="movie" />} />
           <Route path="/series" element={<CatalogPage type="series" />} />
           <Route path="/canais" element={<CatalogPage type="channel" />} />
+          <Route path="/favoritos" element={<FavoritesPage />} />
           <Route path="/movies/:id" element={<MovieDetails />} />
           <Route path="/series/:id" element={<SeriesDetails />} />
           <Route path="/search" element={<SearchPage />} />

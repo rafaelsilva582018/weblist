@@ -64,7 +64,7 @@ export default function SearchPage() {
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <h1 className="text-4xl font-black text-white">Busca</h1>
-          <p className="mt-2 text-sm text-slate-400">{q}</p>
+          <p className="mt-2 text-sm text-slate-400">{q ? `${q} - titulos e atores` : 'Busque por titulo ou ator'}</p>
           {pagination && <p className="mt-1 text-xs text-slate-500">Pagina {pagination.page} de {pagination.totalPages} - {pagination.total} no total</p>}
         </div>
         <div className="grid gap-3 sm:grid-cols-4">

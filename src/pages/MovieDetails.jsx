@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
+import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
 
 export default function MovieDetails() {
@@ -25,6 +26,7 @@ export default function MovieDetails() {
 
   if (error) return <EmptyState title={error} />;
   if (!movie) return <div className="mx-auto max-w-7xl px-4 py-24 text-slate-300">Carregando...</div>;
+  const sources = movie.sources || [];
 
   return (
     <div className="relative -mt-24 min-h-screen overflow-hidden">
@@ -61,7 +63,31 @@ export default function MovieDetails() {
               <Pencil size={17} />
               Editar
             </button>
+            <FavoriteButton
+              type="movie"
+              id={movie.id}
+              initial={movie.isFavorite}
+              label
+              onChange={(next) => setMovie((current) => current ? { ...current, isFavorite: next } : current)}
+            />
           </div>
+          {sources.length > 1 && (
+            <div className="mt-6 max-w-2xl">
+              <p className="mb-2 text-sm font-black uppercase tracking-wide text-slate-300">Opcoes de link</p>
+              <div className="flex flex-wrap gap-2">
+                {sources.map((source, index) => (
+                  <Link
+                    key={source.id || `source-${index}`}
+                    to={`/watch/movie/${movie.id}${source.id ? `?source=${source.id}` : ''}`}
+                    className="rounded border border-white/10 bg-white/8 px-3 py-2 text-sm font-bold text-white hover:bg-white/14"
+                  >
+                    {source.label || `Opcao ${index + 1}`}
+                    {source.sourceHost ? <span className="ml-2 text-xs font-semibold text-slate-400">{source.sourceHost}</span> : null}
+                  </Link>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
       <ManualTmdbModal item={editing ? movie : null} title="Editar filme" onClose={() => setEditing(false)} onApplied={loadMovie} />

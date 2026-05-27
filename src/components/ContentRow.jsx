@@ -1,6 +1,6 @@
 import PosterCard from './PosterCard.jsx';
 
-export default function ContentRow({ title, items = [] }) {
+export default function ContentRow({ title, items = [], onFavoriteChange }) {
   if (!items.length) return null;
 
   return (
@@ -11,7 +11,7 @@ export default function ContentRow({ title, items = [] }) {
       <div className="no-scrollbar flex gap-3 overflow-x-auto pb-2">
         {items.map((item) => (
           <div key={`${item.type}-${item.id}`} className="w-40 shrink-0 sm:w-44 lg:w-48">
-            <PosterCard item={item} />
+            <PosterCard item={item} onFavoriteChange={onFavoriteChange} />
           </div>
         ))}
       </div>

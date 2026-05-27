@@ -123,6 +123,19 @@ export function initDatabase() {
       FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL
     );
 
+    CREATE TABLE IF NOT EXISTS stream_sources (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      content_type TEXT NOT NULL CHECK (content_type IN ('movie', 'episode', 'channel')),
+      content_id INTEGER NOT NULL,
+      label TEXT,
+      stream_url TEXT NOT NULL,
+      source_host TEXT,
+      is_primary INTEGER NOT NULL DEFAULT 0,
+      imported_at TEXT NOT NULL DEFAULT (datetime('now')),
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(content_type, content_id, stream_url)
+    );
+
     CREATE TABLE IF NOT EXISTS watch_progress (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -133,6 +146,16 @@ export function initDatabase() {
       position REAL NOT NULL DEFAULT 0,
       duration REAL NOT NULL DEFAULT 0,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE TABLE IF NOT EXISTS favorites (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      content_type TEXT NOT NULL CHECK (content_type IN ('movie', 'series', 'channel')),
+      content_id INTEGER NOT NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      UNIQUE(user_id, content_type, content_id),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
@@ -156,7 +179,10 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_series_title ON series(normalized_title);
     CREATE INDEX IF NOT EXISTS idx_episodes_order ON episodes(series_id, season_number, episode_number);
     CREATE INDEX IF NOT EXISTS idx_channels_title ON channels(normalized_title);
+    CREATE INDEX IF NOT EXISTS idx_stream_sources_content ON stream_sources(content_type, content_id);
+    CREATE INDEX IF NOT EXISTS idx_stream_sources_url ON stream_sources(stream_url);
     CREATE INDEX IF NOT EXISTS idx_watch_progress_recent ON watch_progress(updated_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_favorites_user_recent ON favorites(user_id, created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_epg_channel_time ON epg_programs(channel_id, start_at, stop_at);
     CREATE INDEX IF NOT EXISTS idx_epg_time ON epg_programs(start_at, stop_at);
 
@@ -196,9 +222,36 @@ function migrateColumns() {
 
   addColumn('movies', 'release_year', 'INTEGER');
   addColumn('series', 'first_air_year', 'INTEGER');
+  addColumn('seasons', 'poster_url', 'TEXT');
+  addColumn('seasons', 'backdrop_url', 'TEXT');
   addColumn('channels', 'tvg_id', 'TEXT');
   addColumn('channels', 'tvg_name', 'TEXT');
   db.prepare("UPDATE channels SET tvg_name = title WHERE tvg_name IS NULL OR tvg_name = ''").run();
+
+  seedPrimaryStreamSources();
+}
+
+function seedPrimaryStreamSources() {
+  db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (content_type, content_id, label, stream_url, is_primary)
+    SELECT 'movie', id, 'Opcao 1', stream_url, 1
+    FROM movies
+    WHERE stream_url IS NOT NULL AND stream_url != ''
+  `).run();
+
+  db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (content_type, content_id, label, stream_url, is_primary)
+    SELECT 'episode', id, 'Opcao 1', stream_url, 1
+    FROM episodes
+    WHERE stream_url IS NOT NULL AND stream_url != ''
+  `).run();
+
+  db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (content_type, content_id, label, stream_url, is_primary)
+    SELECT 'channel', id, 'Opcao 1', stream_url, 1
+    FROM channels
+    WHERE stream_url IS NOT NULL AND stream_url != ''
+  `).run();
 }
 
 export function ensureDefaultAdmin() {
@@ -214,7 +267,9 @@ export function clearLibrary() {
   try {
     db.exec(`
       DELETE FROM watch_progress;
+      DELETE FROM favorites;
       DELETE FROM epg_programs;
+      DELETE FROM stream_sources;
       DELETE FROM episodes;
       DELETE FROM seasons;
       DELETE FROM series;
@@ -223,7 +278,7 @@ export function clearLibrary() {
       DELETE FROM categories;
       DELETE FROM search_index;
       DELETE FROM sqlite_sequence WHERE name IN (
-        'watch_progress', 'episodes', 'seasons', 'series', 'movies', 'channels', 'categories', 'epg_programs'
+        'watch_progress', 'favorites', 'stream_sources', 'episodes', 'seasons', 'series', 'movies', 'channels', 'categories', 'epg_programs'
       );
     `);
     db.exec('COMMIT');
@@ -240,6 +295,7 @@ export function getStats() {
     seasons: db.prepare('SELECT COUNT(*) AS total FROM seasons').get().total,
     episodes: db.prepare('SELECT COUNT(*) AS total FROM episodes').get().total,
     channels: db.prepare('SELECT COUNT(*) AS total FROM channels').get().total,
+    sources: db.prepare('SELECT COUNT(*) AS total FROM stream_sources').get().total,
     categories: db.prepare('SELECT COUNT(*) AS total FROM categories').get().total
   };
 }

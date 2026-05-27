@@ -25,7 +25,8 @@ function createEmptyJob(filePath) {
       series: 0,
       seasons: 0,
       episodes: 0,
-      channels: 0
+      channels: 0,
+      sources: 0
     },
     epgUrlDetected: '',
     startedAt: null,
@@ -64,6 +65,7 @@ function prepareStatements() {
       SELECT 1 FROM movies WHERE stream_url = ?
       UNION ALL SELECT 1 FROM episodes WHERE stream_url = ?
       UNION ALL SELECT 1 FROM channels WHERE stream_url = ?
+      UNION ALL SELECT 1 FROM stream_sources WHERE stream_url = ?
       LIMIT 1
     `),
     selectCategory: db.prepare('SELECT id FROM categories WHERE name = ? AND type = ?'),
@@ -76,19 +78,49 @@ function prepareStatements() {
     updateSeriesPoster: db.prepare("UPDATE series SET poster_url = ? WHERE id = ? AND (poster_url IS NULL OR poster_url = '')"),
     selectSeason: db.prepare('SELECT id FROM seasons WHERE series_id = ? AND season_number = ?'),
     insertSeason: db.prepare('INSERT INTO seasons (series_id, season_number, title) VALUES (?, ?, ?)'),
+    selectEpisodeIdentity: db.prepare(`
+      SELECT id, poster_url AS posterUrl
+      FROM episodes
+      WHERE series_id = ? AND season_number = ? AND episode_number = ?
+      ORDER BY id ASC
+      LIMIT 1
+    `),
+    updateEpisodePoster: db.prepare("UPDATE episodes SET poster_url = ? WHERE id = ? AND (poster_url IS NULL OR poster_url = '')"),
     insertEpisode: db.prepare(`
       INSERT INTO episodes (
         series_id, season_id, season_number, episode_number, title, display_title,
         stream_url, poster_url, category_id
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `),
+    selectMovieIdentity: db.prepare(`
+      SELECT id, poster_url AS posterUrl
+      FROM movies
+      WHERE normalized_title = ? AND category_id = ?
+      ORDER BY id ASC
+      LIMIT 1
+    `),
+    updateMoviePoster: db.prepare("UPDATE movies SET poster_url = ? WHERE id = ? AND (poster_url IS NULL OR poster_url = '')"),
     insertMovie: db.prepare(`
       INSERT INTO movies (title, normalized_title, stream_url, poster_url, category_id)
       VALUES (?, ?, ?, ?, ?)
     `),
+    selectChannelIdentity: db.prepare(`
+      SELECT id, logo_url AS logoUrl
+      FROM channels
+      WHERE normalized_title = ? AND category_id = ?
+      ORDER BY id ASC
+      LIMIT 1
+    `),
+    updateChannelLogo: db.prepare("UPDATE channels SET logo_url = ? WHERE id = ? AND (logo_url IS NULL OR logo_url = '')"),
     insertChannel: db.prepare(`
       INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
+    `),
+    countSources: db.prepare('SELECT COUNT(*) AS total FROM stream_sources WHERE content_type = ? AND content_id = ?'),
+    insertSource: db.prepare(`
+      INSERT OR IGNORE INTO stream_sources (
+        content_type, content_id, label, stream_url, source_host, is_primary
+      ) VALUES (?, ?, ?, ?, ?, ?)
     `)
   };
 }
@@ -117,6 +149,21 @@ function addError(job, message) {
   }
 }
 
+function sourceHost(streamUrl) {
+  try {
+    return new URL(streamUrl).host.replace(/^www\./i, '');
+  } catch {
+    return '';
+  }
+}
+
+function addStreamSource(statements, type, id, streamUrl, isPrimary = false) {
+  const current = statements.countSources.get(type, id).total;
+  const label = `Opcao ${current + 1}`;
+  const result = statements.insertSource.run(type, id, label, streamUrl, sourceHost(streamUrl), isPrimary ? 1 : 0);
+  return result.changes > 0;
+}
+
 function importItem(meta, url, statements, cache, job) {
   const streamUrl = compactSpaces(url);
   if (!isProbablyPlayableUrl(streamUrl)) {
@@ -124,7 +171,7 @@ function importItem(meta, url, statements, cache, job) {
     return;
   }
 
-  if (statements.findStream.get(streamUrl, streamUrl, streamUrl)) {
+  if (statements.findStream.get(streamUrl, streamUrl, streamUrl, streamUrl)) {
     job.duplicates += 1;
     return;
   }
@@ -175,8 +222,25 @@ function importItem(meta, url, statements, cache, job) {
 
       const episodeTitle = classification.episodeTitle || `Episodio ${classification.episode}`;
       const displayTitle = `${seriesTitle} S${padNumber(classification.season)}E${padNumber(classification.episode)} - ${episodeTitle}`;
+      const existingEpisode = statements.selectEpisodeIdentity.get(
+        seriesId,
+        classification.season,
+        classification.episode
+      );
 
-      statements.insertEpisode.run(
+      if (existingEpisode) {
+        if (posterUrl && !existingEpisode.posterUrl) {
+          statements.updateEpisodePoster.run(posterUrl, existingEpisode.id);
+        }
+        if (addStreamSource(statements, 'episode', existingEpisode.id, streamUrl)) {
+          job.imported.sources += 1;
+        } else {
+          job.duplicates += 1;
+        }
+        return;
+      }
+
+      const result = statements.insertEpisode.run(
         seriesId,
         seasonId,
         classification.season,
@@ -187,27 +251,58 @@ function importItem(meta, url, statements, cache, job) {
         posterUrl || null,
         categoryId
       );
+      addStreamSource(statements, 'episode', Number(result.lastInsertRowid), streamUrl, true);
       job.imported.episodes += 1;
       return;
     }
 
     if (classification.type === 'channel') {
       const categoryId = getCategoryId(statements, cache, 'channel', meta.group);
-      statements.insertChannel.run(
+      const normalizedChannel = normalizeTitle(title);
+      const existingChannel = statements.selectChannelIdentity.get(normalizedChannel, categoryId);
+      if (existingChannel) {
+        if (posterUrl && !existingChannel.logoUrl) {
+          statements.updateChannelLogo.run(posterUrl, existingChannel.id);
+        }
+        if (addStreamSource(statements, 'channel', existingChannel.id, streamUrl)) {
+          job.imported.sources += 1;
+        } else {
+          job.duplicates += 1;
+        }
+        return;
+      }
+
+      const result = statements.insertChannel.run(
         title,
-        normalizeTitle(title),
+        normalizedChannel,
         compactSpaces(meta.tvgId || meta.attrs?.['tvg-id'] || ''),
         compactSpaces(meta.tvgName || meta.name || ''),
         streamUrl,
         posterUrl || null,
         categoryId
       );
+      addStreamSource(statements, 'channel', Number(result.lastInsertRowid), streamUrl, true);
       job.imported.channels += 1;
       return;
     }
 
     const categoryId = getCategoryId(statements, cache, 'movie', meta.group);
-    statements.insertMovie.run(title, normalizeTitle(title), streamUrl, posterUrl || null, categoryId);
+    const normalizedMovie = normalizeTitle(title);
+    const existingMovie = statements.selectMovieIdentity.get(normalizedMovie, categoryId);
+    if (existingMovie) {
+      if (posterUrl && !existingMovie.posterUrl) {
+        statements.updateMoviePoster.run(posterUrl, existingMovie.id);
+      }
+      if (addStreamSource(statements, 'movie', existingMovie.id, streamUrl)) {
+        job.imported.sources += 1;
+      } else {
+        job.duplicates += 1;
+      }
+      return;
+    }
+
+    const result = statements.insertMovie.run(title, normalizedMovie, streamUrl, posterUrl || null, categoryId);
+    addStreamSource(statements, 'movie', Number(result.lastInsertRowid), streamUrl, true);
     job.imported.movies += 1;
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) {

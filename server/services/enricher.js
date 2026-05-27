@@ -39,6 +39,10 @@ export function getEnrichJob(id) {
   return jobs.get(id) || null;
 }
 
+export function getActiveEnrichJob() {
+  return [...jobs.values()].find((job) => ['queued', 'running', 'paused'].includes(job.status) && !job.requestedStop) || null;
+}
+
 export function updateEnrichJob(id, action) {
   const job = getEnrichJob(id);
   if (!job) return null;
@@ -86,7 +90,9 @@ export function queueTmdbEnrichment(options = {}) {
     batchSize: Math.min(Math.max(Number(options.limit || options.batchSize || 1000), 1), 2000),
     runAll: Boolean(options.runAll),
     force: Boolean(options.force),
-    delayMs: Math.min(Math.max(Number(options.delayMs || 120), 40), 1000)
+    delayMs: Math.min(Math.max(Number(options.delayMs || 120), 40), 1000),
+    markAttempts: Boolean(options.markAttempts),
+    attemptCooldownDays: Math.min(Math.max(Number(options.attemptCooldownDays || 0), 0), 365)
   });
   jobs.set(job.id, job);
 
@@ -100,9 +106,22 @@ export function queueTmdbEnrichment(options = {}) {
 }
 
 function getCandidateFilter(job) {
-  return job.options.force
-    ? ''
-    : "WHERE tmdb_id IS NULL OR poster_url IS NULL OR poster_url = '' OR backdrop_url IS NULL OR backdrop_url = '' OR overview IS NULL OR overview = ''";
+  if (job.options.force) return { sql: '', params: [] };
+
+  const clauses = [
+    "(tmdb_id IS NULL OR poster_url IS NULL OR poster_url = '' OR backdrop_url IS NULL OR backdrop_url = '' OR overview IS NULL OR overview = '')"
+  ];
+  const params = [];
+
+  if (job.options.attemptCooldownDays > 0) {
+    clauses.push("(metadata_updated_at IS NULL OR metadata_updated_at < datetime('now', ?))");
+    params.push(`-${job.options.attemptCooldownDays} days`);
+  }
+
+  return {
+    sql: `WHERE ${clauses.join(' AND ')}`,
+    params
+  };
 }
 
 function getCandidateCount(job) {
@@ -113,32 +132,30 @@ function getCandidateCount(job) {
   }
 
   const filter = getCandidateFilter(job);
-  const movies = db.prepare(`SELECT COUNT(*) AS total FROM movies ${filter}`).get().total;
-  const series = db.prepare(`SELECT COUNT(*) AS total FROM series ${filter}`).get().total;
+  const movies = db.prepare(`SELECT COUNT(*) AS total FROM movies ${filter.sql}`).get(...filter.params).total;
+  const series = db.prepare(`SELECT COUNT(*) AS total FROM series ${filter.sql}`).get(...filter.params).total;
   return movies + series;
 }
 
 function getCandidates(job, size = job.options.batchSize) {
   const halfLimit = Math.max(1, Math.floor(size / 2));
-  const filter = job.options.force
-    ? ''
-    : "WHERE tmdb_id IS NULL OR poster_url IS NULL OR poster_url = '' OR backdrop_url IS NULL OR backdrop_url = '' OR overview IS NULL OR overview = ''";
+  const filter = getCandidateFilter(job);
 
   const movies = db.prepare(`
     SELECT id, title
     FROM movies
-    ${filter}
+    ${filter.sql}
     ORDER BY imported_at DESC, id DESC
     LIMIT ?
-  `).all(halfLimit).map((item) => ({ ...item, type: 'movie' }));
+  `).all(...filter.params, halfLimit).map((item) => ({ ...item, type: 'movie' }));
 
   const series = db.prepare(`
     SELECT id, title
     FROM series
-    ${filter}
+    ${filter.sql}
     ORDER BY imported_at DESC, id DESC
     LIMIT ?
-  `).all(size - movies.length).map((item) => ({ ...item, type: 'series' }));
+  `).all(...filter.params, size - movies.length).map((item) => ({ ...item, type: 'series' }));
 
   return [...movies, ...series];
 }
@@ -146,6 +163,11 @@ function getCandidates(job, size = job.options.batchSize) {
 function addError(job, message) {
   job.errors += 1;
   if (job.errorSamples.length < 8) job.errorSamples.push(message);
+}
+
+function markAttempt(candidate) {
+  const table = candidate.type === 'movie' ? 'movies' : 'series';
+  db.prepare(`UPDATE ${table} SET metadata_updated_at = datetime('now') WHERE id = ?`).run(candidate.id);
 }
 
 async function runTmdbJob(job) {
@@ -197,6 +219,7 @@ async function runTmdbJob(job) {
 
           if (!match) {
             job.skipped += 1;
+            if (job.options.markAttempts) markAttempt(candidate);
           } else if (candidate.type === 'movie') {
             updateMovieMetadata(candidate.id, match, job.options.force);
             job.matched += 1;

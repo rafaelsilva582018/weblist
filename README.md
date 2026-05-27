@@ -58,6 +58,75 @@ TMDB_LANGUAGE=pt-BR
 
 Por padrao, a atualizacao roda em lotes para evitar travar a biblioteca grande. Aumente o limite no painel se quiser processar mais itens por vez.
 
+## Capas automaticas no servidor
+
+Em producao, o backend pode iniciar a fila do TMDB sozinho. Configure estas variaveis no `.env` ou no Docker:
+
+```bash
+AUTO_TMDB_ENABLED=true
+AUTO_TMDB_RUN_ON_START=true
+AUTO_TMDB_INTERVAL_MINUTES=360
+AUTO_TMDB_BATCH_SIZE=1000
+AUTO_TMDB_RUN_ALL=true
+AUTO_TMDB_FORCE=false
+AUTO_TMDB_DELAY_MS=160
+AUTO_TMDB_RETRY_DAYS=14
+```
+
+Com essa configuracao, o sistema:
+
+- espera alguns segundos depois de iniciar;
+- processa lotes de ate 1000 filmes/series sem capa, backdrop, sinopse ou ID TMDB ate acabar;
+- repete automaticamente a cada 360 minutos;
+- quando um titulo fica sem match, tenta novamente so depois de 14 dias;
+- nao inicia outro lote se uma fila TMDB manual ou automatica ja estiver rodando.
+
+Use `AUTO_TMDB_RUN_ALL=false` se quiser limitar cada execucao automatica a apenas um lote. O painel admin mostra a fila ativa e permite pausar, continuar ou parar.
+
+## Docker no Ubuntu Server
+
+O app ja inclui `Dockerfile` e `docker-compose.yml`. No servidor:
+
+```bash
+cd /opt/sites/weblist
+cp .env.example .env
+nano .env
+docker compose up -d --build
+```
+
+No `.env`, preencha pelo menos:
+
+```bash
+JWT_SECRET=um_segredo_grande
+TMDB_ACCESS_TOKEN=seu_token_tmdb
+```
+
+Depois acesse:
+
+```text
+http://IP_DO_SERVIDOR:3333
+```
+
+Os dados ficam persistidos fora do container:
+
+```text
+./server/data
+./server/uploads
+```
+
+Para acompanhar a fila automatica:
+
+```bash
+docker compose logs -f weblist
+```
+
+Para atualizar o projeto no servidor:
+
+```bash
+docker compose down
+docker compose up -d --build
+```
+
 ## Problemas e correcao manual
 
 A pagina `Problemas` mostra:
@@ -129,6 +198,7 @@ Tabelas criadas:
 - `episodes`
 - `channels`
 - `watch_progress`
+- `favorites`
 - `categories`
 
 ## Observacoes
