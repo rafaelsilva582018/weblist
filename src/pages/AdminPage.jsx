@@ -21,8 +21,10 @@ export default function AdminPage() {
   const [enrichJob, setEnrichJob] = useState(null);
   const [stats, setStats] = useState(null);
   const [tmdbStatus, setTmdbStatus] = useState(null);
+  const [omdbStatus, setOmdbStatus] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
   const [tmdbAccessToken, setTmdbAccessToken] = useState('');
+  const [omdbApiKey, setOmdbApiKey] = useState('');
   const [tmdbLanguage, setTmdbLanguage] = useState('pt-BR');
   const [tmdbLimit, setTmdbLimit] = useState(1000);
   const [tmdbMode, setTmdbMode] = useState('missing');
@@ -52,6 +54,7 @@ export default function AdminPage() {
     apiFetch('/admin/settings')
       .then((data) => {
         setTmdbStatus(data.tmdb);
+        setOmdbStatus(data.omdb);
         setEpgStatus(data.epg);
         setEpgUrl(data.epg?.url || '');
         setTmdbLanguage(data.raw?.tmdbLanguage || data.tmdb?.language || 'pt-BR');
@@ -203,12 +206,15 @@ export default function AdminPage() {
         body: {
           tmdbApiKey,
           tmdbAccessToken,
+          omdbApiKey,
           tmdbLanguage
         }
       });
       setTmdbStatus(data.tmdb);
+      setOmdbStatus(data.omdb);
       setTmdbApiKey('');
       setTmdbAccessToken('');
+      setOmdbApiKey('');
       setTmdbMessage('TMDB configurado');
     } catch (err) {
       setTmdbMessage(err.message);
@@ -545,12 +551,14 @@ export default function AdminPage() {
             <div>
               <h2 className="text-xl font-black text-white">TMDB</h2>
               <p className="text-sm text-slate-400">
-                {tmdbStatus?.configured ? `Conectado em ${tmdbStatus.language}` : 'Cole uma chave gratuita do The Movie Database.'}
+                {tmdbStatus?.configured
+                  ? `Conectado em ${tmdbStatus.language}${omdbStatus?.configured ? ' + OMDb fallback' : ''}`
+                  : 'Cole uma chave gratuita do The Movie Database. OMDb pode ser usado como fallback.'}
               </p>
             </div>
           </div>
 
-          <div className="grid gap-3 sm:grid-cols-2">
+          <div className="grid gap-3 sm:grid-cols-3">
             <label className="block">
               <span className="text-sm font-bold text-slate-200">API key</span>
               <input
@@ -567,6 +575,15 @@ export default function AdminPage() {
                 onChange={(event) => setTmdbAccessToken(event.target.value)}
                 className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
                 placeholder={tmdbStatus?.accessTokenMasked || 'Opcional'}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">OMDb API key</span>
+              <input
+                value={omdbApiKey}
+                onChange={(event) => setOmdbApiKey(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder={omdbStatus?.apiKeyMasked || 'Fallback opcional'}
               />
             </label>
           </div>

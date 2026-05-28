@@ -13,6 +13,12 @@ function getTmdbConfig() {
   };
 }
 
+function getOmdbConfig() {
+  return {
+    apiKey: getSetting('omdb_api_key', process.env.OMDB_API_KEY || '')
+  };
+}
+
 export function getTmdbPublicConfig() {
   const config = getTmdbConfig();
   return {
@@ -20,6 +26,25 @@ export function getTmdbPublicConfig() {
     language: config.language,
     apiKeyMasked: maskSecret(config.apiKey),
     accessTokenMasked: maskSecret(config.accessToken)
+  };
+}
+
+export function getOmdbPublicConfig() {
+  const config = getOmdbConfig();
+  return {
+    configured: Boolean(config.apiKey),
+    apiKeyMasked: maskSecret(config.apiKey)
+  };
+}
+
+export function getMetadataPublicConfig() {
+  const tmdb = getTmdbPublicConfig();
+  const omdb = getOmdbPublicConfig();
+  return {
+    configured: tmdb.configured || omdb.configured,
+    tmdb,
+    omdb,
+    tvmaze: { configured: true }
   };
 }
 
@@ -64,10 +89,82 @@ async function tmdbFetch(endpoint, params = {}) {
   return response.json();
 }
 
+async function omdbFetch(params = {}) {
+  const config = getOmdbConfig();
+  if (!config.apiKey) return null;
+
+  const url = new URL('https://www.omdbapi.com/');
+  url.searchParams.set('apikey', config.apiKey);
+  url.searchParams.set('plot', 'full');
+  url.searchParams.set('r', 'json');
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' }
+  });
+  if (!response.ok) throw new Error(`OMDb respondeu ${response.status}`);
+
+  const data = await response.json();
+  return data?.Response === 'True' ? data : null;
+}
+
+async function tvmazeFetch(endpoint, params = {}) {
+  const url = new URL(`https://api.tvmaze.com${endpoint}`);
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== undefined && value !== null && value !== '') {
+      url.searchParams.set(key, String(value));
+    }
+  }
+
+  const response = await fetch(url, {
+    headers: { Accept: 'application/json' }
+  });
+  if (response.status === 404) return null;
+  if (!response.ok) throw new Error(`TVMaze respondeu ${response.status}`);
+  return response.json();
+}
+
 function getYear(value) {
   if (!value) return null;
   const year = Number(String(value).slice(0, 4));
   return Number.isFinite(year) ? year : null;
+}
+
+function validText(value) {
+  const text = compactSpaces(value || '');
+  if (!text || /^n\/a$/i.test(text)) return null;
+  return text;
+}
+
+function stripHtml(value = '') {
+  return compactSpaces(
+    String(value)
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/p>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/&amp;/gi, '&')
+      .replace(/&#39;/g, "'")
+      .replace(/&quot;/gi, '"')
+  );
+}
+
+function mergeMetadata(primary, fallback) {
+  if (!primary) return fallback;
+  if (!fallback) return primary;
+  return {
+    ...primary,
+    overview: primary.overview || fallback.overview || null,
+    posterUrl: primary.posterUrl || fallback.posterUrl || null,
+    backdropUrl: primary.backdropUrl || fallback.backdropUrl || null,
+    originalTitle: primary.originalTitle || fallback.originalTitle || null,
+    releaseYear: primary.releaseYear || fallback.releaseYear || null,
+    firstAirYear: primary.firstAirYear || fallback.firstAirYear || null
+  };
 }
 
 function scoreResult(result, title, year, kind) {
@@ -146,6 +243,90 @@ export async function searchTmdbSeries(rawTitle) {
     firstAirYear: getYear(item.first_air_date) || year,
     score: match.score
   };
+}
+
+async function searchOmdbMetadata(rawTitle, type) {
+  const { title, year } = extractMetadataTitle(rawTitle);
+  const data = await omdbFetch({
+    t: title,
+    y: year,
+    type: type === 'series' ? 'series' : 'movie'
+  });
+  if (!data) return null;
+
+  return {
+    tmdbId: null,
+    title: validText(data.Title) || title,
+    originalTitle: validText(data.Title),
+    overview: validText(data.Plot),
+    posterUrl: validText(data.Poster),
+    backdropUrl: null,
+    releaseYear: type === 'movie' ? getYear(data.Released || data.Year) || year : null,
+    firstAirYear: type === 'series' ? getYear(data.Year) || year : null,
+    score: 45,
+    metadataSource: 'omdb'
+  };
+}
+
+async function searchTvMazeSeries(rawTitle) {
+  const { title, year } = extractMetadataTitle(rawTitle);
+  const data = await tvmazeFetch('/singlesearch/shows', { q: title });
+  if (!data?.id) return null;
+
+  const resultYear = getYear(data.premiered);
+  const expected = normalizeTitle(title);
+  const found = normalizeTitle(data.name || '');
+  if (expected && found && expected !== found && !found.includes(expected) && !expected.includes(found)) return null;
+  if (year && resultYear && Math.abs(year - resultYear) > 1) return null;
+
+  return {
+    tmdbId: null,
+    title: data.name || title,
+    originalTitle: data.name || null,
+    overview: validText(stripHtml(data.summary || '')),
+    posterUrl: data.image?.original || data.image?.medium || null,
+    backdropUrl: null,
+    firstAirYear: resultYear || year,
+    score: 38,
+    metadataSource: 'tvmaze'
+  };
+}
+
+export async function searchMovieMetadata(rawTitle) {
+  let primary = null;
+  let primaryError = null;
+  try {
+    primary = await searchTmdbMovie(rawTitle);
+  } catch (error) {
+    primaryError = error;
+  }
+
+  const needsFallback = !primary || !primary.overview || !primary.posterUrl;
+  const fallback = needsFallback ? await searchOmdbMetadata(rawTitle, 'movie').catch(() => null) : null;
+  const merged = mergeMetadata(primary, fallback);
+  if (merged) return merged;
+  if (primaryError && !fallback) throw primaryError;
+  return null;
+}
+
+export async function searchSeriesMetadata(rawTitle) {
+  let primary = null;
+  let primaryError = null;
+  try {
+    primary = await searchTmdbSeries(rawTitle);
+  } catch (error) {
+    primaryError = error;
+  }
+
+  const needsFallback = !primary || !primary.overview || !primary.posterUrl;
+  if (!needsFallback) return primary;
+
+  const omdb = await searchOmdbMetadata(rawTitle, 'series').catch(() => null);
+  const tvmaze = await searchTvMazeSeries(rawTitle).catch(() => null);
+  const merged = mergeMetadata(mergeMetadata(primary, omdb), tvmaze);
+  if (merged) return merged;
+  if (primaryError && !omdb && !tvmaze) throw primaryError;
+  return null;
 }
 
 function mapMovieResult(item, score = null) {

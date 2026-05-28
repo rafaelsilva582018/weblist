@@ -11,7 +11,7 @@ import { getActiveEnrichJob, getEnrichJob, queueTmdbEnrichment, updateEnrichJob 
 import { attachCurrentPrograms, getChannelGuide, getCurrentProgram, getEpgJob, getEpgStatus, getNextProgram, queueEpgImport } from './services/epg.js';
 import { getImportJob, queueImport } from './services/importer.js';
 import { getIptvOrgEpgJob, queueIptvOrgEpgImport } from './services/iptvOrgEpg.js';
-import { getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, searchTmdbPersonCredits, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
+import { getOmdbPublicConfig, getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, searchTmdbPersonCredits, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
 import { normalizeTitle } from './utils/normalize.js';
 import { startAutoTmdbEnrichment } from './services/autoTmdb.js';
 
@@ -818,6 +818,7 @@ app.get('/api/auth/me', requireAdmin, (req, res) => {
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
   res.json({
     tmdb: getTmdbPublicConfig(),
+    omdb: getOmdbPublicConfig(),
     epg: getEpgStatus(),
     raw: {
       tmdbLanguage: getSetting('tmdb_language', process.env.TMDB_LANGUAGE || 'pt-BR')
@@ -828,6 +829,7 @@ app.get('/api/admin/settings', requireAdmin, (req, res) => {
 app.put('/api/admin/settings', requireAdmin, (req, res) => {
   const apiKey = String(req.body.tmdbApiKey || '').trim();
   const accessToken = String(req.body.tmdbAccessToken || '').trim();
+  const omdbApiKey = String(req.body.omdbApiKey || '').trim();
 
   if (apiKey) {
     setSetting('tmdb_api_key', apiKey);
@@ -835,11 +837,14 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   if (accessToken) {
     setSetting('tmdb_access_token', accessToken);
   }
+  if (omdbApiKey) {
+    setSetting('omdb_api_key', omdbApiKey);
+  }
   if (Object.hasOwn(req.body, 'tmdbLanguage')) {
     setSetting('tmdb_language', String(req.body.tmdbLanguage || 'pt-BR').trim() || 'pt-BR');
   }
 
-  res.json({ tmdb: getTmdbPublicConfig() });
+  res.json({ tmdb: getTmdbPublicConfig(), omdb: getOmdbPublicConfig() });
 });
 
 app.get('/api/epg/status', requireAdmin, (req, res) => {

@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '../db.js';
 import {
-  getTmdbPublicConfig,
-  searchTmdbMovie,
-  searchTmdbSeries,
+  getMetadataPublicConfig,
+  searchMovieMetadata,
+  searchSeriesMetadata,
   updateMovieMetadata,
   updateSeriesMetadata
 } from './tmdb.js';
@@ -80,9 +80,9 @@ export function updateEnrichJob(id, action) {
 }
 
 export function queueTmdbEnrichment(options = {}) {
-  const config = getTmdbPublicConfig();
+  const config = getMetadataPublicConfig();
   if (!config.configured) {
-    throw new Error('Configure uma chave TMDB antes de atualizar capas');
+    throw new Error('Configure uma chave TMDB ou OMDb antes de atualizar capas');
   }
 
   const job = createJob({
@@ -214,8 +214,8 @@ async function runTmdbJob(job) {
 
         try {
           const match = candidate.type === 'movie'
-            ? await searchTmdbMovie(candidate.title)
-            : await searchTmdbSeries(candidate.title);
+            ? await searchMovieMetadata(candidate.title)
+            : await searchSeriesMetadata(candidate.title);
 
           if (!match) {
             job.skipped += 1;

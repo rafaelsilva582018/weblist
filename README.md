@@ -54,9 +54,19 @@ Tambem e possivel configurar por variaveis de ambiente:
 TMDB_API_KEY=sua_chave
 TMDB_ACCESS_TOKEN=seu_token_opcional
 TMDB_LANGUAGE=pt-BR
+OMDB_API_KEY=sua_chave_omdb_opcional
 ```
 
 Por padrao, a atualizacao roda em lotes para evitar travar a biblioteca grande. Aumente o limite no painel se quiser processar mais itens por vez.
+
+### Fontes alternativas de sinopse
+
+A fila usa o TMDB como fonte principal. Se o TMDB nao encontrar sinopse/capa suficiente:
+
+- filmes e series tentam OMDb, se `OMDB_API_KEY` estiver configurada;
+- series tambem tentam TVMaze como fallback sem chave.
+
+O OMDb pode retornar plot completo com `plot=full`, e o TVMaze fornece busca de series por `/singlesearch/shows`.
 
 ## Capas automaticas no servidor
 
