@@ -78,7 +78,7 @@ export default function SeriesDetails() {
       </section>
 
       <section className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <div className="no-scrollbar mb-6 flex gap-2 overflow-x-auto">
+        <div className="mb-6 flex flex-wrap gap-2">
           {series.seasons.map((season) => (
             <button
               key={season.id}
