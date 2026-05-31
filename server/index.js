@@ -618,10 +618,10 @@ function listChannels({ q = '', category = '', sort = 'imported', limit = 40, pa
 
 function getContinueWatching(userId, mode = 'all') {
   const typeFilter = {
-    media: "AND content_type IN ('movie', 'episode') AND position > 5",
+    media: "AND content_type IN ('movie', 'episode') AND position > 5 AND completed_at IS NULL",
     channels: "AND content_type = 'channel'",
-    all: "AND (content_type = 'channel' OR position > 5)"
-  }[mode] || "AND (content_type = 'channel' OR position > 5)";
+    all: "AND (content_type = 'channel' OR (position > 5 AND completed_at IS NULL))"
+  }[mode] || "AND (content_type = 'channel' OR (position > 5 AND completed_at IS NULL))";
 
   const progressRows = db.prepare(`
     SELECT *
@@ -1184,15 +1184,19 @@ app.get('/api/series/:id', (req, res) => {
       e.id, e.season_id AS seasonId, e.season_number AS seasonNumber, e.episode_number AS episodeNumber,
       e.title, e.display_title AS displayTitle,
       COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
-      COUNT(ss.id) AS sourceCount
+      COUNT(ss.id) AS sourceCount,
+      MAX(wp.position) AS progressPosition,
+      MAX(wp.duration) AS progressDuration,
+      MAX(wp.completed_at) AS completedAt
     FROM episodes e
     JOIN seasons se ON se.id = e.season_id
     JOIN series s ON s.id = e.series_id
     LEFT JOIN stream_sources ss ON ss.content_type = 'episode' AND ss.content_id = e.id
+    LEFT JOIN watch_progress wp ON wp.user_id = ? AND wp.content_type = 'episode' AND wp.content_id = e.id
     WHERE e.series_id = ?
     GROUP BY e.id
     ORDER BY e.season_number ASC, e.episode_number ASC, e.title COLLATE NOCASE ASC
-  `).all(series.id);
+  `).all(userId, series.id);
 
   const bySeason = new Map(seasons.map((season) => [season.id, { ...season, episodes: [] }]));
   for (const episode of episodes) {
@@ -1515,6 +1519,15 @@ app.get('/api/stream/channel/:id', asyncRoute(async (req, res) => {
   }
 }));
 
+app.delete('/api/progress/completed', requireAdmin, (req, res) => {
+  const userId = getLocalUserId(req);
+  const result = db.prepare(`
+    DELETE FROM watch_progress
+    WHERE user_id = ? AND completed_at IS NOT NULL
+  `).run(userId);
+  res.json({ ok: true, removed: result.changes || 0, stats: getStats() });
+});
+
 app.get('/api/progress', (req, res) => {
   const userId = getLocalUserId(req);
   const type = String(req.query.type || '');
@@ -1530,6 +1543,10 @@ app.post('/api/progress', (req, res) => {
   const id = Number(req.body.id);
   const position = Math.max(0, Number(req.body.position || 0));
   const duration = Math.max(0, Number(req.body.duration || 0));
+  const requestedCompleted = req.body.completed === true;
+  const nearEndCompleted = type !== 'channel' && duration > 0 && position >= Math.max(duration - 8, duration * 0.98);
+  const completed = type !== 'channel' && (requestedCompleted || nearEndCompleted);
+  const clearCompleted = type !== 'channel' && duration > 0 && position < duration * 0.85;
 
   if (!['movie', 'episode', 'channel'].includes(type) || !id) {
     return res.status(400).json({ error: 'Progresso invalido' });
@@ -1538,15 +1555,31 @@ app.post('/api/progress', (req, res) => {
   const progressKey = `${userId}:${type}:${id}`;
   db.prepare(`
     INSERT INTO watch_progress (
-      user_id, progress_key, content_type, content_id, episode_id, position, duration, updated_at
-    ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
+      user_id, progress_key, content_type, content_id, episode_id, position, duration, completed_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, CASE WHEN ? THEN datetime('now') ELSE NULL END, datetime('now'))
     ON CONFLICT(progress_key) DO UPDATE SET
       position = excluded.position,
       duration = excluded.duration,
+      completed_at = CASE
+        WHEN ? THEN datetime('now')
+        WHEN ? THEN NULL
+        ELSE watch_progress.completed_at
+      END,
       updated_at = datetime('now')
-  `).run(userId, progressKey, type, id, type === 'episode' ? id : null, position, duration);
+  `).run(
+    userId,
+    progressKey,
+    type,
+    id,
+    type === 'episode' ? id : null,
+    position,
+    duration,
+    completed ? 1 : 0,
+    completed ? 1 : 0,
+    clearCompleted ? 1 : 0
+  );
 
-  res.json({ ok: true });
+  res.json({ ok: true, completed });
 });
 
 app.use((error, req, res, next) => {

@@ -35,6 +35,7 @@ export default function AdminPage() {
   const [epgJob, setEpgJob] = useState(null);
   const [epgJobSource, setEpgJobSource] = useState('xmltv');
   const [error, setError] = useState('');
+  const [libraryMessage, setLibraryMessage] = useState('');
   const [tmdbMessage, setTmdbMessage] = useState('');
   const [epgMessage, setEpgMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -168,6 +169,7 @@ export default function AdminPage() {
 
     setBusy(true);
     setError('');
+    setLibraryMessage('');
     try {
       const form = new FormData();
       if (file) form.append('file', file);
@@ -185,10 +187,28 @@ export default function AdminPage() {
     if (!window.confirm('Limpar toda a biblioteca importada?')) return;
     setBusy(true);
     setError('');
+    setLibraryMessage('');
     try {
       const data = await apiFetch('/library', { method: 'DELETE' });
       setStats(data.stats);
       setJob(null);
+      setLibraryMessage('Biblioteca limpa');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function clearWatched() {
+    if (!window.confirm('Limpar somente as marcacoes de assistido? A biblioteca continua igual.')) return;
+    setBusy(true);
+    setError('');
+    setLibraryMessage('');
+    try {
+      const data = await apiFetch('/progress/completed', { method: 'DELETE' });
+      setStats(data.stats);
+      setLibraryMessage(`${data.removed || 0} marcacoes de assistido removidas`);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -333,12 +353,13 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-3 lg:grid-cols-7">
+      <div className="mb-8 grid gap-3 sm:grid-cols-4 lg:grid-cols-8">
         <StatBox label="Filmes" value={stats?.movies ?? 0} />
         <StatBox label="Series" value={stats?.series ?? 0} />
         <StatBox label="Temporadas" value={stats?.seasons ?? 0} />
         <StatBox label="Episodios" value={stats?.episodes ?? 0} />
         <StatBox label="Canais" value={stats?.channels ?? 0} />
+        <StatBox label="Assistidos" value={stats?.watched ?? 0} />
         <StatBox label="Fontes" value={stats?.sources ?? 0} />
         <StatBox label="Categorias" value={stats?.categories ?? 0} />
       </div>
@@ -373,6 +394,7 @@ export default function AdminPage() {
           />
 
           {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
+          {libraryMessage && <p className="mt-4 text-sm text-slate-300">{libraryMessage}</p>}
 
           <div className="mt-5 flex flex-wrap gap-3">
             <button disabled={busy || job?.status === 'running'} className="inline-flex items-center gap-2 rounded bg-brand px-5 py-3 text-sm font-black text-white hover:bg-red-600 disabled:opacity-60">
@@ -382,6 +404,10 @@ export default function AdminPage() {
             <button type="button" onClick={clearAll} disabled={busy} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
               <Trash2 size={17} />
               Limpar biblioteca
+            </button>
+            <button type="button" onClick={clearWatched} disabled={busy || (stats?.watched ?? 0) === 0} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
+              <Trash2 size={17} />
+              Limpar assistidos
             </button>
           </div>
         </form>

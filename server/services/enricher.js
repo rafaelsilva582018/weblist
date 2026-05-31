@@ -85,14 +85,18 @@ export function queueTmdbEnrichment(options = {}) {
     throw new Error('Configure uma chave TMDB ou OMDb antes de atualizar capas');
   }
 
+  const force = Boolean(options.force);
+  const hasAttemptOption = Object.hasOwn(options, 'markAttempts');
+  const retryDays = Object.hasOwn(options, 'attemptCooldownDays') ? Number(options.attemptCooldownDays) : force ? 0 : 14;
+
   const job = createJob({
     limit: Math.min(Math.max(Number(options.limit || 1000), 1), 2000),
     batchSize: Math.min(Math.max(Number(options.limit || options.batchSize || 1000), 1), 2000),
     runAll: Boolean(options.runAll),
-    force: Boolean(options.force),
+    force,
     delayMs: Math.min(Math.max(Number(options.delayMs || 120), 40), 1000),
-    markAttempts: Boolean(options.markAttempts),
-    attemptCooldownDays: Math.min(Math.max(Number(options.attemptCooldownDays || 0), 0), 365)
+    markAttempts: hasAttemptOption ? Boolean(options.markAttempts) : !force,
+    attemptCooldownDays: Math.min(Math.max(Number.isFinite(retryDays) ? retryDays : 0, 0), 365)
   });
   jobs.set(job.id, job);
 
@@ -138,6 +142,23 @@ function getCandidateCount(job) {
 }
 
 function getCandidates(job, size = job.options.batchSize) {
+  if (job.options.force) {
+    return db.prepare(`
+      SELECT id, title, type
+      FROM (
+        SELECT id, title, imported_at AS importedAt, 'movie' AS type
+        FROM movies
+
+        UNION ALL
+
+        SELECT id, title, imported_at AS importedAt, 'series' AS type
+        FROM series
+      )
+      ORDER BY importedAt DESC, type ASC, id DESC
+      LIMIT ? OFFSET ?
+    `).all(size, job.processed);
+  }
+
   const halfLimit = Math.max(1, Math.floor(size / 2));
   const filter = getCandidateFilter(job);
 
@@ -237,8 +258,8 @@ async function runTmdbJob(job) {
         }
       }
 
-      if (!job.options.runAll || job.options.force) break;
-      job.total = job.processed + getCandidateCount(job);
+      if (!job.options.runAll) break;
+      if (!job.options.force) job.total = job.processed + getCandidateCount(job);
     } while (job.options.runAll);
 
     job.status = 'done';

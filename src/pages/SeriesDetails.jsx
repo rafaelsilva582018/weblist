@@ -1,10 +1,15 @@
-import { ArrowLeft, Pencil, Play } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Pencil, Play } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
+
+function episodeProgress(episode) {
+  if (!episode?.progressDuration || episode.progressDuration <= 0) return 0;
+  return Math.min(100, Math.max(0, (episode.progressPosition / episode.progressDuration) * 100));
+}
 
 export default function SeriesDetails() {
   const { id } = useParams();
@@ -88,31 +93,48 @@ export default function SeriesDetails() {
         </div>
 
         <div className="divide-y divide-white/10 overflow-hidden rounded border border-white/10 bg-white/5">
-          {currentSeason?.episodes?.map((episode) => (
-            <Link key={episode.id} to={`/watch/episode/${episode.id}`} className="group flex items-center gap-4 p-4 transition hover:bg-white/8">
-              <div className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded bg-white/8 text-white sm:w-28">
-                {episode.posterUrl ? (
-                  <img src={episode.posterUrl} alt={episode.title} className="size-full object-cover" loading="lazy" />
-                ) : (
-                  <Play size={18} fill="currentColor" />
-                )}
-                <span className="absolute inset-0 grid place-items-center bg-black/18 opacity-0 transition group-hover:opacity-100">
-                  <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
-                    <Play size={16} fill="currentColor" />
+          {currentSeason?.episodes?.map((episode) => {
+            const watched = Boolean(episode.completedAt);
+            const percent = episodeProgress(episode);
+            return (
+              <Link key={episode.id} to={`/watch/episode/${episode.id}`} className="group flex items-center gap-4 p-4 transition hover:bg-white/8">
+                <div className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded bg-white/8 text-white sm:w-28">
+                  {episode.posterUrl ? (
+                    <img src={episode.posterUrl} alt={episode.title} className="size-full object-cover" loading="lazy" />
+                  ) : (
+                    <Play size={18} fill="currentColor" />
+                  )}
+                  <span className="absolute inset-0 grid place-items-center bg-black/18 opacity-0 transition group-hover:opacity-100">
+                    <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
+                      <Play size={16} fill="currentColor" />
+                    </span>
                   </span>
-                </span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="font-bold text-white">
-                  {episode.episodeNumber}. {episode.title}
-                </p>
-                <p className="mt-1 truncate text-sm text-slate-400">
-                  {episode.displayTitle}
-                  {episode.sourceCount > 1 ? ` - ${episode.sourceCount} opcoes` : ''}
-                </p>
-              </div>
-            </Link>
-          ))}
+                  {watched && (
+                    <span className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-ocean text-ink shadow">
+                      <CheckCircle2 size={15} />
+                    </span>
+                  )}
+                  {!watched && percent > 0 && (
+                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
+                      <div className="h-full bg-brand" style={{ width: `${percent}%` }} />
+                    </div>
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <p className="min-w-0 truncate font-bold text-white">
+                      {episode.episodeNumber}. {episode.title}
+                    </p>
+                    {watched && <span className="shrink-0 rounded bg-ocean/18 px-2 py-1 text-[11px] font-black uppercase text-ocean">Assistido</span>}
+                  </div>
+                  <p className="mt-1 truncate text-sm text-slate-400">
+                    {episode.displayTitle}
+                    {episode.sourceCount > 1 ? ` - ${episode.sourceCount} opcoes` : ''}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
         </div>
       </section>
       <ManualTmdbModal item={editing ? series : null} title="Editar serie" onClose={() => setEditing(false)} onApplied={loadSeries} />

@@ -82,19 +82,23 @@ export default function PlayerPage() {
     }
   }
 
-  const saveProgress = useCallback(() => {
+  const saveProgress = useCallback((options = {}) => {
     const video = videoRef.current;
     if (!video || !item) return;
 
     const duration = type === 'channel' ? 0 : Number.isFinite(video.duration) ? video.duration : 0;
-    const position = type === 'channel' ? Math.max(1, video.currentTime || 0) : video.currentTime || 0;
+    const completed = options?.completed === true;
+    const position = completed && duration
+      ? duration
+      : type === 'channel' ? Math.max(1, video.currentTime || 0) : video.currentTime || 0;
     apiFetch('/progress', {
       method: 'POST',
       body: {
         type,
         id: Number(id),
         position,
-        duration
+        duration,
+        completed
       }
     }).catch(() => {});
   }, [id, item, type]);
@@ -293,7 +297,7 @@ export default function PlayerPage() {
       if (isMpegTs(item)) {
         restartLiveStream();
       } else {
-        saveProgress();
+        saveProgress({ completed: true });
       }
     };
 

@@ -164,6 +164,26 @@ function addStreamSource(statements, type, id, streamUrl, isPrimary = false) {
   return result.changes > 0;
 }
 
+function detectAudioVariant(meta = {}) {
+  const attrs = meta.attrs ? Object.values(meta.attrs).join(' ') : '';
+  const haystack = normalizeTitle(`${meta.group || ''} ${meta.name || ''} ${meta.rawTitle || ''} ${meta.tvgName || ''} ${attrs}`);
+  if (/\b(legendado|legendada|legendados|legendadas|leg|sub|subtitulado|subtitulada)\b/.test(haystack)) {
+    return 'Legendado';
+  }
+  if (/\b(dublado|dublada|dublados|dubladas|dub)\b/.test(haystack)) {
+    return 'Dublado';
+  }
+  return '';
+}
+
+function appendAudioVariant(title, variant) {
+  if (!variant) return title;
+  const normalizedTitle = normalizeTitle(title);
+  const normalizedVariant = normalizeTitle(variant);
+  if (new RegExp(`\\b${normalizedVariant}\\b`).test(normalizedTitle)) return title;
+  return `${title} (${variant})`;
+}
+
 function importItem(meta, url, statements, cache, job) {
   const streamUrl = compactSpaces(url);
   if (!isProbablyPlayableUrl(streamUrl)) {
@@ -184,7 +204,7 @@ function importItem(meta, url, statements, cache, job) {
   try {
     if (classification.type === 'episode') {
       const categoryId = getCategoryId(statements, cache, 'series', meta.group);
-      const seriesTitle = compactSpaces(classification.seriesTitle);
+      const seriesTitle = appendAudioVariant(compactSpaces(classification.seriesTitle), detectAudioVariant(meta));
       const normalizedSeries = normalizeTitle(seriesTitle);
 
       if (!normalizedSeries) {

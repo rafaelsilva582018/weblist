@@ -145,6 +145,7 @@ export function initDatabase() {
       episode_id INTEGER,
       position REAL NOT NULL DEFAULT 0,
       duration REAL NOT NULL DEFAULT 0,
+      completed_at TEXT,
       updated_at TEXT NOT NULL DEFAULT (datetime('now')),
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
@@ -226,6 +227,8 @@ function migrateColumns() {
   addColumn('seasons', 'backdrop_url', 'TEXT');
   addColumn('channels', 'tvg_id', 'TEXT');
   addColumn('channels', 'tvg_name', 'TEXT');
+  addColumn('watch_progress', 'completed_at', 'TEXT');
+  db.exec('CREATE INDEX IF NOT EXISTS idx_watch_progress_completed ON watch_progress(completed_at)');
   db.prepare("UPDATE channels SET tvg_name = title WHERE tvg_name IS NULL OR tvg_name = ''").run();
 
   seedPrimaryStreamSources();
@@ -296,6 +299,7 @@ export function getStats() {
     episodes: db.prepare('SELECT COUNT(*) AS total FROM episodes').get().total,
     channels: db.prepare('SELECT COUNT(*) AS total FROM channels').get().total,
     sources: db.prepare('SELECT COUNT(*) AS total FROM stream_sources').get().total,
+    watched: db.prepare('SELECT COUNT(*) AS total FROM watch_progress WHERE completed_at IS NOT NULL').get().total,
     categories: db.prepare('SELECT COUNT(*) AS total FROM categories').get().total
   };
 }
