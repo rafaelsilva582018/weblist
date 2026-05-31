@@ -14,6 +14,18 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+function progressLogEvery() {
+  const value = Number(process.env.TMDB_PROGRESS_LOG_EVERY || 100);
+  return Number.isFinite(value) ? Math.min(Math.max(value, 10), 5000) : 100;
+}
+
+function logJobProgress(job, reason = 'progresso') {
+  console.log(
+    `[TMDB] ${reason}: ${job.id} lote ${job.batch} ${job.processed}/${job.total} ` +
+    `encontradas=${job.matched} sem_match=${job.skipped} erros=${job.errors}`
+  );
+}
+
 function createJob(options) {
   return {
     id: randomUUID(),
@@ -198,6 +210,7 @@ async function runTmdbJob(job) {
   job.message = 'Consultando TMDB';
   job.startedAt ||= new Date().toISOString();
   job.total = getCandidateCount(job);
+  logJobProgress(job, 'inicio');
 
   try {
     do {
@@ -205,12 +218,14 @@ async function runTmdbJob(job) {
         job.status = 'stopped';
         job.message = 'Atualizacao interrompida';
         job.finishedAt = new Date().toISOString();
+        logJobProgress(job, 'parado');
         return;
       }
 
       if (job.requestedPause) {
         job.status = 'paused';
         job.message = 'Atualizacao pausada';
+        logJobProgress(job, 'pausado');
         return;
       }
 
@@ -218,18 +233,21 @@ async function runTmdbJob(job) {
       if (!candidates.length) break;
       job.batch += 1;
       job.message = `Consultando TMDB - lote ${job.batch}`;
+      logJobProgress(job, 'lote');
 
       for (const candidate of candidates) {
         if (job.requestedStop) {
           job.status = 'stopped';
           job.message = 'Atualizacao interrompida';
           job.finishedAt = new Date().toISOString();
+          logJobProgress(job, 'parado');
           return;
         }
 
         if (job.requestedPause) {
           job.status = 'paused';
           job.message = 'Atualizacao pausada';
+          logJobProgress(job, 'pausado');
           return;
         }
 
@@ -253,6 +271,9 @@ async function runTmdbJob(job) {
         }
 
         job.processed += 1;
+        if (job.processed % progressLogEvery() === 0) {
+          logJobProgress(job);
+        }
         if (job.processed < job.total) {
           await wait(job.options.delayMs);
         }
@@ -265,6 +286,7 @@ async function runTmdbJob(job) {
     job.status = 'done';
     job.message = 'Capas atualizadas';
     job.finishedAt = new Date().toISOString();
+    logJobProgress(job, 'concluido');
   } finally {
     job.running = false;
   }

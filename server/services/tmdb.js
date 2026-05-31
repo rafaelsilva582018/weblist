@@ -5,6 +5,26 @@ import { compactSpaces, normalizeTitle, padNumber } from '../utils/normalize.js'
 const TMDB_API_BASE = 'https://api.themoviedb.org/3';
 const TMDB_IMAGE_BASE = 'https://image.tmdb.org/t/p';
 
+function fetchTimeoutMs() {
+  const value = Number(process.env.METADATA_FETCH_TIMEOUT_MS || 25000);
+  return Number.isFinite(value) ? Math.min(Math.max(value, 5000), 120000) : 25000;
+}
+
+async function fetchJson(url, options = {}, sourceName = 'Metadados') {
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: AbortSignal.timeout(fetchTimeoutMs())
+    });
+    return response;
+  } catch (error) {
+    if (error.name === 'TimeoutError' || error.name === 'AbortError') {
+      throw new Error(`${sourceName} demorou demais para responder`);
+    }
+    throw error;
+  }
+}
+
 function getTmdbConfig() {
   return {
     apiKey: getSetting('tmdb_api_key', process.env.TMDB_API_KEY || ''),
@@ -78,9 +98,9 @@ async function tmdbFetch(endpoint, params = {}) {
   }
 
   const url = buildRequestUrl(endpoint, { language: config.language, ...params }, config);
-  const response = await fetch(url, {
+  const response = await fetchJson(url, {
     headers: config.accessToken ? { Authorization: `Bearer ${config.accessToken}` } : {}
-  });
+  }, 'TMDB');
 
   if (!response.ok) {
     throw new Error(`TMDB respondeu ${response.status}`);
@@ -103,9 +123,9 @@ async function omdbFetch(params = {}) {
     }
   }
 
-  const response = await fetch(url, {
+  const response = await fetchJson(url, {
     headers: { Accept: 'application/json' }
-  });
+  }, 'OMDb');
   if (!response.ok) throw new Error(`OMDb respondeu ${response.status}`);
 
   const data = await response.json();
@@ -120,9 +140,9 @@ async function tvmazeFetch(endpoint, params = {}) {
     }
   }
 
-  const response = await fetch(url, {
+  const response = await fetchJson(url, {
     headers: { Accept: 'application/json' }
-  });
+  }, 'TVMaze');
   if (response.status === 404) return null;
   if (!response.ok) throw new Error(`TVMaze respondeu ${response.status}`);
   return response.json();

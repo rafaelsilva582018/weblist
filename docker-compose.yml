@@ -22,6 +22,8 @@ services:
       AUTO_TMDB_FORCE: ${AUTO_TMDB_FORCE:-false}
       AUTO_TMDB_DELAY_MS: ${AUTO_TMDB_DELAY_MS:-160}
       AUTO_TMDB_RETRY_DAYS: ${AUTO_TMDB_RETRY_DAYS:-14}
+      METADATA_FETCH_TIMEOUT_MS: ${METADATA_FETCH_TIMEOUT_MS:-25000}
+      TMDB_PROGRESS_LOG_EVERY: ${TMDB_PROGRESS_LOG_EVERY:-100}
     volumes:
       - ./server/data:/app/server/data
       - ./server/uploads:/app/server/uploads
