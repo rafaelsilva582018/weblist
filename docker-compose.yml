@@ -25,3 +25,4 @@ services:
     volumes:
       - ./server/data:/app/server/data
       - ./server/uploads:/app/server/uploads
+      - ./tools:/app/tools
