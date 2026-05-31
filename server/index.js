@@ -18,6 +18,7 @@ import { startAutoTmdbEnrichment } from './services/autoTmdb.js';
 const app = express();
 const port = Number(process.env.PORT || 3333);
 const jwtSecret = process.env.JWT_SECRET || 'weblist-local-secret';
+const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '30d';
 const upload = multer({
   dest: uploadsDir,
   limits: { fileSize: 1024 * 1024 * 700 }
@@ -62,7 +63,7 @@ function getLocalUserId(req) {
 }
 
 function signUser(user) {
-  return jwt.sign({ sub: user.id, username: user.username }, jwtSecret, { expiresIn: '7d' });
+  return jwt.sign({ sub: user.id, username: user.username }, jwtSecret, { expiresIn: jwtExpiresIn });
 }
 
 function parseLimit(value, fallback = 40, max = 120) {

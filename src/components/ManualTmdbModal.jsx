@@ -1,6 +1,7 @@
 import { Check, Image, Search, Upload, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { apiFetch } from '../api.js';
+import { Link } from 'react-router-dom';
+import { apiFetch, setToken } from '../api.js';
 
 export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Corrigir TMDB' }) {
   const [query, setQuery] = useState(item?.title || '');
@@ -89,6 +90,11 @@ export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Cor
   }
 
   const canUseTmdb = item.type === 'movie' || item.type === 'series';
+  const authExpired = /sessao expirada|login necessario/i.test(message);
+
+  function clearSession() {
+    setToken(null);
+  }
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-black/76 p-4 backdrop-blur">
@@ -122,7 +128,20 @@ export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Cor
             </button>
           </div>
 
-          {message && <p className="mt-3 text-sm text-slate-300">{message}</p>}
+          {message && (
+            <div className={`mt-3 rounded border p-3 text-sm ${authExpired ? 'border-amber-400/30 bg-amber-400/10 text-amber-100' : 'border-white/10 bg-black/18 text-slate-300'}`}>
+              <p>{authExpired ? 'Sessao expirada. Entre no Admin novamente para editar capas e metadados.' : message}</p>
+              {authExpired && (
+                <Link
+                  to="/admin"
+                  onClick={clearSession}
+                  className="mt-3 inline-flex rounded bg-white px-3 py-2 text-xs font-black text-ink hover:bg-slate-200"
+                >
+                  Entrar no Admin
+                </Link>
+              )}
+            </div>
+          )}
 
           {mode === 'tmdb' && canUseTmdb && (
             <>

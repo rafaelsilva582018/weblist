@@ -30,7 +30,9 @@ export async function apiFetch(path, options = {}) {
 
   const data = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(data.error || 'Falha na requisicao');
+    const error = new Error(data.error || 'Falha na requisicao');
+    error.status = response.status;
+    throw error;
   }
   return data;
 }

@@ -9,6 +9,7 @@ services:
       NODE_ENV: production
       PORT: 3333
       JWT_SECRET: ${JWT_SECRET:-troque-este-segredo}
+      JWT_EXPIRES_IN: ${JWT_EXPIRES_IN:-30d}
       TMDB_API_KEY: ${TMDB_API_KEY:-}
       TMDB_ACCESS_TOKEN: ${TMDB_ACCESS_TOKEN:-}
       TMDB_LANGUAGE: ${TMDB_LANGUAGE:-pt-BR}
