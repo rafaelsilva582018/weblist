@@ -53,3 +53,41 @@ textarea {
   border: 1px solid rgba(255, 255, 255, 0.08);
   backdrop-filter: blur(18px);
 }
+
+@keyframes login-mosaic-row-down {
+  from {
+    transform: translate3d(0, -18px, 0);
+  }
+
+  to {
+    transform: translate3d(0, 18px, 0);
+  }
+}
+
+.login-mosaic {
+  transform: rotate(-6deg) scale(1.04);
+  transform-origin: center;
+}
+
+.login-mosaic-tile {
+  animation: login-mosaic-row-down 28s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.login-mosaic-tile:nth-child(odd) {
+  animation-direction: alternate-reverse;
+}
+
+.login-mosaic-tile:nth-child(3n) {
+  animation-duration: 34s;
+}
+
+.login-mosaic-tile:nth-child(4n) {
+  animation-duration: 40s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .login-mosaic-tile {
+    animation: none;
+  }
+}

@@ -858,6 +858,40 @@ function getFeaturedItems(hideAdult = true) {
   `).all();
 }
 
+function getLoginBackgroundItems(limit = 56) {
+  return db.prepare(`
+    SELECT *
+    FROM (
+      SELECT
+        m.id,
+        'movie' AS type,
+        m.title,
+        COALESCE(NULLIF(m.poster_url, ''), NULLIF(m.backdrop_url, '')) AS imageUrl
+      FROM movies m
+      LEFT JOIN categories c ON c.id = m.category_id
+      WHERE ${adultFilterClauses('m').join(' AND ')}
+        AND (m.poster_url IS NOT NULL OR m.backdrop_url IS NOT NULL)
+        AND (m.poster_url != '' OR m.backdrop_url != '')
+
+      UNION ALL
+
+      SELECT
+        s.id,
+        'series' AS type,
+        s.title,
+        COALESCE(NULLIF(s.poster_url, ''), NULLIF(s.backdrop_url, '')) AS imageUrl
+      FROM series s
+      LEFT JOIN categories c ON c.id = s.category_id
+      WHERE ${adultFilterClauses('s').join(' AND ')}
+        AND (s.poster_url IS NOT NULL OR s.backdrop_url IS NOT NULL)
+        AND (s.poster_url != '' OR s.backdrop_url != '')
+
+    )
+    ORDER BY RANDOM()
+    LIMIT ?
+  `).all(limit);
+}
+
 function getCategoryRows(userId = 1, hideAdult = true) {
   const rows = [];
   const categoryAdultClause = hideAdult
@@ -906,6 +940,11 @@ function getCategoryRows(userId = 1, hideAdult = true) {
 
 app.get('/api/health', (req, res) => {
   res.json({ ok: true, stats: getStats() });
+});
+
+app.get('/api/auth/login-background', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.json({ items: getLoginBackgroundItems() });
 });
 
 app.post('/api/auth/login', (req, res) => {

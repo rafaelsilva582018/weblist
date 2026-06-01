@@ -1,5 +1,6 @@
 import { Eye, EyeOff, LockKeyhole, Play, User } from 'lucide-react';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { apiFetch } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 const tiles = [
@@ -19,11 +20,32 @@ const tiles = [
 
 export default function LoginPage() {
   const { login } = useAuth();
+  const [backgroundItems, setBackgroundItems] = useState([]);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const mosaicItems = useMemo(() => {
+    if (!backgroundItems.length) return [];
+    return Array.from({ length: 56 }, (_, index) => backgroundItems[index % backgroundItems.length]);
+  }, [backgroundItems]);
+
+  useEffect(() => {
+    let active = true;
+    apiFetch('/auth/login-background')
+      .then((data) => {
+        if (!active) return;
+        setBackgroundItems(
+          (data.items || []).filter((item) => item.imageUrl && ['movie', 'series'].includes(item.type))
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      active = false;
+    };
+  }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -40,17 +62,33 @@ export default function LoginPage() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-ink text-white">
-      <div className="absolute inset-0 opacity-40">
-        <div className="grid h-full min-w-[920px] -rotate-6 grid-cols-6 gap-4 p-8 sm:grid-cols-8">
-          {Array.from({ length: 48 }).map((_, index) => {
+      <div className="absolute inset-0 opacity-46">
+        <div className="login-mosaic grid min-h-[125vh] min-w-[1120px] grid-cols-8 gap-1.5 p-4 sm:grid-cols-11">
+          {mosaicItems.length > 0 ? mosaicItems.map((item, index) => (
+            <div
+              key={`${item.type}-${item.id}-${index}`}
+              className="login-mosaic-tile flex aspect-[2/3] items-center justify-center overflow-hidden rounded-sm border border-white/10 bg-black/70 shadow-xl"
+              style={{ marginTop: `${(index % 5) * 6}px` }}
+            >
+              <img
+                src={item.imageUrl}
+                alt=""
+                className="size-full object-contain"
+                loading="lazy"
+                onError={(event) => {
+                  event.currentTarget.style.opacity = '0';
+                }}
+              />
+            </div>
+          )) : Array.from({ length: 48 }).map((_, index) => {
             const [from, to] = tiles[index % tiles.length];
             return (
               <div
                 key={index}
-                className="h-44 rounded border border-white/10 shadow-2xl"
+                className="aspect-[2/3] rounded-sm border border-white/10 shadow-xl"
                 style={{
                   background: `linear-gradient(145deg, ${from}, ${to})`,
-                  transform: `translateY(${(index % 5) * 18}px)`
+                  marginTop: `${(index % 5) * 6}px`
                 }}
               />
             );
