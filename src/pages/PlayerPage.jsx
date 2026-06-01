@@ -1,6 +1,6 @@
 import Hls from 'hls.js';
 import mpegts from 'mpegts.js';
-import { ArrowLeft, CalendarDays, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Cast, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
@@ -52,6 +52,8 @@ export default function PlayerPage() {
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isPip, setIsPip] = useState(false);
+  const [remotePlaybackState, setRemotePlaybackState] = useState('unsupported');
+  const [remotePlaybackAvailable, setRemotePlaybackAvailable] = useState(false);
   const [streamReloadKey, setStreamReloadKey] = useState(0);
   const [guideOpen, setGuideOpen] = useState(false);
   const [liveBuffering, setLiveBuffering] = useState(false);
@@ -61,6 +63,7 @@ export default function PlayerPage() {
   const hasGuide = item?.guide?.length > 0;
   const sourceOptions = item?.sources || [];
   const favoriteType = type === 'movie' || type === 'channel' ? type : null;
+  const remotePlaybackSupported = remotePlaybackState !== 'unsupported';
   const finishClock = !isLive && isPlaying && duration > current
     ? formatFinishClock(Math.max(0, duration - current))
     : '';
@@ -406,6 +409,44 @@ export default function PlayerPage() {
     };
   }, [isLive]);
 
+  useEffect(() => {
+    const video = videoRef.current;
+    const remote = video?.remote;
+    if (!remote) {
+      setRemotePlaybackState('unsupported');
+      setRemotePlaybackAvailable(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    let availabilityId = null;
+    const updateState = () => setRemotePlaybackState(remote.state || 'disconnected');
+
+    setRemotePlaybackState(remote.state || 'disconnected');
+    setRemotePlaybackAvailable(true);
+    remote.watchAvailability?.((available) => {
+      if (!cancelled) setRemotePlaybackAvailable(Boolean(available));
+    })
+      .then((idValue) => {
+        availabilityId = idValue;
+      })
+      .catch(() => {
+        if (!cancelled) setRemotePlaybackAvailable(true);
+      });
+
+    remote.addEventListener?.('connecting', updateState);
+    remote.addEventListener?.('connect', updateState);
+    remote.addEventListener?.('disconnect', updateState);
+
+    return () => {
+      cancelled = true;
+      if (availabilityId !== null) remote.cancelWatchAvailability?.(availabilityId).catch?.(() => {});
+      remote.removeEventListener?.('connecting', updateState);
+      remote.removeEventListener?.('connect', updateState);
+      remote.removeEventListener?.('disconnect', updateState);
+    };
+  }, [item?.streamUrl]);
+
   function fullscreen() {
     if (document.fullscreenElement) {
       document.exitFullscreen?.();
@@ -530,6 +571,31 @@ export default function PlayerPage() {
       }
     } catch {
       setError('Nao foi possivel abrir Picture-in-Picture neste video');
+    }
+  }
+
+  async function openRemotePlayback() {
+    const video = videoRef.current;
+    if (!video?.remote?.prompt) {
+      setError('Transmissao nao esta disponivel neste navegador. No Chrome, tente o menu Transmitir.');
+      showControls();
+      return;
+    }
+
+    try {
+      setError('');
+      await video.remote.prompt();
+      setRemotePlaybackState(video.remote.state || 'connecting');
+    } catch (err) {
+      if (err?.name === 'NotAllowedError') return;
+      if (err?.name === 'NotFoundError') {
+        setError('Nenhuma TV ou Chromecast encontrado na rede.');
+      } else if (err?.name === 'NotSupportedError') {
+        setError('Este video nao esta disponivel para transmissao neste navegador.');
+      } else {
+        setError('Nao foi possivel abrir a transmissao para TV.');
+      }
+      showControls();
     }
   }
 
@@ -750,6 +816,16 @@ export default function PlayerPage() {
               />
               <button onClick={togglePip} className="grid size-10 place-items-center rounded bg-white/10 text-white hover:bg-white/16" title={isPip ? 'Sair do Picture-in-Picture' : 'Picture-in-Picture'}>
                 <PictureInPicture size={18} />
+              </button>
+              <button
+                onClick={openRemotePlayback}
+                disabled={remotePlaybackSupported && !remotePlaybackAvailable}
+                className={`grid size-10 place-items-center rounded text-white hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-45 ${
+                  remotePlaybackState === 'connected' || remotePlaybackState === 'connecting' ? 'bg-ocean/80 text-ink' : 'bg-white/10'
+                }`}
+                title={remotePlaybackState === 'connected' ? 'Transmitindo para TV' : 'Transmitir para TV'}
+              >
+                <Cast size={18} />
               </button>
               <button onClick={fullscreen} className="grid size-10 place-items-center rounded bg-white/10 text-white hover:bg-white/16" title={isFullscreen ? 'Sair da tela cheia' : 'Tela cheia'}>
                 {isFullscreen ? <Minimize size={18} /> : <Maximize size={18} />}
