@@ -167,6 +167,24 @@ A busca usa um indice local SQLite FTS para pesquisar por titulo e categoria com
 - `npm run seed`: limpa a biblioteca e importa `sample/playlist.m3u`.
 - `npm run build`: gera o frontend de producao em `dist/`.
 - `npm start`: inicia a API; se existir `dist/`, ela tambem serve o frontend.
+- `npm run cap:add:android`: cria o projeto Android do Capacitor.
+- `npm run cap:sync`: sincroniza o app Android com o site configurado.
+- `npm run cap:open`: abre o projeto Android no Android Studio.
+
+## APK Android com Capacitor
+
+O APK funciona como um app Android apontando para o seu servidor Weblist. Para teste, pode usar IP externo e porta:
+
+```powershell
+$env:CAPACITOR_SERVER_URL="http://SEU_IP_EXTERNO:3333"
+npm run cap:add:android
+npm run cap:sync
+npm run cap:open
+```
+
+No Android Studio, use `Build > Build Bundle(s) / APK(s) > Build APK(s)`.
+
+Para Android aceitar `http://IP:3333`, o projeto usa `server.cleartext` automaticamente quando a URL comeca com `http://`. Para uso definitivo, o ideal e colocar o Weblist atras de um dominio com HTTPS, por exemplo `https://seu-dominio.com`.
 
 ## Estrutura
 

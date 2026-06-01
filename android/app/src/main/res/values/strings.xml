@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Weblist</string>
+    <string name="title_activity_main">Weblist</string>
+    <string name="package_name">com.weblist.app</string>
+    <string name="custom_url_scheme">com.weblist.app</string>
+</resources>

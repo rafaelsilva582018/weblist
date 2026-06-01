@@ -5,6 +5,7 @@ import { apiFetch, setToken } from '../api.js';
 
 export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Corrigir TMDB' }) {
   const [query, setQuery] = useState(item?.title || '');
+  const [tmdbReference, setTmdbReference] = useState('');
   const [mode, setMode] = useState('tmdb');
   const [manual, setManual] = useState({ title: '', overview: '', posterUrl: '', backdropUrl: '' });
   const [imageFile, setImageFile] = useState(null);
@@ -23,6 +24,7 @@ export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Cor
     });
     setImageFile(null);
     setResults([]);
+    setTmdbReference('');
     setMessage('');
   }, [item]);
 
@@ -51,6 +53,25 @@ export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Cor
       await apiFetch('/tmdb/apply', {
         method: 'POST',
         body: { type: item.type, id: item.id, tmdbId: result.tmdbId, force: true }
+      });
+      onApplied?.();
+      onClose();
+    } catch (err) {
+      setMessage(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function applyReference(event) {
+    event?.preventDefault();
+    if (!tmdbReference.trim()) return;
+    setLoading(true);
+    setMessage('');
+    try {
+      await apiFetch('/tmdb/apply', {
+        method: 'POST',
+        body: { type: item.type, id: item.id, tmdbReference: tmdbReference.trim(), force: true }
       });
       onApplied?.();
       onClose();
@@ -154,6 +175,24 @@ export default function ManualTmdbModal({ item, onClose, onApplied, title = 'Cor
                   Buscar
                 </button>
               </form>
+
+              <form onSubmit={applyReference} className="mt-3 grid gap-2 sm:grid-cols-[1fr_auto]">
+                <label className="flex items-center gap-2 rounded border border-white/10 bg-black/24 px-3 py-2">
+                  <span className="text-xs font-black uppercase text-ocean">ID</span>
+                  <input
+                    value={tmdbReference}
+                    onChange={(event) => setTmdbReference(event.target.value)}
+                    className="w-full bg-transparent text-white outline-none placeholder:text-slate-500"
+                    placeholder={item.type === 'series' ? 'Cole o link ou ID da serie no TMDB' : 'Cole o link ou ID do filme no TMDB'}
+                  />
+                </label>
+                <button disabled={loading || !tmdbReference.trim()} className="rounded border border-ocean/40 bg-ocean px-4 py-2 text-sm font-black text-ink disabled:opacity-60">
+                  Aplicar link
+                </button>
+              </form>
+              <p className="mt-2 text-xs text-slate-500">
+                Ex.: https://www.themoviedb.org/{item.type === 'series' ? 'tv' : 'movie'}/669525 ou apenas o numero do TMDB.
+              </p>
 
               <div className="mt-4 grid max-h-[58vh] gap-3 overflow-y-auto pr-1 sm:grid-cols-2">
                 {results.map((result) => (

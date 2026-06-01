@@ -36,6 +36,31 @@ function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
 }
 
+function parseTmdbReference(value = '') {
+  const text = String(value || '').trim();
+  if (!text) return { id: 0, type: '' };
+
+  const numberOnly = text.match(/^\d+$/);
+  if (numberOnly) return { id: Number(numberOnly[0]), type: '' };
+
+  const urlText = /^https?:\/\//i.test(text) ? text : `https://www.themoviedb.org/${text.replace(/^\/+/, '')}`;
+  try {
+    const url = new URL(urlText);
+    const [mediaType, idPart] = url.pathname.split('/').filter(Boolean);
+    const id = Number(String(idPart || '').match(/^\d+/)?.[0] || 0);
+    if (id && ['movie', 'tv'].includes(String(mediaType || '').toLowerCase())) {
+      return { id, type: mediaType.toLowerCase() === 'tv' ? 'series' : 'movie' };
+    }
+  } catch {
+    // Fall back to the loose matcher below.
+  }
+
+  const loose = text.match(/(?:^|\/)(movie|tv)\/(\d+)/i);
+  if (loose) return { id: Number(loose[2]), type: loose[1].toLowerCase() === 'tv' ? 'series' : 'movie' };
+
+  return { id: 0, type: '' };
+}
+
 function getBearerToken(req) {
   const header = req.headers.authorization || '';
   return header.startsWith('Bearer ') ? header.slice(7) : '';
@@ -1122,9 +1147,17 @@ app.get('/api/tmdb/search', requireAdmin, asyncRoute(async (req, res) => {
 app.post('/api/tmdb/apply', requireAdmin, asyncRoute(async (req, res) => {
   const type = String(req.body.type || '') === 'series' ? 'series' : 'movie';
   const id = Number(req.body.id);
-  const tmdbId = Number(req.body.tmdbId);
+  const reference = parseTmdbReference(req.body.tmdbReference || req.body.tmdbUrl || req.body.tmdbId);
+  const tmdbId = Number(req.body.tmdbId) || reference.id;
   const force = req.body.force !== false;
   if (!id || !tmdbId) return res.status(400).json({ error: 'Selecao TMDB invalida' });
+  if (reference.type && reference.type !== type) {
+    return res.status(400).json({
+      error: reference.type === 'series'
+        ? 'Esse link TMDB parece ser de serie, mas o item selecionado e filme'
+        : 'Esse link TMDB parece ser de filme, mas o item selecionado e serie'
+    });
+  }
 
   const seasonNumbers = type === 'series'
     ? db.prepare('SELECT season_number AS seasonNumber FROM seasons WHERE series_id = ? ORDER BY season_number ASC').all(id).map((season) => season.seasonNumber)
