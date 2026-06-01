@@ -1,13 +1,17 @@
-import { AlertTriangle, Film, Home, MonitorPlay, Search, Settings, Star, Tv } from 'lucide-react';
+import { AlertTriangle, Film, Home, LogOut, MonitorPlay, Search, Settings, Star, Tv, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext.jsx';
 
-const navItems = [
+const baseNavItems = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/filmes', label: 'Filmes', icon: Film },
   { to: '/series', label: 'Series', icon: MonitorPlay },
   { to: '/canais', label: 'Canais', icon: Tv },
-  { to: '/favoritos', label: 'Favoritos', icon: Star },
+  { to: '/favoritos', label: 'Favoritos', icon: Star }
+];
+
+const adminNavItems = [
   { to: '/problemas', label: 'Problemas', icon: AlertTriangle }
 ];
 
@@ -15,6 +19,8 @@ export default function Layout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [query, setQuery] = useState(searchParams.get('q') || '');
+  const { user, logout } = useAuth();
+  const navItems = user?.isAdmin ? [...baseNavItems, ...adminNavItems] : baseNavItems;
 
   function submitSearch(event) {
     event.preventDefault();
@@ -61,17 +67,34 @@ export default function Layout() {
             />
           </form>
 
-          <NavLink
-            to="/admin"
-            className={({ isActive }) =>
-              `grid size-10 place-items-center rounded border border-white/10 transition ${
-                isActive ? 'bg-brand text-white' : 'bg-white/6 text-slate-300 hover:bg-white/10 hover:text-white'
-              }`
-            }
-            title="Admin"
-          >
-            <Settings size={18} />
-          </NavLink>
+          <div className="hidden items-center gap-2 sm:flex">
+            <div className="hidden items-center gap-2 rounded border border-white/10 bg-white/6 px-3 py-2 text-sm text-slate-200 lg:flex">
+              <UserCircle size={17} className="text-slate-400" />
+              <span className="max-w-28 truncate">{user?.username}</span>
+            </div>
+            <button
+              type="button"
+              onClick={logout}
+              className="grid size-10 place-items-center rounded border border-white/10 bg-white/6 text-slate-300 transition hover:bg-white/10 hover:text-white"
+              title="Sair"
+            >
+              <LogOut size={18} />
+            </button>
+          </div>
+
+          {user?.isAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `grid size-10 place-items-center rounded border border-white/10 transition ${
+                  isActive ? 'bg-brand text-white' : 'bg-white/6 text-slate-300 hover:bg-white/10 hover:text-white'
+                }`
+              }
+              title="Admin"
+            >
+              <Settings size={18} />
+            </NavLink>
+          )}
         </div>
 
         <div className="mx-auto flex max-w-7xl gap-1 overflow-x-auto px-4 pb-3 sm:hidden">
@@ -92,6 +115,23 @@ export default function Layout() {
               </NavLink>
             );
           })}
+          {user?.isAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `flex shrink-0 items-center gap-2 rounded px-3 py-2 text-sm ${
+                  isActive ? 'bg-white/12 text-white' : 'text-slate-300'
+                }`
+              }
+            >
+              <Settings size={16} />
+              Admin
+            </NavLink>
+          )}
+          <button type="button" onClick={logout} className="flex shrink-0 items-center gap-2 rounded px-3 py-2 text-sm text-slate-300">
+            <LogOut size={16} />
+            Sair
+          </button>
         </div>
       </header>
 

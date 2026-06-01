@@ -4,14 +4,17 @@ import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
 import Pagination from '../components/Pagination.jsx';
 import PosterCard from '../components/PosterCard.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 export default function SearchPage() {
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const q = searchParams.get('q') || '';
   const type = searchParams.get('type') || 'all';
   const metadata = searchParams.get('metadata') || 'all';
   const year = searchParams.get('year') || '';
-  const hideAdult = searchParams.get('hideAdult') !== 'false';
+  const canViewAdult = Boolean(user?.canViewAdult);
+  const hideAdult = !canViewAdult || searchParams.get('hideAdult') !== 'false';
   const page = Number(searchParams.get('page') || 1);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -86,13 +89,15 @@ export default function SearchPage() {
             className="rounded border border-white/10 bg-panel px-3 py-2 text-sm text-white outline-none placeholder:text-slate-500"
             placeholder="Ano"
           />
-          <button
-            type="button"
-            onClick={() => setParam('hideAdult', hideAdult ? 'false' : 'true')}
-            className="rounded border border-white/10 bg-panel px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/8"
-          >
-            {hideAdult ? 'Adultos ocultos' : 'Mostrar todos'}
-          </button>
+          {canViewAdult && (
+            <button
+              type="button"
+              onClick={() => setParam('hideAdult', hideAdult ? 'false' : 'true')}
+              className="rounded border border-white/10 bg-panel px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/8"
+            >
+              {hideAdult ? 'Adultos ocultos' : 'Mostrar todos'}
+            </button>
+          )}
         </div>
       </div>
 

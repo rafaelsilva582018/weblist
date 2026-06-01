@@ -1,6 +1,7 @@
-import { CalendarDays, Database, FileUp, Image, KeyRound, RefreshCcw, Trash2 } from 'lucide-react';
+import { CalendarDays, Database, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { apiFetch, getToken, setToken } from '../api.js';
+import { apiFetch } from '../api.js';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function StatBox({ label, value }) {
   return (
@@ -12,9 +13,7 @@ function StatBox({ label, value }) {
 }
 
 export default function AdminPage() {
-  const [tokenState, setTokenState] = useState(getToken());
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('admin123');
+  const { logout: authLogout, token, user } = useAuth();
   const [file, setFile] = useState(null);
   const [content, setContent] = useState('');
   const [job, setJob] = useState(null);
@@ -38,6 +37,12 @@ export default function AdminPage() {
   const [libraryMessage, setLibraryMessage] = useState('');
   const [tmdbMessage, setTmdbMessage] = useState('');
   const [epgMessage, setEpgMessage] = useState('');
+  const [users, setUsers] = useState([]);
+  const [newUsername, setNewUsername] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [newIsAdmin, setNewIsAdmin] = useState(false);
+  const [newCanViewAdult, setNewCanViewAdult] = useState(false);
+  const [userMessage, setUserMessage] = useState('');
   const [busy, setBusy] = useState(false);
 
   const percent = useMemo(() => {
@@ -51,7 +56,7 @@ export default function AdminPage() {
   }, [epgJob]);
 
   useEffect(() => {
-    if (!tokenState) return;
+    if (!token) return;
     apiFetch('/admin/settings')
       .then((data) => {
         setTmdbStatus(data.tmdb);
@@ -61,10 +66,10 @@ export default function AdminPage() {
         setTmdbLanguage(data.raw?.tmdbLanguage || data.tmdb?.language || 'pt-BR');
       })
       .catch(() => {});
-  }, [tokenState]);
+  }, [token]);
 
   useEffect(() => {
-    if (!tokenState) return undefined;
+    if (!token) return undefined;
 
     let cancelled = false;
     const loadActiveJob = () => {
@@ -86,7 +91,7 @@ export default function AdminPage() {
       cancelled = true;
       clearInterval(timer);
     };
-  }, [enrichJob, tokenState]);
+  }, [enrichJob, token]);
 
   useEffect(() => {
     if (!enrichJob || !['queued', 'running', 'paused'].includes(enrichJob.status)) return undefined;
@@ -128,9 +133,20 @@ export default function AdminPage() {
       .catch(() => {});
   }
 
+  function refreshUsers() {
+    apiFetch('/admin/users')
+      .then((data) => setUsers(data.users || []))
+      .catch((err) => setUserMessage(err.message));
+  }
+
   useEffect(() => {
     refreshStats();
   }, []);
+
+  useEffect(() => {
+    if (!token) return;
+    refreshUsers();
+  }, [token]);
 
   useEffect(() => {
     if (!job || !['queued', 'running'].includes(job.status)) return undefined;
@@ -144,21 +160,6 @@ export default function AdminPage() {
     }, 900);
     return () => clearInterval(timer);
   }, [job]);
-
-  async function login(event) {
-    event.preventDefault();
-    setBusy(true);
-    setError('');
-    try {
-      const data = await apiFetch('/auth/login', { method: 'POST', body: { username, password } });
-      setToken(data.token);
-      setTokenState(data.token);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function startImport(event) {
     event.preventDefault();
@@ -211,6 +212,48 @@ export default function AdminPage() {
       setLibraryMessage(`${data.removed || 0} marcacoes de assistido removidas`);
     } catch (err) {
       setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function createUser(event) {
+    event.preventDefault();
+    setBusy(true);
+    setUserMessage('');
+    try {
+      const data = await apiFetch('/admin/users', {
+        method: 'POST',
+        body: {
+          username: newUsername,
+          password: newPassword,
+          isAdmin: newIsAdmin,
+          canViewAdult: newCanViewAdult
+        }
+      });
+      setUsers(data.users || []);
+      setNewUsername('');
+      setNewPassword('');
+      setNewIsAdmin(false);
+      setNewCanViewAdult(false);
+      setUserMessage('Usuario criado');
+    } catch (err) {
+      setUserMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function removeUser(userId) {
+    if (!window.confirm('Remover este usuario?')) return;
+    setBusy(true);
+    setUserMessage('');
+    try {
+      const data = await apiFetch(`/admin/users/${userId}`, { method: 'DELETE' });
+      setUsers(data.users || []);
+      setUserMessage('Usuario removido');
+    } catch (err) {
+      setUserMessage(err.message);
     } finally {
       setBusy(false);
     }
@@ -305,8 +348,7 @@ export default function AdminPage() {
   }
 
   function logout() {
-    setToken(null);
-    setTokenState(null);
+    authLogout();
   }
 
   async function controlTmdbJob(action) {
@@ -321,24 +363,6 @@ export default function AdminPage() {
     } catch (err) {
       setTmdbMessage(err.message);
     }
-  }
-
-  if (!tokenState) {
-    return (
-      <div className="mx-auto grid min-h-[70vh] max-w-md place-items-center px-4">
-        <form onSubmit={login} className="glass w-full rounded p-6">
-          <h1 className="text-3xl font-black text-white">Admin</h1>
-          <div className="mt-6 space-y-3">
-            <input value={username} onChange={(event) => setUsername(event.target.value)} className="w-full rounded border border-white/10 bg-black/30 px-3 py-3 text-white outline-none" placeholder="Usuario" />
-            <input value={password} onChange={(event) => setPassword(event.target.value)} type="password" className="w-full rounded border border-white/10 bg-black/30 px-3 py-3 text-white outline-none" placeholder="Senha" />
-          </div>
-          {error && <p className="mt-4 text-sm text-red-300">{error}</p>}
-          <button disabled={busy} className="mt-6 w-full rounded bg-brand px-5 py-3 text-sm font-black text-white hover:bg-red-600 disabled:opacity-60">
-            Entrar
-          </button>
-        </form>
-      </div>
-    );
   }
 
   return (
@@ -363,6 +387,96 @@ export default function AdminPage() {
         <StatBox label="Fontes" value={stats?.sources ?? 0} />
         <StatBox label="Categorias" value={stats?.categories ?? 0} />
       </div>
+
+      <section className="mb-6 grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
+        <form onSubmit={createUser} className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-ocean text-ink">
+              <UserPlus size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Usuarios</h2>
+              <p className="text-sm text-slate-400">Cadastre quem pode entrar na tela inicial.</p>
+            </div>
+          </div>
+
+          <div className="grid gap-3 sm:grid-cols-2">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Usuario</span>
+              <input
+                value={newUsername}
+                onChange={(event) => setNewUsername(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder="nome de acesso"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Senha</span>
+              <input
+                value={newPassword}
+                onChange={(event) => setNewPassword(event.target.value)}
+                type="password"
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder="minimo 6 caracteres"
+              />
+            </label>
+          </div>
+
+          <label className="mt-4 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+            <input checked={newIsAdmin} onChange={(event) => setNewIsAdmin(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+            Dar acesso de administrador
+          </label>
+
+          <label className="mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+            <input checked={newCanViewAdult} onChange={(event) => setNewCanViewAdult(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+            Permitir conteudo +18
+          </label>
+
+          {userMessage && <p className="mt-4 text-sm text-slate-300">{userMessage}</p>}
+
+          <button disabled={busy || !newUsername.trim() || newPassword.length < 6} className="mt-5 inline-flex items-center gap-2 rounded bg-white px-5 py-3 text-sm font-black text-ink hover:bg-slate-200 disabled:opacity-60">
+            <UserPlus size={17} />
+            Criar usuario
+          </button>
+        </form>
+
+        <aside className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-white text-ink">
+              <Users size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Acessos</h2>
+              <p className="text-sm text-slate-400">{users.length} usuario(s) cadastrado(s)</p>
+            </div>
+          </div>
+
+          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+            {users.map((item) => (
+              <div key={item.id} className="flex items-center gap-3 rounded border border-white/10 bg-black/20 px-3 py-3">
+                <div className="grid size-10 place-items-center rounded bg-white/8 text-slate-200">
+                  {item.isAdmin ? <ShieldCheck size={18} /> : <Users size={18} />}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-bold text-white">{item.username}</p>
+                  <p className="text-xs text-slate-400">
+                    {item.isAdmin ? 'Administrador' : 'Usuario'} - {item.canViewAdult ? '+18 permitido' : '+18 bloqueado'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeUser(item.id)}
+                  disabled={busy || item.id === user?.id}
+                  className="grid size-9 place-items-center rounded border border-white/10 text-slate-300 hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  title={item.id === user?.id ? 'Usuario atual' : 'Remover'}
+                >
+                  <Trash2 size={16} />
+                </button>
+              </div>
+            ))}
+          </div>
+        </aside>
+      </section>
 
       <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
         <form onSubmit={startImport} className="rounded border border-white/10 bg-white/6 p-5">

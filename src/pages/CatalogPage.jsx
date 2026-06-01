@@ -5,6 +5,7 @@ import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
 import Pagination from '../components/Pagination.jsx';
 import PosterCard from '../components/PosterCard.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 const labels = {
   movie: { title: 'Filmes', endpoint: '/movies' },
@@ -14,6 +15,7 @@ const labels = {
 
 export default function CatalogPage({ type }) {
   const config = labels[type];
+  const { user } = useAuth();
   const [urlParams, setUrlParams] = useSearchParams();
   const [items, setItems] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -25,7 +27,8 @@ export default function CatalogPage({ type }) {
   const sort = urlParams.get('sort') || 'imported';
   const metadata = urlParams.get('metadata') || 'all';
   const year = urlParams.get('year') || '';
-  const hideAdult = urlParams.get('hideAdult') !== 'false';
+  const canViewAdult = Boolean(user?.canViewAdult);
+  const hideAdult = !canViewAdult || urlParams.get('hideAdult') !== 'false';
   const page = Math.max(1, Number(urlParams.get('page') || 1) || 1);
 
   const requestParams = useMemo(() => {
@@ -114,6 +117,7 @@ export default function CatalogPage({ type }) {
         </div>
       </div>
 
+      {(type !== 'channel' || canViewAdult) && (
       <div className={`mb-6 grid gap-3 rounded border border-white/10 bg-white/5 p-3 ${type === 'channel' ? 'sm:grid-cols-[1fr]' : 'sm:grid-cols-[180px_180px_1fr]'}`}>
         {type !== 'channel' && (
           <>
@@ -133,6 +137,7 @@ export default function CatalogPage({ type }) {
             />
           </>
         )}
+          {canViewAdult && (
           <div className="grid grid-cols-2 overflow-hidden rounded border border-white/10 bg-panel p-1">
             <button
               type="button"
@@ -149,7 +154,9 @@ export default function CatalogPage({ type }) {
               Mostrar todos
             </button>
           </div>
+          )}
       </div>
+      )}
 
       {loading && <div className="py-20 text-slate-300">Carregando...</div>}
       {error && <EmptyState title={error} />}

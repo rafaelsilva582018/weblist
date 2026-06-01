@@ -22,17 +22,19 @@ Depois abra:
 - App: http://localhost:5173
 - API: http://localhost:3333/api/health
 
-Login do admin:
+Login inicial do admin:
 
 - Usuario: `admin`
 - Senha: `admin123`
 
 ## Importar sua playlist
 
-1. Abra `http://localhost:5173/admin`.
-2. Entre com o login acima.
+1. Abra `http://localhost:5173` e entre com o login acima.
+2. Acesse `Admin`.
 3. Envie um arquivo `.m3u` ou `.m3u8`, ou cole o conteudo no campo de texto.
 4. Clique em `Importar`.
+
+Novos usuarios sao cadastrados somente pelo administrador, dentro do painel `Admin > Usuarios`. Na criacao do usuario voce tambem escolhe se ele pode ver conteudo +18; sem essa permissao o app oculta esse conteudo e bloqueia acesso direto por link.
 
 Se quiser usar o arquivo grande que ja esta nesta pasta (`Lista.m3u`), envie ele pelo painel admin. A importacao roda em segundo plano e mostra progresso, duplicados, erros e totais importados.
 

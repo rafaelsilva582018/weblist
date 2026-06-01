@@ -86,11 +86,24 @@ function runCommand(job, command, args, cwd, timeoutMs = 20 * 60 * 1000) {
 }
 
 async function ensureIptvOrgRepo(job) {
-  await fs.mkdir(path.dirname(repoDir), { recursive: true });
+  const toolsDir = path.resolve(projectRoot, 'tools');
+  const resolvedRepoDir = path.resolve(repoDir);
+  if (!resolvedRepoDir.startsWith(`${toolsDir}${path.sep}`) || path.basename(resolvedRepoDir) !== 'iptv-org-epg') {
+    throw new Error('Diretorio iptv-org invalido');
+  }
+
+  await fs.mkdir(toolsDir, { recursive: true });
 
   if (!(await exists(path.join(repoDir, '.git')))) {
+    if (await exists(repoDir)) {
+      job.message = 'Limpando iptv-org incompleto';
+      await fs.rm(repoDir, { recursive: true, force: true });
+    }
     job.message = 'Baixando iptv-org/epg';
     await runCommand(job, 'git', ['clone', '--depth', '1', '-b', 'master', repoUrl, repoDir], projectRoot);
+  } else {
+    job.message = 'Atualizando iptv-org/epg';
+    await runCommand(job, 'git', ['pull', '--ff-only'], repoDir, 5 * 60 * 1000);
   }
 
   if (!(await exists(path.join(repoDir, 'node_modules')))) {

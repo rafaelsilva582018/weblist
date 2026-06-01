@@ -27,6 +27,8 @@ export function initDatabase() {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT NOT NULL UNIQUE,
       password_hash TEXT NOT NULL,
+      is_admin INTEGER NOT NULL DEFAULT 0,
+      can_view_adult INTEGER NOT NULL DEFAULT 0,
       created_at TEXT NOT NULL DEFAULT (datetime('now'))
     );
 
@@ -208,10 +210,27 @@ function addColumn(table, name, definition) {
   const columns = getColumns(table);
   if (!columns.has(name)) {
     db.exec(`ALTER TABLE ${table} ADD COLUMN ${name} ${definition}`);
+    return true;
   }
+  return false;
 }
 
 function migrateColumns() {
+  addColumn('users', 'is_admin', 'INTEGER NOT NULL DEFAULT 0');
+  const addedAdultPermission = addColumn('users', 'can_view_adult', 'INTEGER NOT NULL DEFAULT 0');
+
+  const adminCount = db.prepare('SELECT COUNT(*) AS total FROM users WHERE is_admin = 1').get().total;
+  if (adminCount === 0) {
+    db.prepare("UPDATE users SET is_admin = 1 WHERE username = 'admin' COLLATE NOCASE").run();
+    const updatedAdminCount = db.prepare('SELECT COUNT(*) AS total FROM users WHERE is_admin = 1').get().total;
+    if (updatedAdminCount === 0) {
+      db.prepare('UPDATE users SET is_admin = 1 WHERE id = (SELECT MIN(id) FROM users)').run();
+    }
+  }
+  if (addedAdultPermission) {
+    db.prepare('UPDATE users SET can_view_adult = 1 WHERE is_admin = 1 AND can_view_adult = 0').run();
+  }
+
   for (const table of ['movies', 'series']) {
     addColumn(table, 'backdrop_url', 'TEXT');
     addColumn(table, 'overview', 'TEXT');
@@ -262,7 +281,7 @@ export function ensureDefaultAdmin() {
   if (total > 0) return;
 
   const passwordHash = bcrypt.hashSync('admin123', 10);
-  db.prepare('INSERT INTO users (username, password_hash) VALUES (?, ?)').run('admin', passwordHash);
+  db.prepare('INSERT INTO users (username, password_hash, is_admin, can_view_adult) VALUES (?, ?, 1, 1)').run('admin', passwordHash);
 }
 
 export function clearLibrary() {

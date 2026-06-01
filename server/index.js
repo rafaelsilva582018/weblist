@@ -41,29 +41,66 @@ function getBearerToken(req) {
   return header.startsWith('Bearer ') ? header.slice(7) : '';
 }
 
-function requireAdmin(req, res, next) {
+function formatUser(user) {
+  return {
+    id: user.id,
+    username: user.username,
+    isAdmin: Boolean(user.is_admin),
+    canViewAdult: Boolean(user.can_view_adult),
+    createdAt: user.created_at
+  };
+}
+
+function listUsers() {
+  return db
+    .prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users ORDER BY created_at ASC, id ASC')
+    .all()
+    .map(formatUser);
+}
+
+function requireAuth(req, res, next) {
   try {
     const token = getBearerToken(req);
     if (!token) return res.status(401).json({ error: 'Login necessario' });
-    req.user = jwt.verify(token, jwtSecret);
+    const payload = jwt.verify(token, jwtSecret);
+    const user = db.prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users WHERE id = ?').get(Number(payload.sub));
+    if (!user) return res.status(401).json({ error: 'Sessao expirada' });
+    req.user = formatUser(user);
     return next();
   } catch {
     return res.status(401).json({ error: 'Sessao expirada' });
   }
 }
 
+function requireAdmin(req, res, next) {
+  return requireAuth(req, res, () => {
+    if (!req.user?.isAdmin) return res.status(403).json({ error: 'Acesso restrito ao administrador' });
+    return next();
+  });
+}
+
 function getLocalUserId(req) {
+  return getLocalUser(req).id;
+}
+
+function getLocalUser(req) {
   try {
     const token = getBearerToken(req);
-    if (!token) return 1;
-    return Number(jwt.verify(token, jwtSecret).sub) || 1;
+    if (!token) return { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
+    const payload = jwt.verify(token, jwtSecret);
+    const user = db.prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users WHERE id = ?').get(Number(payload.sub));
+    return user ? formatUser(user) : { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
   } catch {
-    return 1;
+    return { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
   }
 }
 
 function signUser(user) {
-  return jwt.sign({ sub: user.id, username: user.username }, jwtSecret, { expiresIn: jwtExpiresIn });
+  return jwt.sign(
+    { sub: user.id, username: user.username, isAdmin: Boolean(user.is_admin), canViewAdult: Boolean(user.can_view_adult) },
+    jwtSecret,
+    { expiresIn: jwtExpiresIn }
+  );
 }
 
 function parseLimit(value, fallback = 40, max = 120) {
@@ -99,6 +136,39 @@ function shouldHideAdult(value) {
   return !['0', 'false', 'no'].includes(String(value ?? 'true').toLowerCase());
 }
 
+function canShowAdult(user) {
+  return Boolean(user?.canViewAdult);
+}
+
+function effectiveHideAdult(req, user = getLocalUser(req)) {
+  return canShowAdult(user) ? shouldHideAdult(req.query.hideAdult) : true;
+}
+
+function adultFilterClauses(alias, categoryAlias = 'c') {
+  return [
+    `COALESCE(${categoryAlias}.name, '') NOT LIKE '%Adult%' COLLATE NOCASE`,
+    `COALESCE(${categoryAlias}.name, '') NOT LIKE '%XXX%' COLLATE NOCASE`,
+    `COALESCE(${categoryAlias}.name, '') NOT LIKE '%+18%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%[XXX]%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%XXX%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%18+%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%+18%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%sexo%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%porn%' COLLATE NOCASE`,
+    `${alias}.title NOT LIKE '%erot%' COLLATE NOCASE`
+  ];
+}
+
+function addAdultFilters(where, alias, categoryAlias = 'c') {
+  where.push(...adultFilterClauses(alias, categoryAlias));
+}
+
+function isAdultRecord(record = {}) {
+  if (!record) return false;
+  const text = `${record.title || ''} ${record.category || ''}`;
+  return /adult|xxx|\+18|18\+|sexo|porn|erot/i.test(text);
+}
+
 function addSearchFilters({ where, params, alias, type, q, category, metadata = 'all', year = '', hideAdult = true }) {
   if (q) {
     const fts = buildFtsQuery(q);
@@ -119,9 +189,7 @@ function addSearchFilters({ where, params, alias, type, q, category, metadata = 
   }
 
   if (hideAdult) {
-    where.push(`COALESCE(c.name, '') NOT LIKE '%Adult%' COLLATE NOCASE`);
-    where.push(`COALESCE(c.name, '') NOT LIKE '%XXX%' COLLATE NOCASE`);
-    where.push(`${alias}.title NOT LIKE '%[XXX]%' COLLATE NOCASE`);
+    addAdultFilters(where, alias);
   }
 
   if (year && /^\d{4}$/.test(String(year))) {
@@ -226,6 +294,41 @@ function contentExists(type, id) {
   return Boolean(db.prepare(`SELECT id FROM ${table} WHERE id = ?`).get(id));
 }
 
+function getContentAdultRecord(type, id) {
+  if (type === 'movie') {
+    return db.prepare(`
+      SELECT m.title, c.name AS category
+      FROM movies m
+      LEFT JOIN categories c ON c.id = m.category_id
+      WHERE m.id = ?
+    `).get(id);
+  }
+
+  if (type === 'series') {
+    return db.prepare(`
+      SELECT s.title, c.name AS category
+      FROM series s
+      LEFT JOIN categories c ON c.id = s.category_id
+      WHERE s.id = ?
+    `).get(id);
+  }
+
+  if (type === 'channel') {
+    return db.prepare(`
+      SELECT ch.title, c.name AS category
+      FROM channels ch
+      LEFT JOIN categories c ON c.id = ch.category_id
+      WHERE ch.id = ?
+    `).get(id);
+  }
+
+  return null;
+}
+
+function canAccessContent(user, type, id) {
+  return canShowAdult(user) || !isAdultRecord(getContentAdultRecord(type, id));
+}
+
 function isFavorite(userId, type, id) {
   return Boolean(db.prepare(`
     SELECT 1
@@ -234,7 +337,7 @@ function isFavorite(userId, type, id) {
   `).get(userId, type, id));
 }
 
-function listFavorites(userId, { type = 'all', limit = 60, page = 1 }) {
+function listFavorites(userId, { type = 'all', limit = 60, page = 1, hideAdult = true }) {
   const filterType = type === 'all' ? null : normalizeFavoriteType(type);
   if (type !== 'all' && !filterType) {
     return { items: [], pagination: paginationMeta(0, page, limit) };
@@ -243,61 +346,79 @@ function listFavorites(userId, { type = 'all', limit = 60, page = 1 }) {
   const offset = (page - 1) * limit;
   const includedTypes = filterType ? [filterType] : ['movie', 'series', 'channel'];
   const parts = [];
+  const countParts = [];
   const params = [];
+  const countParams = [];
+  const movieAdultClause = hideAdult ? `AND ${adultFilterClauses('m').join(' AND ')}` : '';
+  const seriesAdultClause = hideAdult ? `AND ${adultFilterClauses('s').join(' AND ')}` : '';
+  const channelAdultClause = hideAdult ? `AND ${adultFilterClauses('ch').join(' AND ')}` : '';
 
   if (includedTypes.includes('movie')) {
+    const movieFrom = `
+      FROM favorites f
+      JOIN movies m ON m.id = f.content_id
+      LEFT JOIN categories c ON c.id = m.category_id
+      WHERE f.user_id = ? AND f.content_type = 'movie'
+      ${movieAdultClause}
+    `;
     parts.push(`
       SELECT
         f.created_at AS favoritedAt,
         m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.imported_at AS importedAt,
         m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear, NULL AS firstAirYear,
         c.id AS categoryId, c.name AS category, 1 AS isFavorite
-      FROM favorites f
-      JOIN movies m ON m.id = f.content_id
-      LEFT JOIN categories c ON c.id = m.category_id
-      WHERE f.user_id = ? AND f.content_type = 'movie'
+      ${movieFrom}
     `);
+    countParts.push(`SELECT f.id ${movieFrom}`);
     params.push(userId);
+    countParams.push(userId);
   }
 
   if (includedTypes.includes('series')) {
+    const seriesFrom = `
+      FROM favorites f
+      JOIN series s ON s.id = f.content_id
+      LEFT JOIN categories c ON c.id = s.category_id
+      WHERE f.user_id = ? AND f.content_type = 'series'
+      ${seriesAdultClause}
+    `;
     parts.push(`
       SELECT
         f.created_at AS favoritedAt,
         s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.imported_at AS importedAt,
         s.backdrop_url AS backdropUrl, s.overview, NULL AS releaseYear, s.first_air_year AS firstAirYear,
         c.id AS categoryId, c.name AS category, 1 AS isFavorite
-      FROM favorites f
-      JOIN series s ON s.id = f.content_id
-      LEFT JOIN categories c ON c.id = s.category_id
-      WHERE f.user_id = ? AND f.content_type = 'series'
+      ${seriesFrom}
     `);
+    countParts.push(`SELECT f.id ${seriesFrom}`);
     params.push(userId);
+    countParams.push(userId);
   }
 
   if (includedTypes.includes('channel')) {
+    const channelFrom = `
+      FROM favorites f
+      JOIN channels ch ON ch.id = f.content_id
+      LEFT JOIN categories c ON c.id = ch.category_id
+      WHERE f.user_id = ? AND f.content_type = 'channel'
+      ${channelAdultClause}
+    `;
     parts.push(`
       SELECT
         f.created_at AS favoritedAt,
         ch.id, 'channel' AS type, ch.title, ch.logo_url AS posterUrl, ch.imported_at AS importedAt,
         NULL AS backdropUrl, NULL AS overview, NULL AS releaseYear, NULL AS firstAirYear,
         c.id AS categoryId, c.name AS category, 1 AS isFavorite
-      FROM favorites f
-      JOIN channels ch ON ch.id = f.content_id
-      LEFT JOIN categories c ON c.id = ch.category_id
-      WHERE f.user_id = ? AND f.content_type = 'channel'
+      ${channelFrom}
     `);
+    countParts.push(`SELECT f.id ${channelFrom}`);
     params.push(userId);
+    countParams.push(userId);
   }
 
-  const countParams = [userId];
-  const countTypeClause = filterType ? 'AND content_type = ?' : '';
-  if (filterType) countParams.push(filterType);
-  const total = db.prepare(`
-    SELECT COUNT(*) AS total
-    FROM favorites
-    WHERE user_id = ? ${countTypeClause}
-  `).get(...countParams).total;
+  const total = countParts.length
+    ? db.prepare(`SELECT COUNT(*) AS total FROM (${countParts.join(' UNION ALL ')})`).get(...countParams).total
+    : 0;
 
   if (!parts.length || total === 0) {
     return { items: [], pagination: paginationMeta(total, page, limit) };
@@ -617,7 +738,7 @@ function listChannels({ q = '', category = '', sort = 'imported', limit = 40, pa
   return { items: attachCurrentPrograms(items), pagination: paginationMeta(total, page, limit) };
 }
 
-function getContinueWatching(userId, mode = 'all') {
+function getContinueWatching(userId, mode = 'all', hideAdult = true) {
   const typeFilter = {
     media: "AND content_type IN ('movie', 'episode') AND position > 5 AND completed_at IS NULL",
     channels: "AND content_type = 'channel'",
@@ -637,10 +758,14 @@ function getContinueWatching(userId, mode = 'all') {
     if (row.content_type === 'movie') {
       const item = db.prepare(`
       SELECT
-        id, 'movie' AS type, title, poster_url AS posterUrl, backdrop_url AS backdropUrl,
+        movies.id, 'movie' AS type, movies.title, movies.poster_url AS posterUrl, movies.backdrop_url AS backdropUrl,
+        c.name AS category,
         EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = movies.id) AS isFavorite
-        FROM movies WHERE id = ?
+        FROM movies
+        LEFT JOIN categories c ON c.id = movies.category_id
+        WHERE movies.id = ?
       `).get(userId, row.content_id);
+      if (hideAdult && isAdultRecord(item)) continue;
       if (item) items.push({ ...item, progress: row });
       continue;
     }
@@ -650,12 +775,15 @@ function getContinueWatching(userId, mode = 'all') {
         SELECT
           e.id, 'episode' AS type, e.title, e.display_title AS displayTitle,
           COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
-          s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl
+          s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl,
+          c.name AS category
         FROM episodes e
         JOIN seasons se ON se.id = e.season_id
         JOIN series s ON s.id = e.series_id
+        LEFT JOIN categories c ON c.id = COALESCE(e.category_id, s.category_id)
         WHERE e.id = ?
       `).get(row.content_id);
+      if (hideAdult && isAdultRecord({ ...item, title: `${item?.title || ''} ${item?.seriesTitle || ''}` })) continue;
       if (item) items.push({ ...item, progress: row });
       continue;
     }
@@ -663,10 +791,14 @@ function getContinueWatching(userId, mode = 'all') {
     if (row.content_type === 'channel') {
       const item = db.prepare(`
         SELECT
-          id, 'channel' AS type, title, logo_url AS posterUrl,
+          channels.id, 'channel' AS type, channels.title, channels.logo_url AS posterUrl,
+          c.name AS category,
           EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'channel' AND f.content_id = channels.id) AS isFavorite
-        FROM channels WHERE id = ?
+        FROM channels
+        LEFT JOIN categories c ON c.id = channels.category_id
+        WHERE channels.id = ?
       `).get(userId, row.content_id);
+      if (hideAdult && isAdultRecord(item)) continue;
       if (item) items.push({ ...item, progress: row });
     }
   }
@@ -674,7 +806,9 @@ function getContinueWatching(userId, mode = 'all') {
   return mode === 'channels' ? attachCurrentPrograms(items) : items;
 }
 
-function getFeaturedItems() {
+function getFeaturedItems(hideAdult = true) {
+  const movieAdult = hideAdult ? `${adultFilterClauses('m').join(' AND ')} AND` : '';
+  const seriesAdult = hideAdult ? `${adultFilterClauses('s').join(' AND ')} AND` : '';
   const items = db.prepare(`
     SELECT *
     FROM (
@@ -683,14 +817,7 @@ function getFeaturedItems() {
         m.backdrop_url AS backdropUrl, m.overview, m.imported_at AS importedAt
       FROM movies m
       LEFT JOIN categories c ON c.id = m.category_id
-      WHERE COALESCE(c.name, '') NOT LIKE '%Adult%' COLLATE NOCASE
-        AND COALESCE(c.name, '') NOT LIKE '%XXX%' COLLATE NOCASE
-        AND m.title NOT LIKE '%[XXX]%' COLLATE NOCASE
-        AND m.title NOT LIKE '%sexo%' COLLATE NOCASE
-        AND m.title NOT LIKE '%porn%' COLLATE NOCASE
-        AND m.title NOT LIKE '%erot%' COLLATE NOCASE
-        AND m.title NOT LIKE '%18+%' COLLATE NOCASE
-        AND (m.backdrop_url IS NOT NULL OR m.poster_url IS NOT NULL)
+      WHERE ${movieAdult} (m.backdrop_url IS NOT NULL OR m.poster_url IS NOT NULL)
 
       UNION ALL
 
@@ -699,14 +826,7 @@ function getFeaturedItems() {
         s.backdrop_url AS backdropUrl, s.overview, s.imported_at AS importedAt
       FROM series s
       LEFT JOIN categories c ON c.id = s.category_id
-      WHERE COALESCE(c.name, '') NOT LIKE '%Adult%' COLLATE NOCASE
-        AND COALESCE(c.name, '') NOT LIKE '%XXX%' COLLATE NOCASE
-        AND s.title NOT LIKE '%[XXX]%' COLLATE NOCASE
-        AND s.title NOT LIKE '%sexo%' COLLATE NOCASE
-        AND s.title NOT LIKE '%porn%' COLLATE NOCASE
-        AND s.title NOT LIKE '%erot%' COLLATE NOCASE
-        AND s.title NOT LIKE '%18+%' COLLATE NOCASE
-        AND (s.backdrop_url IS NOT NULL OR s.poster_url IS NOT NULL)
+      WHERE ${seriesAdult} (s.backdrop_url IS NOT NULL OR s.poster_url IS NOT NULL)
     )
     ORDER BY RANDOM()
     LIMIT 5
@@ -722,13 +842,7 @@ function getFeaturedItems() {
         m.backdrop_url AS backdropUrl, m.overview, m.imported_at AS importedAt
       FROM movies m
       LEFT JOIN categories c ON c.id = m.category_id
-      WHERE COALESCE(c.name, '') NOT LIKE '%Adult%' COLLATE NOCASE
-        AND COALESCE(c.name, '') NOT LIKE '%XXX%' COLLATE NOCASE
-        AND m.title NOT LIKE '%[XXX]%' COLLATE NOCASE
-        AND m.title NOT LIKE '%sexo%' COLLATE NOCASE
-        AND m.title NOT LIKE '%porn%' COLLATE NOCASE
-        AND m.title NOT LIKE '%erot%' COLLATE NOCASE
-        AND m.title NOT LIKE '%18+%' COLLATE NOCASE
+      ${hideAdult ? `WHERE ${adultFilterClauses('m').join(' AND ')}` : ''}
 
       UNION ALL
 
@@ -737,28 +851,24 @@ function getFeaturedItems() {
         s.backdrop_url AS backdropUrl, s.overview, s.imported_at AS importedAt
       FROM series s
       LEFT JOIN categories c ON c.id = s.category_id
-      WHERE COALESCE(c.name, '') NOT LIKE '%Adult%' COLLATE NOCASE
-        AND COALESCE(c.name, '') NOT LIKE '%XXX%' COLLATE NOCASE
-        AND s.title NOT LIKE '%[XXX]%' COLLATE NOCASE
-        AND s.title NOT LIKE '%sexo%' COLLATE NOCASE
-        AND s.title NOT LIKE '%porn%' COLLATE NOCASE
-        AND s.title NOT LIKE '%erot%' COLLATE NOCASE
-        AND s.title NOT LIKE '%18+%' COLLATE NOCASE
+      ${hideAdult ? `WHERE ${adultFilterClauses('s').join(' AND ')}` : ''}
     )
     ORDER BY RANDOM()
     LIMIT 5
   `).all();
 }
 
-function getCategoryRows(userId = 1) {
+function getCategoryRows(userId = 1, hideAdult = true) {
   const rows = [];
+  const categoryAdultClause = hideAdult
+    ? `AND c.name NOT LIKE '%Adult%' COLLATE NOCASE AND c.name NOT LIKE '%XXX%' COLLATE NOCASE AND c.name NOT LIKE '%+18%' COLLATE NOCASE`
+    : '';
   const movieCategories = db.prepare(`
     SELECT c.id, c.name, COUNT(m.id) AS total, MAX(m.imported_at) AS recent
     FROM categories c
     JOIN movies m ON m.category_id = c.id
     WHERE c.type = 'movie'
-      AND c.name NOT LIKE '%Adult%' COLLATE NOCASE
-      AND c.name NOT LIKE '%XXX%' COLLATE NOCASE
+      ${categoryAdultClause}
     GROUP BY c.id
     ORDER BY RANDOM()
     LIMIT 5
@@ -768,7 +878,7 @@ function getCategoryRows(userId = 1) {
     rows.push({
       title: category.name,
       type: 'movie',
-      items: listMovies({ category: category.id, sort: 'random', limit: 18, userId }).items
+      items: listMovies({ category: category.id, sort: 'random', limit: 18, userId, hideAdult }).items
     });
   }
 
@@ -777,6 +887,7 @@ function getCategoryRows(userId = 1) {
     FROM categories c
     JOIN series s ON s.category_id = c.id
     WHERE c.type = 'series'
+      ${categoryAdultClause}
     GROUP BY c.id
     ORDER BY RANDOM()
     LIMIT 4
@@ -786,7 +897,7 @@ function getCategoryRows(userId = 1) {
     rows.push({
       title: `${category.name} - series`,
       type: 'series',
-      items: listSeries({ category: category.id, sort: 'random', limit: 18, userId }).items
+      items: listSeries({ category: category.id, sort: 'random', limit: 18, userId, hideAdult }).items
     });
   }
 
@@ -808,12 +919,59 @@ app.post('/api/auth/login', (req, res) => {
 
   return res.json({
     token: signUser(user),
-    user: { id: user.id, username: user.username }
+    user: formatUser(user)
   });
 });
 
-app.get('/api/auth/me', requireAdmin, (req, res) => {
+app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
+});
+
+app.get('/api/admin/users', requireAdmin, (req, res) => {
+  res.json({ users: listUsers() });
+});
+
+app.post('/api/admin/users', requireAdmin, (req, res) => {
+  const username = String(req.body.username || '').trim();
+  const password = String(req.body.password || '');
+  const isAdmin = req.body.isAdmin === true || req.body.isAdmin === 1 || req.body.isAdmin === '1' || req.body.isAdmin === 'true';
+  const canViewAdult = req.body.canViewAdult === true || req.body.canViewAdult === 1 || req.body.canViewAdult === '1' || req.body.canViewAdult === 'true';
+
+  if (username.length < 3) {
+    return res.status(400).json({ error: 'Use um usuario com pelo menos 3 caracteres' });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: 'Use uma senha com pelo menos 6 caracteres' });
+  }
+
+  const existing = db.prepare('SELECT id FROM users WHERE username = ? COLLATE NOCASE').get(username);
+  if (existing) {
+    return res.status(409).json({ error: 'Esse usuario ja existe' });
+  }
+
+  const passwordHash = bcrypt.hashSync(password, 10);
+  const result = db
+    .prepare('INSERT INTO users (username, password_hash, is_admin, can_view_adult) VALUES (?, ?, ?, ?)')
+    .run(username, passwordHash, isAdmin ? 1 : 0, canViewAdult ? 1 : 0);
+  const user = db.prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
+  res.status(201).json({ user: formatUser(user), users: listUsers() });
+});
+
+app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
+  const userId = Number(req.params.id);
+  if (!Number.isFinite(userId)) return res.status(400).json({ error: 'Usuario invalido' });
+  if (userId === req.user.id) return res.status(400).json({ error: 'Voce nao pode remover seu proprio usuario' });
+
+  const user = db.prepare('SELECT id, is_admin FROM users WHERE id = ?').get(userId);
+  if (!user) return res.status(404).json({ error: 'Usuario nao encontrado' });
+
+  if (user.is_admin) {
+    const admins = db.prepare('SELECT COUNT(*) AS total FROM users WHERE is_admin = 1').get().total;
+    if (admins <= 1) return res.status(400).json({ error: 'Mantenha pelo menos um administrador' });
+  }
+
+  db.prepare('DELETE FROM users WHERE id = ?').run(userId);
+  res.json({ users: listUsers() });
 });
 
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
@@ -1031,12 +1189,18 @@ app.get('/api/stats', (req, res) => {
 });
 
 app.get('/api/categories', (req, res) => {
+  const user = getLocalUser(req);
   const type = String(req.query.type || '').trim();
   const params = [];
   const where = [];
   if (type && type !== 'all') {
     where.push('type = ?');
     params.push(type);
+  }
+  if (!canShowAdult(user)) {
+    where.push("name NOT LIKE '%Adult%' COLLATE NOCASE");
+    where.push("name NOT LIKE '%XXX%' COLLATE NOCASE");
+    where.push("name NOT LIKE '%+18%' COLLATE NOCASE");
   }
 
   const categories = db.prepare(`
@@ -1050,27 +1214,29 @@ app.get('/api/categories', (req, res) => {
 });
 
 app.get('/api/favorites', (req, res) => {
-  const userId = getLocalUserId(req);
-  const result = listFavorites(userId, {
+  const user = getLocalUser(req);
+  const result = listFavorites(user.id, {
     type: String(req.query.type || 'all'),
     limit: parseLimit(req.query.limit, 60, 120),
-    page: parsePage(req.query.page)
+    page: parsePage(req.query.page),
+    hideAdult: !canShowAdult(user)
   });
   res.json(result);
 });
 
 app.post('/api/favorites', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const type = normalizeFavoriteType(req.body.type);
   const id = Number(req.body.id);
 
   if (!type || !id) return res.status(400).json({ error: 'Favorito invalido' });
   if (!contentExists(type, id)) return res.status(404).json({ error: 'Item nao encontrado' });
+  if (!canAccessContent(user, type, id)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
 
   db.prepare(`
     INSERT OR IGNORE INTO favorites (user_id, content_type, content_id)
     VALUES (?, ?, ?)
-  `).run(userId, type, id);
+  `).run(user.id, type, id);
 
   res.json({ ok: true, isFavorite: true });
 });
@@ -1091,41 +1257,42 @@ app.delete('/api/favorites/:type/:id', (req, res) => {
 });
 
 app.get('/api/home', (req, res) => {
-  const userId = getLocalUserId(req);
-  const featuredItems = getFeaturedItems();
+  const user = getLocalUser(req);
+  const hideAdult = !canShowAdult(user);
+  const featuredItems = getFeaturedItems(hideAdult);
   res.json({
     featured: featuredItems[0] || null,
     featuredItems,
-    continueWatching: getContinueWatching(userId),
-    continueMoviesSeries: getContinueWatching(userId, 'media'),
-    continueChannels: getContinueWatching(userId, 'channels'),
-    favorites: listFavorites(userId, { limit: 20 }).items,
-    randomMovies: listMovies({ sort: 'random', limit: 20, userId }).items,
-    randomSeries: listSeries({ sort: 'random', limit: 20, userId }).items,
-    liveChannels: listChannels({ sort: 'random', limit: 20, userId }).items,
-    rows: getCategoryRows(userId),
+    continueWatching: getContinueWatching(user.id, 'all', hideAdult),
+    continueMoviesSeries: getContinueWatching(user.id, 'media', hideAdult),
+    continueChannels: getContinueWatching(user.id, 'channels', hideAdult),
+    favorites: listFavorites(user.id, { limit: 20, hideAdult }).items,
+    randomMovies: listMovies({ sort: 'random', limit: 20, userId: user.id, hideAdult }).items,
+    randomSeries: listSeries({ sort: 'random', limit: 20, userId: user.id, hideAdult }).items,
+    liveChannels: listChannels({ sort: 'random', limit: 20, userId: user.id, hideAdult }).items,
+    rows: getCategoryRows(user.id, hideAdult),
     stats: getStats()
   });
 });
 
 app.get('/api/movies', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const result = listMovies({
     q: String(req.query.q || ''),
     category: String(req.query.category || ''),
     sort: String(req.query.sort || 'imported'),
     metadata: String(req.query.metadata || 'all'),
     year: String(req.query.year || ''),
-    hideAdult: shouldHideAdult(req.query.hideAdult),
+    hideAdult: effectiveHideAdult(req, user),
     limit: parseLimit(req.query.limit),
     page: parsePage(req.query.page),
-    userId
+    userId: user.id
   });
   res.json(result);
 });
 
 app.get('/api/movies/:id', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const movie = db.prepare(`
     SELECT
       m.id, 'movie' AS type, m.title, m.stream_url AS streamUrl, m.poster_url AS posterUrl,
@@ -1138,28 +1305,29 @@ app.get('/api/movies/:id', (req, res) => {
   `).get(req.params.id);
 
   if (!movie) return res.status(404).json({ error: 'Filme nao encontrado' });
+  if (!canShowAdult(user) && isAdultRecord(movie)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
   const sources = getStreamSources('movie', movie.id, movie.streamUrl);
-  res.json({ movie: { ...movie, isFavorite: isFavorite(userId, 'movie', movie.id), sources: publicSources(sources), sourceCount: sources.length } });
+  res.json({ movie: { ...movie, isFavorite: isFavorite(user.id, 'movie', movie.id), sources: publicSources(sources), sourceCount: sources.length } });
 });
 
 app.get('/api/series', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const result = listSeries({
     q: String(req.query.q || ''),
     category: String(req.query.category || ''),
     sort: String(req.query.sort || 'imported'),
     metadata: String(req.query.metadata || 'all'),
     year: String(req.query.year || ''),
-    hideAdult: shouldHideAdult(req.query.hideAdult),
+    hideAdult: effectiveHideAdult(req, user),
     limit: parseLimit(req.query.limit),
     page: parsePage(req.query.page),
-    userId
+    userId: user.id
   });
   res.json(result);
 });
 
 app.get('/api/series/:id', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const series = db.prepare(`
     SELECT
       s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.backdrop_url AS backdropUrl,
@@ -1172,6 +1340,7 @@ app.get('/api/series/:id', (req, res) => {
   `).get(req.params.id);
 
   if (!series) return res.status(404).json({ error: 'Serie nao encontrada' });
+  if (!canShowAdult(user) && isAdultRecord(series)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
 
   const seasons = db.prepare(`
     SELECT id, season_number AS seasonNumber, title, poster_url AS posterUrl
@@ -1197,33 +1366,40 @@ app.get('/api/series/:id', (req, res) => {
     WHERE e.series_id = ?
     GROUP BY e.id
     ORDER BY e.season_number ASC, e.episode_number ASC, e.title COLLATE NOCASE ASC
-  `).all(userId, series.id);
+  `).all(user.id, series.id);
 
   const bySeason = new Map(seasons.map((season) => [season.id, { ...season, episodes: [] }]));
   for (const episode of episodes) {
     bySeason.get(episode.seasonId)?.episodes.push(episode);
   }
 
-  res.json({ series: { ...series, isFavorite: isFavorite(userId, 'series', series.id), seasons: [...bySeason.values()] } });
+  res.json({ series: { ...series, isFavorite: isFavorite(user.id, 'series', series.id), seasons: [...bySeason.values()] } });
 });
 
 app.get('/api/channels', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const result = listChannels({
     q: String(req.query.q || ''),
     category: String(req.query.category || ''),
     sort: String(req.query.sort || 'imported'),
-    hideAdult: shouldHideAdult(req.query.hideAdult),
+    hideAdult: effectiveHideAdult(req, user),
     limit: parseLimit(req.query.limit, 60, 200),
     page: parsePage(req.query.page),
-    userId
+    userId: user.id
   });
   res.json(result);
 });
 
 app.get('/api/channels/:id/epg', (req, res) => {
-  const channel = db.prepare('SELECT id FROM channels WHERE id = ?').get(req.params.id);
+  const user = getLocalUser(req);
+  const channel = db.prepare(`
+    SELECT ch.id, ch.title, c.name AS category
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    WHERE ch.id = ?
+  `).get(req.params.id);
   if (!channel) return res.status(404).json({ error: 'Canal nao encontrado' });
+  if (!canShowAdult(user) && isAdultRecord(channel)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
 
   res.json({
     current: getCurrentProgram(channel.id),
@@ -1233,13 +1409,13 @@ app.get('/api/channels/:id/epg', (req, res) => {
 });
 
 app.get('/api/search', asyncRoute(async (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const q = String(req.query.q || '').trim();
   const type = String(req.query.type || 'all');
   const category = String(req.query.category || '');
   const metadata = String(req.query.metadata || 'all');
   const year = String(req.query.year || '');
-  const hideAdult = shouldHideAdult(req.query.hideAdult);
+  const hideAdult = effectiveHideAdult(req, user);
   const limit = parseLimit(req.query.limit, 40, 120);
   const page = parsePage(req.query.page);
   const perTypeLimit = page * limit;
@@ -1248,22 +1424,22 @@ app.get('/api/search', asyncRoute(async (req, res) => {
   if (!q) return res.json({ items: [] });
   let total = 0;
   if (type === 'all' || type === 'movie') {
-    const result = listMovies({ q, category, metadata, year, hideAdult, limit: perTypeLimit, userId });
+    const result = listMovies({ q, category, metadata, year, hideAdult, limit: perTypeLimit, userId: user.id });
     results.push(...result.items);
     total += result.pagination.total;
   }
   if (type === 'all' || type === 'series') {
-    const result = listSeries({ q, category, metadata, year, hideAdult, limit: perTypeLimit, userId });
+    const result = listSeries({ q, category, metadata, year, hideAdult, limit: perTypeLimit, userId: user.id });
     results.push(...result.items);
     total += result.pagination.total;
   }
   if (type === 'all' || type === 'channel') {
-    const result = listChannels({ q, category, hideAdult, limit: perTypeLimit, userId });
+    const result = listChannels({ q, category, hideAdult, limit: perTypeLimit, userId: user.id });
     results.push(...result.items);
     total += result.pagination.total;
   }
 
-  const personMatches = await findPersonCreditMatches({ q, type, category, metadata, year, hideAdult, userId });
+  const personMatches = await findPersonCreditMatches({ q, type, category, metadata, year, hideAdult, userId: user.id });
   const merged = mergeSearchItems(results, personMatches);
   const start = (page - 1) * limit;
   res.json({
@@ -1342,17 +1518,20 @@ app.get('/api/problems', requireAdmin, (req, res) => {
 });
 
 app.get('/api/play/:type/:id', (req, res) => {
-  const userId = getLocalUserId(req);
+  const user = getLocalUser(req);
   const type = req.params.type;
   const id = Number(req.params.id);
 
   if (type === 'movie') {
     const movie = db.prepare(`
-      SELECT id, 'movie' AS type, title, stream_url AS streamUrl, poster_url AS posterUrl
-        , backdrop_url AS backdropUrl
-      FROM movies WHERE id = ?
+      SELECT m.id, 'movie' AS type, m.title, m.stream_url AS streamUrl, m.poster_url AS posterUrl,
+        m.backdrop_url AS backdropUrl, c.name AS category
+      FROM movies m
+      LEFT JOIN categories c ON c.id = m.category_id
+      WHERE m.id = ?
     `).get(id);
     if (!movie) return res.status(404).json({ error: 'Filme nao encontrado' });
+    if (!canShowAdult(user) && isAdultRecord(movie)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
     const sources = getStreamSources('movie', movie.id, movie.streamUrl);
     const selectedSource = pickStreamSource(sources, req.query.source);
     const streamUrl = selectedSource?.streamUrl || movie.streamUrl;
@@ -1363,17 +1542,21 @@ app.get('/api/play/:type/:id', (req, res) => {
         streamFormat: streamFormat(streamUrl),
         sources: publicSources(sources),
         activeSourceId: selectedSource?.id || null,
-        isFavorite: isFavorite(userId, 'movie', movie.id)
+        isFavorite: isFavorite(user.id, 'movie', movie.id)
       }
     });
   }
 
   if (type === 'channel') {
     const channel = db.prepare(`
-      SELECT id, 'channel' AS type, title, stream_url AS streamUrl, logo_url AS posterUrl
-      FROM channels WHERE id = ?
+      SELECT ch.id, 'channel' AS type, ch.title, ch.stream_url AS streamUrl, ch.logo_url AS posterUrl,
+        c.name AS category
+      FROM channels ch
+      LEFT JOIN categories c ON c.id = ch.category_id
+      WHERE ch.id = ?
     `).get(id);
     if (!channel) return res.status(404).json({ error: 'Canal nao encontrado' });
+    if (!canShowAdult(user) && isAdultRecord(channel)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
     const sources = getStreamSources('channel', channel.id, channel.streamUrl);
     const selectedSource = pickStreamSource(sources, req.query.source);
     const directStreamUrl = selectedSource?.streamUrl || channel.streamUrl;
@@ -1387,7 +1570,7 @@ app.get('/api/play/:type/:id', (req, res) => {
         streamFormat: format,
         sources: publicSources(sources),
         activeSourceId: selectedSource?.id || null,
-        isFavorite: isFavorite(userId, 'channel', channel.id),
+        isFavorite: isFavorite(user.id, 'channel', channel.id),
         currentProgram: getCurrentProgram(channel.id),
         nextProgram: getNextProgram(channel.id),
         guide: getChannelGuide(channel.id, 8)
@@ -1403,13 +1586,18 @@ app.get('/api/play/:type/:id', (req, res) => {
         e.series_id AS seriesId, e.season_number AS seasonNumber,
         e.episode_number AS episodeNumber, s.title AS seriesTitle,
         COALESCE(NULLIF(s.backdrop_url, ''), NULLIF(se.backdrop_url, ''), NULLIF(s.poster_url, '')) AS backdropUrl,
-        s.overview AS seriesOverview
+        s.overview AS seriesOverview,
+        c.name AS category
       FROM episodes e
       JOIN seasons se ON se.id = e.season_id
       JOIN series s ON s.id = e.series_id
+      LEFT JOIN categories c ON c.id = COALESCE(e.category_id, s.category_id)
       WHERE e.id = ?
     `).get(id);
     if (!episode) return res.status(404).json({ error: 'Episodio nao encontrado' });
+    if (!canShowAdult(user) && isAdultRecord({ ...episode, title: `${episode.title || ''} ${episode.seriesTitle || ''}` })) {
+      return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
+    }
 
     const nextEpisode = db.prepare(`
       SELECT id, title, season_number AS seasonNumber, episode_number AS episodeNumber
@@ -1440,8 +1628,15 @@ app.get('/api/play/:type/:id', (req, res) => {
 });
 
 app.get('/api/stream/channel/:id', asyncRoute(async (req, res) => {
-  const channel = db.prepare('SELECT id, title, stream_url AS streamUrl FROM channels WHERE id = ?').get(req.params.id);
+  const user = getLocalUser(req);
+  const channel = db.prepare(`
+    SELECT ch.id, ch.title, ch.stream_url AS streamUrl, c.name AS category
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    WHERE ch.id = ?
+  `).get(req.params.id);
   if (!channel) return res.status(404).json({ error: 'Canal nao encontrado' });
+  if (!canShowAdult(user) && isAdultRecord(channel)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
   const sources = getStreamSources('channel', channel.id, channel.streamUrl);
   const selectedSource = pickStreamSource(sources, req.query.source);
   const directStreamUrl = selectedSource?.streamUrl || channel.streamUrl;
