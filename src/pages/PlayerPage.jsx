@@ -29,10 +29,12 @@ export default function PlayerPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const sourceParam = searchParams.get('source') || '';
+  const autoPlayParam = searchParams.get('autoplay') === '1';
   const videoRef = useRef(null);
   const shellRef = useRef(null);
   const mediaPlayerRef = useRef(null);
   const lastSaveRef = useRef(0);
+  const autoPlayAttemptedRef = useRef(false);
   const lastLiveTickRef = useRef({ position: 0, updatedAt: Date.now() });
   const lowLiveBufferSinceRef = useRef(0);
   const lastLiveRestartRef = useRef(0);
@@ -59,6 +61,9 @@ export default function PlayerPage() {
   const hasGuide = item?.guide?.length > 0;
   const sourceOptions = item?.sources || [];
   const favoriteType = type === 'movie' || type === 'channel' ? type : null;
+  const finishClock = !isLive && isPlaying && duration > current
+    ? formatFinishClock(Math.max(0, duration - current))
+    : '';
 
   function getLiveBufferedAhead(video = videoRef.current) {
     if (!video?.buffered?.length) return 0;
@@ -104,6 +109,12 @@ export default function PlayerPage() {
   }, [id, item, type]);
 
   useEffect(() => {
+    autoPlayAttemptedRef.current = false;
+    setCurrent(0);
+    setDuration(0);
+    setIsPlaying(false);
+    setItem(null);
+    setError('');
     const sourceQuery = sourceParam ? `?source=${encodeURIComponent(sourceParam)}` : '';
     apiFetch(`/play/${type}/${id}${sourceQuery}`)
       .then((data) => setItem(data.item))
@@ -112,6 +123,7 @@ export default function PlayerPage() {
 
   useEffect(() => {
     if (!item?.streamUrl || !videoRef.current) return undefined;
+    if (Number(item.id) !== Number(id)) return undefined;
 
     const video = videoRef.current;
     let hls;
@@ -255,16 +267,26 @@ export default function PlayerPage() {
         })
         .catch(() => {});
     };
+    const autoPlayIfRequested = () => {
+      if (!autoPlayParam || autoPlayAttemptedRef.current || isLive || document.hidden) return;
+      autoPlayAttemptedRef.current = true;
+      playMedia(video).catch(() => {
+        setError('Clique novamente para iniciar a reproducao');
+        showControls();
+      });
+    };
     const onLoaded = () => {
       clearPlayableError();
       setDuration(Number.isFinite(video.duration) ? video.duration : 0);
       restoreProgress();
       resumeLiveIfNeeded();
+      autoPlayIfRequested();
     };
     const onPlayable = () => {
       clearPlayableError();
       finishPendingLivePlay();
       resumeLiveIfNeeded();
+      autoPlayIfRequested();
     };
     const onTime = () => {
       setCurrent(video.currentTime || 0);
@@ -298,6 +320,9 @@ export default function PlayerPage() {
         restartLiveStream();
       } else {
         saveProgress({ completed: true });
+        if (type === 'episode' && item?.nextEpisode?.id) {
+          navigate(`/watch/episode/${item.nextEpisode.id}?autoplay=1`, { replace: true });
+        }
       }
     };
 
@@ -338,7 +363,7 @@ export default function PlayerPage() {
       hls?.destroy();
       tsPlayer?.destroy();
     };
-  }, [id, item, saveProgress, streamReloadKey, type]);
+  }, [autoPlayParam, id, isLive, item, navigate, saveProgress, streamReloadKey, type]);
 
   function showControls() {
     setControlsVisible(true);
@@ -402,6 +427,17 @@ export default function PlayerPage() {
   function formatClock(value) {
     if (!value) return '';
     return new Date(value).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function formatFinishClock(secondsLeft) {
+    if (!Number.isFinite(secondsLeft) || secondsLeft <= 0) return '';
+    const rate = videoRef.current?.playbackRate && videoRef.current.playbackRate > 0
+      ? videoRef.current.playbackRate
+      : 1;
+    return new Date(Date.now() + (secondsLeft / rate) * 1000).toLocaleTimeString('pt-BR', {
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   }
 
   async function togglePlay() {
@@ -577,6 +613,7 @@ export default function PlayerPage() {
         playsInline
         poster={item?.backdropUrl || item?.posterUrl || undefined}
         onClick={togglePlay}
+        onDoubleClick={fullscreen}
         className="h-screen w-screen bg-black object-contain"
       />
 
@@ -659,8 +696,9 @@ export default function PlayerPage() {
                 </button>
               </>
             )}
-            <div className="min-w-28 text-sm font-bold text-slate-200">
-              {isLive ? 'Ao vivo' : `${formatTime(current)} / ${formatTime(duration)}`}
+            <div className="min-w-32 text-sm font-bold text-slate-200">
+              <p>{isLive ? 'Ao vivo' : `${formatTime(current)} / ${formatTime(duration)}`}</p>
+              {finishClock && <p className="mt-0.5 text-[11px] font-semibold text-slate-400">Termina as {finishClock}</p>}
             </div>
             {isLive && (liveBuffering || item?.currentProgram) && (
               <div className="order-last min-w-0 basis-full px-2 text-center sm:order-none sm:basis-auto sm:flex-1 sm:px-6">
