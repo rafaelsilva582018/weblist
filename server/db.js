@@ -218,6 +218,11 @@ function addColumn(table, name, definition) {
 function migrateColumns() {
   addColumn('users', 'is_admin', 'INTEGER NOT NULL DEFAULT 0');
   const addedAdultPermission = addColumn('users', 'can_view_adult', 'INTEGER NOT NULL DEFAULT 0');
+  addColumn('users', 'display_name', 'TEXT');
+  addColumn('users', 'email', 'TEXT');
+  addColumn('users', 'avatar_url', 'TEXT');
+  addColumn('users', 'prefer_hide_adult', 'INTEGER NOT NULL DEFAULT 1');
+  addColumn('users', 'autoplay_next', 'INTEGER NOT NULL DEFAULT 1');
 
   const adminCount = db.prepare('SELECT COUNT(*) AS total FROM users WHERE is_admin = 1').get().total;
   if (adminCount === 0) {

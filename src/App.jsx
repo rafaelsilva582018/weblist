@@ -8,6 +8,7 @@ import Home from './pages/Home.jsx';
 import LoginPage from './pages/LoginPage.jsx';
 import MovieDetails from './pages/MovieDetails.jsx';
 import PlayerPage from './pages/PlayerPage.jsx';
+import ProfilePage from './pages/ProfilePage.jsx';
 import ProblemsPage from './pages/ProblemsPage.jsx';
 import SearchPage from './pages/SearchPage.jsx';
 import SeriesDetails from './pages/SeriesDetails.jsx';
@@ -62,6 +63,7 @@ export default function App() {
               <Route path="/series" element={<CatalogPage type="series" />} />
               <Route path="/canais" element={<CatalogPage type="channel" />} />
               <Route path="/favoritos" element={<FavoritesPage />} />
+              <Route path="/perfil" element={<ProfilePage />} />
               <Route path="/movies/:id" element={<MovieDetails />} />
               <Route path="/series/:id" element={<SeriesDetails />} />
               <Route path="/search" element={<SearchPage />} />

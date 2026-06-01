@@ -15,6 +15,10 @@ const adminNavItems = [
   { to: '/problemas', label: 'Problemas', icon: AlertTriangle }
 ];
 
+function userInitial(user) {
+  return (user?.displayName || user?.username || 'U').trim()[0]?.toUpperCase() || 'U';
+}
+
 export default function Layout() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -68,10 +72,20 @@ export default function Layout() {
           </form>
 
           <div className="hidden items-center gap-2 sm:flex">
-            <div className="hidden items-center gap-2 rounded border border-white/10 bg-white/6 px-3 py-2 text-sm text-slate-200 lg:flex">
-              <UserCircle size={17} className="text-slate-400" />
-              <span className="max-w-28 truncate">{user?.username}</span>
-            </div>
+            <NavLink
+              to="/perfil"
+              className={({ isActive }) =>
+                `hidden items-center gap-2 rounded border border-white/10 px-3 py-2 text-sm transition lg:flex ${
+                  isActive ? 'bg-white text-ink' : 'bg-white/6 text-slate-200 hover:bg-white/10 hover:text-white'
+                }`
+              }
+              title="Perfil"
+            >
+              <span className="grid size-6 shrink-0 place-items-center overflow-hidden rounded bg-white/10 text-xs font-black">
+                {user?.avatarUrl ? <img src={user.avatarUrl} alt={user?.username} className="size-full object-cover" /> : userInitial(user)}
+              </span>
+              <span className="max-w-28 truncate">{user?.displayName || user?.username}</span>
+            </NavLink>
             <button
               type="button"
               onClick={logout}
@@ -128,6 +142,17 @@ export default function Layout() {
               Admin
             </NavLink>
           )}
+          <NavLink
+            to="/perfil"
+            className={({ isActive }) =>
+              `flex shrink-0 items-center gap-2 rounded px-3 py-2 text-sm ${
+                isActive ? 'bg-white/12 text-white' : 'text-slate-300'
+              }`
+            }
+          >
+            <UserCircle size={16} />
+            Perfil
+          </NavLink>
           <button type="button" onClick={logout} className="flex shrink-0 items-center gap-2 rounded px-3 py-2 text-sm text-slate-300">
             <LogOut size={16} />
             Sair

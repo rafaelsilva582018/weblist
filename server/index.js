@@ -61,6 +61,15 @@ function parseTmdbReference(value = '') {
   return { id: 0, type: '' };
 }
 
+function compactInput(value = '', maxLength = 160) {
+  return String(value || '').replace(/\s+/g, ' ').trim().slice(0, maxLength);
+}
+
+function boolInput(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback;
+  return value === true || value === 1 || value === '1' || value === 'true';
+}
+
 function getBearerToken(req) {
   const header = req.headers.authorization || '';
   return header.startsWith('Bearer ') ? header.slice(7) : '';
@@ -70,15 +79,40 @@ function formatUser(user) {
   return {
     id: user.id,
     username: user.username,
+    displayName: user.display_name || '',
+    email: user.email || '',
+    avatarUrl: user.avatar_url || '',
     isAdmin: Boolean(user.is_admin),
     canViewAdult: Boolean(user.can_view_adult),
+    preferHideAdult: user.prefer_hide_adult !== 0,
+    autoplayNext: user.autoplay_next !== 0,
+    watchedCount: Number(user.watched_count || 0),
+    progressCount: Number(user.progress_count || 0),
     createdAt: user.created_at
   };
 }
 
 function listUsers() {
   return db
-    .prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users ORDER BY created_at ASC, id ASC')
+    .prepare(`
+      SELECT
+        u.id,
+        u.username,
+        u.display_name,
+        u.email,
+        u.avatar_url,
+        u.is_admin,
+        u.can_view_adult,
+        u.prefer_hide_adult,
+        u.autoplay_next,
+        u.created_at,
+        COUNT(wp.id) AS progress_count,
+        SUM(CASE WHEN wp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS watched_count
+      FROM users u
+      LEFT JOIN watch_progress wp ON wp.user_id = u.id
+      GROUP BY u.id
+      ORDER BY u.created_at ASC, u.id ASC
+    `)
     .all()
     .map(formatUser);
 }
@@ -88,7 +122,7 @@ function requireAuth(req, res, next) {
     const token = getBearerToken(req);
     if (!token) return res.status(401).json({ error: 'Login necessario' });
     const payload = jwt.verify(token, jwtSecret);
-    const user = db.prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users WHERE id = ?').get(Number(payload.sub));
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(payload.sub));
     if (!user) return res.status(401).json({ error: 'Sessao expirada' });
     req.user = formatUser(user);
     return next();
@@ -113,7 +147,7 @@ function getLocalUser(req) {
     const token = getBearerToken(req);
     if (!token) return { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
     const payload = jwt.verify(token, jwtSecret);
-    const user = db.prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users WHERE id = ?').get(Number(payload.sub));
+    const user = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(payload.sub));
     return user ? formatUser(user) : { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
   } catch {
     return { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
@@ -831,6 +865,61 @@ function getContinueWatching(userId, mode = 'all', hideAdult = true) {
   return mode === 'channels' ? attachCurrentPrograms(items) : items;
 }
 
+function getUserProfileStats(userId) {
+  return {
+    progress: db.prepare('SELECT COUNT(*) AS total FROM watch_progress WHERE user_id = ?').get(userId).total,
+    watched: db.prepare('SELECT COUNT(*) AS total FROM watch_progress WHERE user_id = ? AND completed_at IS NOT NULL').get(userId).total,
+    favorites: db.prepare('SELECT COUNT(*) AS total FROM favorites WHERE user_id = ?').get(userId).total
+  };
+}
+
+function getRecentProfileItems(userId, hideAdult = true, limit = 18) {
+  const rows = db.prepare(`
+    SELECT *
+    FROM watch_progress
+    WHERE user_id = ?
+      AND content_type IN ('movie', 'episode')
+      AND (position > 5 OR completed_at IS NOT NULL)
+    ORDER BY updated_at DESC
+    LIMIT ?
+  `).all(userId, limit);
+
+  const items = [];
+  for (const row of rows) {
+    if (row.content_type === 'movie') {
+      const item = db.prepare(`
+        SELECT
+          m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.backdrop_url AS backdropUrl,
+          c.name AS category,
+          EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
+        FROM movies m
+        LEFT JOIN categories c ON c.id = m.category_id
+        WHERE m.id = ?
+      `).get(userId, row.content_id);
+      if (hideAdult && isAdultRecord(item)) continue;
+      if (item) items.push({ ...item, progress: row });
+      continue;
+    }
+
+    const item = db.prepare(`
+      SELECT
+        e.id, 'episode' AS type, e.title, e.display_title AS displayTitle,
+        COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
+        s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl,
+        c.name AS category
+      FROM episodes e
+      JOIN seasons se ON se.id = e.season_id
+      JOIN series s ON s.id = e.series_id
+      LEFT JOIN categories c ON c.id = COALESCE(e.category_id, s.category_id)
+      WHERE e.id = ?
+    `).get(row.content_id);
+    if (hideAdult && isAdultRecord({ ...item, title: `${item?.title || ''} ${item?.seriesTitle || ''}` })) continue;
+    if (item) items.push({ ...item, progress: row });
+  }
+
+  return items;
+}
+
 function getFeaturedItems(hideAdult = true) {
   const movieAdult = hideAdult ? `${adultFilterClauses('m').join(' AND ')} AND` : '';
   const seriesAdult = hideAdult ? `${adultFilterClauses('s').join(' AND ')} AND` : '';
@@ -991,6 +1080,89 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json({ user: req.user });
 });
 
+app.get('/api/me/profile', requireAuth, (req, res) => {
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  const formattedUser = formatUser(user);
+  const hideAdult = !canShowAdult(formattedUser) || formattedUser.preferHideAdult !== false;
+  res.json({
+    user: formattedUser,
+    stats: getUserProfileStats(formattedUser.id),
+    recent: getRecentProfileItems(formattedUser.id, hideAdult)
+  });
+});
+
+app.patch('/api/me/profile', requireAuth, (req, res) => {
+  const displayName = compactInput(req.body.displayName, 80);
+  const email = compactInput(req.body.email, 160).toLowerCase();
+  const currentUser = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  const preferHideAdult = currentUser.can_view_adult ? boolInput(req.body.preferHideAdult, currentUser.prefer_hide_adult !== 0) : true;
+  const autoplayNext = boolInput(req.body.autoplayNext, currentUser.autoplay_next !== 0);
+
+  if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+    return res.status(400).json({ error: 'Email invalido' });
+  }
+
+  db.prepare(`
+    UPDATE users SET
+      display_name = ?,
+      email = ?,
+      prefer_hide_adult = ?,
+      autoplay_next = ?
+    WHERE id = ?
+  `).run(displayName, email, preferHideAdult ? 1 : 0, autoplayNext ? 1 : 0, req.user.id);
+
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  res.json({ user: formatUser(user), stats: getUserProfileStats(req.user.id) });
+});
+
+app.post('/api/me/avatar', requireAuth, upload.single('image'), asyncRoute(async (req, res) => {
+  if (!req.file) return res.status(400).json({ error: 'Envie uma imagem' });
+  if (!String(req.file.mimetype || '').startsWith('image/')) {
+    await fs.promises.unlink(req.file.path).catch(() => {});
+    return res.status(400).json({ error: 'Arquivo precisa ser imagem' });
+  }
+
+  const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
+  const avatarsDir = path.join(uploadsDir, 'avatars');
+  await fs.promises.mkdir(avatarsDir, { recursive: true });
+  const fileName = `user-${req.user.id}-${Date.now()}-${randomUUID()}${ext}`;
+  const target = path.join(avatarsDir, fileName);
+  await fs.promises.rename(req.file.path, target);
+  const url = `/api/uploads/avatars/${fileName}`;
+  db.prepare('UPDATE users SET avatar_url = ? WHERE id = ?').run(url, req.user.id);
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  res.json({ ok: true, url, user: formatUser(user) });
+}));
+
+app.put('/api/me/password', requireAuth, (req, res) => {
+  const currentPassword = String(req.body.currentPassword || '');
+  const newPassword = String(req.body.newPassword || '');
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+
+  if (!bcrypt.compareSync(currentPassword, user.password_hash)) {
+    return res.status(400).json({ error: 'Senha atual incorreta' });
+  }
+  if (newPassword.length < 6) {
+    return res.status(400).json({ error: 'Use uma nova senha com pelo menos 6 caracteres' });
+  }
+
+  const passwordHash = bcrypt.hashSync(newPassword, 10);
+  db.prepare('UPDATE users SET password_hash = ? WHERE id = ?').run(passwordHash, req.user.id);
+  res.json({ ok: true });
+});
+
+app.delete('/api/me/progress', requireAuth, (req, res) => {
+  const result = db.prepare('DELETE FROM watch_progress WHERE user_id = ?').run(req.user.id);
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  res.json({
+    ok: true,
+    removed: result.changes || 0,
+    user: formatUser(user),
+    stats: getUserProfileStats(req.user.id),
+    recent: []
+  });
+});
+
 app.get('/api/admin/users', requireAdmin, (req, res) => {
   res.json({ users: listUsers() });
 });
@@ -1017,7 +1189,7 @@ app.post('/api/admin/users', requireAdmin, (req, res) => {
   const result = db
     .prepare('INSERT INTO users (username, password_hash, is_admin, can_view_adult) VALUES (?, ?, ?, ?)')
     .run(username, passwordHash, isAdmin ? 1 : 0, canViewAdult ? 1 : 0);
-  const user = db.prepare('SELECT id, username, is_admin, can_view_adult, created_at FROM users WHERE id = ?').get(result.lastInsertRowid);
+  const user = db.prepare('SELECT * FROM users WHERE id = ?').get(result.lastInsertRowid);
   res.status(201).json({ user: formatUser(user), users: listUsers() });
 });
 
@@ -1036,6 +1208,17 @@ app.delete('/api/admin/users/:id', requireAdmin, (req, res) => {
 
   db.prepare('DELETE FROM users WHERE id = ?').run(userId);
   res.json({ users: listUsers() });
+});
+
+app.delete('/api/admin/users/:id/progress', requireAdmin, (req, res) => {
+  const userId = Number(req.params.id);
+  if (!Number.isFinite(userId)) return res.status(400).json({ error: 'Usuario invalido' });
+
+  const user = db.prepare('SELECT id FROM users WHERE id = ?').get(userId);
+  if (!user) return res.status(404).json({ error: 'Usuario nao encontrado' });
+
+  const result = db.prepare('DELETE FROM watch_progress WHERE user_id = ?').run(userId);
+  res.json({ ok: true, removed: result.changes || 0, users: listUsers(), stats: getStats() });
 });
 
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
@@ -1287,11 +1470,12 @@ app.get('/api/categories', (req, res) => {
 
 app.get('/api/favorites', (req, res) => {
   const user = getLocalUser(req);
+  const hideAdult = !canShowAdult(user) || user.preferHideAdult !== false;
   const result = listFavorites(user.id, {
     type: String(req.query.type || 'all'),
     limit: parseLimit(req.query.limit, 60, 120),
     page: parsePage(req.query.page),
-    hideAdult: !canShowAdult(user)
+    hideAdult
   });
   res.json(result);
 });
@@ -1330,7 +1514,7 @@ app.delete('/api/favorites/:type/:id', (req, res) => {
 
 app.get('/api/home', (req, res) => {
   const user = getLocalUser(req);
-  const hideAdult = !canShowAdult(user);
+  const hideAdult = !canShowAdult(user) || user.preferHideAdult !== false;
   const featuredItems = getFeaturedItems(hideAdult);
   res.json({
     featured: featuredItems[0] || null,

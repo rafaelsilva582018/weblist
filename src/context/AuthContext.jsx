@@ -48,6 +48,16 @@ export function AuthProvider({ children }) {
     return data;
   }
 
+  async function refreshUser() {
+    const data = await apiFetch('/auth/me');
+    setUser(data.user);
+    return data.user;
+  }
+
+  function updateUser(nextUser) {
+    setUser(nextUser);
+  }
+
   function logout() {
     setToken(null);
     setTokenState(null);
@@ -61,6 +71,8 @@ export function AuthProvider({ children }) {
       user,
       status,
       login,
+      refreshUser,
+      updateUser,
       logout
     }),
     [token, user, status]

@@ -28,7 +28,8 @@ export default function CatalogPage({ type }) {
   const metadata = urlParams.get('metadata') || 'all';
   const year = urlParams.get('year') || '';
   const canViewAdult = Boolean(user?.canViewAdult);
-  const hideAdult = !canViewAdult || urlParams.get('hideAdult') !== 'false';
+  const hideAdultParam = urlParams.get('hideAdult');
+  const hideAdult = !canViewAdult || (hideAdultParam === null ? user?.preferHideAdult !== false : hideAdultParam !== 'false');
   const page = Math.max(1, Number(urlParams.get('page') || 1) || 1);
 
   const requestParams = useMemo(() => {

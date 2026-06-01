@@ -1,4 +1,4 @@
-import { CalendarDays, Database, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
+import { CalendarDays, Database, Eraser, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -201,20 +201,30 @@ export default function AdminPage() {
     }
   }
 
-  async function clearWatched() {
-    if (!window.confirm('Limpar somente as marcacoes de assistido? A biblioteca continua igual.')) return;
+  async function clearUserProgress(userId, username = 'usuario') {
+    if (!userId) return;
+    if (!window.confirm(`Limpar assistidos e continuar assistindo de ${username}? A biblioteca continua igual.`)) return;
     setBusy(true);
     setError('');
     setLibraryMessage('');
+    setUserMessage('');
     try {
-      const data = await apiFetch('/progress/completed', { method: 'DELETE' });
+      const data = await apiFetch(`/admin/users/${userId}/progress`, { method: 'DELETE' });
       setStats(data.stats);
-      setLibraryMessage(`${data.removed || 0} marcacoes de assistido removidas`);
+      setUsers(data.users || []);
+      const message = `${data.removed || 0} registro(s) de historico removido(s) de ${username}`;
+      setLibraryMessage(message);
+      setUserMessage(message);
     } catch (err) {
       setError(err.message);
+      setUserMessage(err.message);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function clearWatched() {
+    await clearUserProgress(user?.id, user?.username || 'usuario atual');
   }
 
   async function createUser(event) {
@@ -462,7 +472,19 @@ export default function AdminPage() {
                   <p className="text-xs text-slate-400">
                     {item.isAdmin ? 'Administrador' : 'Usuario'} - {item.canViewAdult ? '+18 permitido' : '+18 bloqueado'}
                   </p>
+                  <p className="mt-1 text-xs text-slate-500">
+                    {item.watchedCount || 0} assistido(s) - {item.progressCount || 0} historico(s)
+                  </p>
                 </div>
+                <button
+                  type="button"
+                  onClick={() => clearUserProgress(item.id, item.username)}
+                  disabled={busy || !item.progressCount}
+                  className="grid size-9 place-items-center rounded border border-white/10 text-slate-300 hover:bg-white/8 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  title="Limpar assistidos e progresso"
+                >
+                  <Eraser size={16} />
+                </button>
                 <button
                   type="button"
                   onClick={() => removeUser(item.id)}
@@ -519,9 +541,9 @@ export default function AdminPage() {
               <Trash2 size={17} />
               Limpar biblioteca
             </button>
-            <button type="button" onClick={clearWatched} disabled={busy || (stats?.watched ?? 0) === 0} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
-              <Trash2 size={17} />
-              Limpar assistidos
+            <button type="button" onClick={clearWatched} disabled={busy || !user?.id} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
+              <Eraser size={17} />
+              Limpar meus assistidos
             </button>
           </div>
         </form>

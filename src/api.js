@@ -28,9 +28,15 @@ export async function apiFetch(path, options = {}) {
     body: options.body && !isForm ? JSON.stringify(options.body) : options.body
   });
 
-  const data = await response.json().catch(() => ({}));
+  const raw = await response.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    data = { error: raw ? raw.slice(0, 160) : '' };
+  }
   if (!response.ok) {
-    const error = new Error(data.error || 'Falha na requisicao');
+    const error = new Error(data.error || `Falha na requisicao (${response.status})`);
     error.status = response.status;
     throw error;
   }

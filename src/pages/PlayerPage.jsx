@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import FavoriteButton from '../components/FavoriteButton.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function isHlsUrl(url = '') {
   return /\.m3u8(\?|#|$)/i.test(url);
@@ -27,6 +28,7 @@ const liveRestartCooldownMs = 8000;
 export default function PlayerPage() {
   const { type, id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const sourceParam = searchParams.get('source') || '';
   const autoPlayParam = searchParams.get('autoplay') === '1';
@@ -64,6 +66,7 @@ export default function PlayerPage() {
   const sourceOptions = item?.sources || [];
   const favoriteType = type === 'movie' || type === 'channel' ? type : null;
   const remotePlaybackSupported = remotePlaybackState !== 'unsupported';
+  const shouldAutoplayNext = user?.autoplayNext !== false;
   const finishClock = !isLive && isPlaying && duration > current
     ? formatFinishClock(Math.max(0, duration - current))
     : '';
@@ -323,7 +326,7 @@ export default function PlayerPage() {
         restartLiveStream();
       } else {
         saveProgress({ completed: true });
-        if (type === 'episode' && item?.nextEpisode?.id) {
+        if (shouldAutoplayNext && type === 'episode' && item?.nextEpisode?.id) {
           navigate(`/watch/episode/${item.nextEpisode.id}?autoplay=1`, { replace: true });
         }
       }
@@ -366,7 +369,7 @@ export default function PlayerPage() {
       hls?.destroy();
       tsPlayer?.destroy();
     };
-  }, [autoPlayParam, id, isLive, item, navigate, saveProgress, streamReloadKey, type]);
+  }, [autoPlayParam, id, isLive, item, navigate, saveProgress, shouldAutoplayNext, streamReloadKey, type]);
 
   function showControls() {
     setControlsVisible(true);

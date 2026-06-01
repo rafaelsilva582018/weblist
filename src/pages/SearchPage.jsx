@@ -14,7 +14,8 @@ export default function SearchPage() {
   const metadata = searchParams.get('metadata') || 'all';
   const year = searchParams.get('year') || '';
   const canViewAdult = Boolean(user?.canViewAdult);
-  const hideAdult = !canViewAdult || searchParams.get('hideAdult') !== 'false';
+  const hideAdultParam = searchParams.get('hideAdult');
+  const hideAdult = !canViewAdult || (hideAdultParam === null ? user?.preferHideAdult !== false : hideAdultParam !== 'false');
   const page = Number(searchParams.get('page') || 1);
   const [items, setItems] = useState([]);
   const [pagination, setPagination] = useState(null);
