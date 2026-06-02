@@ -30,6 +30,7 @@ export default function AdminPage() {
   const [tmdbLimit, setTmdbLimit] = useState(1000);
   const [tmdbMode, setTmdbMode] = useState('missing');
   const [tmdbRunAll, setTmdbRunAll] = useState(true);
+  const [tmdbIncludeEpisodes, setTmdbIncludeEpisodes] = useState(true);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiBaseUrl, setAiBaseUrl] = useState('http://localhost:11434/v1');
   const [aiApiKey, setAiApiKey] = useState('');
@@ -38,6 +39,7 @@ export default function AdminPage() {
   const [aiRunAll, setAiRunAll] = useState(false);
   const [aiGenerateSynopsis, setAiGenerateSynopsis] = useState(true);
   const [aiRetryRecent, setAiRetryRecent] = useState(true);
+  const [aiIncludeEpisodes, setAiIncludeEpisodes] = useState(true);
   const [epgStatus, setEpgStatus] = useState(null);
   const [epgUrl, setEpgUrl] = useState('');
   const [epgContent, setEpgContent] = useState('');
@@ -366,7 +368,8 @@ export default function AdminPage() {
           body: {
             limit: Number(tmdbLimit) || 1000,
             runAll: tmdbRunAll,
-            force: tmdbMode === 'replace'
+            force: tmdbMode === 'replace',
+            includeEpisodes: tmdbIncludeEpisodes
           }
       });
       setEnrichJob(data.job);
@@ -411,6 +414,7 @@ export default function AdminPage() {
           limit: Number(aiLimit) || 100,
           runAll: aiRunAll,
           generateSynopsis: aiGenerateSynopsis,
+          includeEpisodes: aiIncludeEpisodes,
           retryRecent: aiRetryRecent
         }
       });
@@ -943,6 +947,11 @@ export default function AdminPage() {
             Processar todos os lotes automaticamente
           </label>
 
+          <label className="mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+            <input checked={tmdbIncludeEpisodes} onChange={(event) => setTmdbIncludeEpisodes(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+            Buscar temporadas e episodios das series
+          </label>
+
           {tmdbMessage && <p className="mt-4 text-sm text-slate-300">{tmdbMessage}</p>}
 
           <div className="mt-5 flex flex-wrap gap-3">
@@ -989,6 +998,7 @@ export default function AdminPage() {
               </div>
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <StatBox label="Encontradas" value={enrichJob.matched} />
+                <StatBox label="Episodios" value={enrichJob.episodes || 0} />
                 <StatBox label="Sem match" value={enrichJob.skipped} />
                 <StatBox label="Erros" value={enrichJob.errors} />
                 <StatBox label="Lote" value={enrichJob.batch || 0} />
@@ -1089,10 +1099,14 @@ export default function AdminPage() {
             </label>
           </div>
 
-          <div className="mt-4 grid gap-3 lg:grid-cols-3">
+          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
               <input checked={aiGenerateSynopsis} onChange={(event) => setAiGenerateSynopsis(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
               Gerar sinopse se nao encontrar
+            </label>
+            <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+              <input checked={aiIncludeEpisodes} onChange={(event) => setAiIncludeEpisodes(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+              Buscar episodios das series
             </label>
             <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
               <input checked={aiRetryRecent} onChange={(event) => setAiRetryRecent(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
@@ -1152,6 +1166,7 @@ export default function AdminPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <StatBox label="Normalizados" value={aiJob.normalized || 0} />
                 <StatBox label="Encontrados" value={aiJob.matched || 0} />
+                <StatBox label="Episodios" value={aiJob.episodes || 0} />
                 <StatBox label="Sinopses IA" value={aiJob.synopsisGenerated || 0} />
                 <StatBox label="Revisar" value={aiJob.review || 0} />
                 <StatBox label="Sem match" value={aiJob.skipped || 0} />

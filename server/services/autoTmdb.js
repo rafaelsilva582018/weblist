@@ -22,6 +22,7 @@ export function getAutoTmdbConfig() {
     batchSize: numberEnv('AUTO_TMDB_BATCH_SIZE', 1000, 1, 2000),
     runAll: boolEnv('AUTO_TMDB_RUN_ALL', true),
     force: boolEnv('AUTO_TMDB_FORCE', false),
+    includeEpisodes: boolEnv('AUTO_TMDB_INCLUDE_EPISODES', true),
     delayMs: numberEnv('AUTO_TMDB_DELAY_MS', 160, 40, 2000),
     retryDays: numberEnv('AUTO_TMDB_RETRY_DAYS', 14, 0, 365)
   };
@@ -59,6 +60,7 @@ export function startAutoTmdbEnrichment() {
         batchSize: config.batchSize,
         runAll: config.runAll,
         force: config.force,
+        includeEpisodes: config.includeEpisodes,
         delayMs: config.delayMs,
         markAttempts: true,
         attemptCooldownDays: config.retryDays

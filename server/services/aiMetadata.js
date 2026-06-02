@@ -3,6 +3,7 @@ import { db, getSetting } from '../db.js';
 import { extractMetadataTitle } from '../parser/m3uParser.js';
 import { compactSpaces, normalizeTitle } from '../utils/normalize.js';
 import {
+  getTmdbById,
   searchMovieMetadata,
   searchSeriesMetadata,
   updateMovieMetadata,
@@ -66,6 +67,7 @@ function createJob(options) {
     matched: 0,
     normalized: 0,
     synopsisGenerated: 0,
+    episodes: 0,
     review: 0,
     skipped: 0,
     errors: 0,
@@ -137,6 +139,7 @@ export function queueAiMetadataAssistant(options = {}) {
     batchSize: Math.min(Math.max(Number(options.limit || options.batchSize || 100), 1), 1000),
     runAll: Boolean(options.runAll),
     generateSynopsis: options.generateSynopsis !== false,
+    includeEpisodes: options.includeEpisodes !== false,
     retryRecent: options.retryRecent !== false,
     delayMs: Math.min(Math.max(Number(options.delayMs || 250), 80), 3000),
     attemptCooldownDays: Math.min(Math.max(
@@ -226,6 +229,48 @@ function addError(job, message) {
 function markAttempt(candidate) {
   const table = candidate.type === 'movie' ? 'movies' : 'series';
   db.prepare(`UPDATE ${table} SET metadata_updated_at = datetime('now') WHERE id = ?`).run(candidate.id);
+}
+
+function getImportedSeasonNumbers(seriesId) {
+  return db.prepare(`
+    SELECT DISTINCT season_number AS seasonNumber
+    FROM seasons
+    WHERE series_id = ?
+    ORDER BY season_number ASC
+  `).all(seriesId)
+    .map((season) => Number(season.seasonNumber))
+    .filter((seasonNumber) => Number.isInteger(seasonNumber) && seasonNumber >= 0);
+}
+
+function countEpisodes(match = {}) {
+  return (match.seasons || []).reduce((total, season) => total + (season.episodes?.length || 0), 0);
+}
+
+async function hydrateSeriesEpisodes(candidate, match, includeEpisodes) {
+  if (!includeEpisodes || !match?.tmdbId) return match;
+
+  const seasonNumbers = getImportedSeasonNumbers(candidate.id);
+  if (!seasonNumbers.length) return match;
+
+  let detailed = null;
+  try {
+    detailed = await getTmdbById('series', match.tmdbId, {
+      includeEpisodes: true,
+      seasonNumbers
+    });
+  } catch {
+    return match;
+  }
+
+  return {
+    ...match,
+    ...detailed,
+    overview: detailed.overview || match.overview || null,
+    posterUrl: detailed.posterUrl || match.posterUrl || null,
+    backdropUrl: detailed.backdropUrl || match.backdropUrl || null,
+    firstAirYear: detailed.firstAirYear || match.firstAirYear || null,
+    score: match.score || detailed.score
+  };
 }
 
 function chatUrl(baseUrl) {
@@ -432,7 +477,9 @@ async function processCandidate(job, candidate) {
     if (candidate.type === 'movie') {
       updateMovieMetadata(candidate.id, match, false);
     } else {
-      updateSeriesMetadata(candidate.id, match, false);
+      const detailedMatch = await hydrateSeriesEpisodes(candidate, match, job.options.includeEpisodes);
+      updateSeriesMetadata(candidate.id, detailedMatch, false);
+      job.episodes += countEpisodes(detailedMatch);
     }
     job.matched += 1;
     return;

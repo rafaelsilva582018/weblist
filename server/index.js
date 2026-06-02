@@ -1339,7 +1339,8 @@ app.post('/api/tmdb/enrich', requireAdmin, (req, res) => {
     const job = queueTmdbEnrichment({
       limit: req.body.limit,
       runAll: req.body.runAll,
-      force: req.body.force
+      force: req.body.force,
+      includeEpisodes: req.body.includeEpisodes
     });
     res.status(202).json({ jobId: job.id, job });
   } catch (error) {
@@ -1369,6 +1370,7 @@ app.post('/api/ai/metadata/run', requireAdmin, (req, res) => {
       limit: req.body.limit,
       runAll: req.body.runAll,
       generateSynopsis: req.body.generateSynopsis,
+      includeEpisodes: req.body.includeEpisodes,
       retryRecent: req.body.retryRecent
     });
     res.status(202).json({ jobId: job.id, job });
