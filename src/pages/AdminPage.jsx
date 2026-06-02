@@ -1,4 +1,4 @@
-import { CalendarDays, Database, Eraser, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Trash2, UserPlus, Users } from 'lucide-react';
+import { CalendarDays, Database, Eraser, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Sparkles, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -21,6 +21,8 @@ export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [tmdbStatus, setTmdbStatus] = useState(null);
   const [omdbStatus, setOmdbStatus] = useState(null);
+  const [aiStatus, setAiStatus] = useState(null);
+  const [aiJob, setAiJob] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
   const [tmdbAccessToken, setTmdbAccessToken] = useState('');
   const [omdbApiKey, setOmdbApiKey] = useState('');
@@ -28,6 +30,13 @@ export default function AdminPage() {
   const [tmdbLimit, setTmdbLimit] = useState(1000);
   const [tmdbMode, setTmdbMode] = useState('missing');
   const [tmdbRunAll, setTmdbRunAll] = useState(true);
+  const [aiEnabled, setAiEnabled] = useState(false);
+  const [aiBaseUrl, setAiBaseUrl] = useState('http://localhost:11434/v1');
+  const [aiApiKey, setAiApiKey] = useState('');
+  const [aiModel, setAiModel] = useState('');
+  const [aiLimit, setAiLimit] = useState(100);
+  const [aiRunAll, setAiRunAll] = useState(false);
+  const [aiGenerateSynopsis, setAiGenerateSynopsis] = useState(true);
   const [epgStatus, setEpgStatus] = useState(null);
   const [epgUrl, setEpgUrl] = useState('');
   const [epgContent, setEpgContent] = useState('');
@@ -36,6 +45,7 @@ export default function AdminPage() {
   const [error, setError] = useState('');
   const [libraryMessage, setLibraryMessage] = useState('');
   const [tmdbMessage, setTmdbMessage] = useState('');
+  const [aiMessage, setAiMessage] = useState('');
   const [epgMessage, setEpgMessage] = useState('');
   const [users, setUsers] = useState([]);
   const [newUsername, setNewUsername] = useState('');
@@ -44,6 +54,7 @@ export default function AdminPage() {
   const [newCanViewAdult, setNewCanViewAdult] = useState(false);
   const [userMessage, setUserMessage] = useState('');
   const [busy, setBusy] = useState(false);
+  const [activeAdminTab, setActiveAdminTab] = useState('library');
 
   const percent = useMemo(() => {
     if (!job?.totalBytes) return 0;
@@ -55,15 +66,26 @@ export default function AdminPage() {
     return Math.min(100, Math.round((epgJob.processed / epgJob.totalPrograms) * 100));
   }, [epgJob]);
 
+  const adminTabs = [
+    { id: 'library', label: 'Biblioteca', icon: Database },
+    { id: 'users', label: 'Usuarios', icon: Users },
+    { id: 'metadata', label: 'Metadados', icon: Sparkles },
+    { id: 'epg', label: 'Programacao', icon: CalendarDays }
+  ];
+
   useEffect(() => {
     if (!token) return;
     apiFetch('/admin/settings')
       .then((data) => {
         setTmdbStatus(data.tmdb);
         setOmdbStatus(data.omdb);
+        setAiStatus(data.ai);
         setEpgStatus(data.epg);
         setEpgUrl(data.epg?.url || '');
         setTmdbLanguage(data.raw?.tmdbLanguage || data.tmdb?.language || 'pt-BR');
+        setAiEnabled(Boolean(data.raw?.aiEnabled || data.ai?.enabled));
+        setAiBaseUrl(data.raw?.aiBaseUrl || data.ai?.baseUrl || 'http://localhost:11434/v1');
+        setAiModel(data.raw?.aiModel || data.ai?.model || '');
       })
       .catch(() => {});
   }, [token]);
@@ -105,6 +127,44 @@ export default function AdminPage() {
     }, enrichJob.status === 'paused' ? 5000 : 1200);
     return () => clearInterval(timer);
   }, [enrichJob]);
+
+  useEffect(() => {
+    if (!token) return undefined;
+
+    let cancelled = false;
+    const loadActiveJob = () => {
+      apiFetch('/ai/metadata/active')
+        .then((data) => {
+          if (!cancelled && data.job) setAiJob(data.job);
+        })
+        .catch(() => {});
+    };
+
+    loadActiveJob();
+    const timer = setInterval(() => {
+      if (!aiJob || ['done', 'error', 'stopped'].includes(aiJob.status)) {
+        loadActiveJob();
+      }
+    }, 5000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(timer);
+    };
+  }, [aiJob, token]);
+
+  useEffect(() => {
+    if (!aiJob || !['queued', 'running', 'paused'].includes(aiJob.status)) return undefined;
+    const timer = setInterval(() => {
+      apiFetch(`/ai/metadata/${aiJob.id}`)
+        .then((data) => {
+          setAiJob(data.job);
+          if (['done', 'error', 'stopped'].includes(data.job.status)) refreshStats();
+        })
+        .catch((err) => setAiMessage(err.message));
+    }, aiJob.status === 'paused' ? 5000 : 1200);
+    return () => clearInterval(timer);
+  }, [aiJob]);
 
   useEffect(() => {
     if (!epgJob || !['queued', 'running'].includes(epgJob.status)) return undefined;
@@ -316,6 +376,50 @@ export default function AdminPage() {
     }
   }
 
+  async function saveAiSettings(event) {
+    event.preventDefault();
+    setBusy(true);
+    setAiMessage('');
+    try {
+      const data = await apiFetch('/admin/settings', {
+        method: 'PUT',
+        body: {
+          aiEnabled,
+          aiBaseUrl,
+          aiApiKey,
+          aiModel
+        }
+      });
+      setAiStatus(data.ai);
+      setAiApiKey('');
+      setAiMessage('IA configurada');
+    } catch (err) {
+      setAiMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function startAiAssistant() {
+    setBusy(true);
+    setAiMessage('');
+    try {
+      const data = await apiFetch('/ai/metadata/run', {
+        method: 'POST',
+        body: {
+          limit: Number(aiLimit) || 100,
+          runAll: aiRunAll,
+          generateSynopsis: aiGenerateSynopsis
+        }
+      });
+      setAiJob(data.job);
+    } catch (err) {
+      setAiMessage(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function startEpgImport(event) {
     event.preventDefault();
     if (!epgUrl.trim() && !epgContent.trim()) {
@@ -375,6 +479,20 @@ export default function AdminPage() {
     }
   }
 
+  async function controlAiJob(action) {
+    if (!aiJob?.id) return;
+    setAiMessage('');
+    try {
+      const data = await apiFetch(`/ai/metadata/${aiJob.id}`, {
+        method: 'PATCH',
+        body: { action }
+      });
+      setAiJob(data.job);
+    } catch (err) {
+      setAiMessage(err.message);
+    }
+  }
+
   return (
     <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
@@ -398,6 +516,29 @@ export default function AdminPage() {
         <StatBox label="Categorias" value={stats?.categories ?? 0} />
       </div>
 
+      <div className="mb-6 overflow-x-auto rounded border border-white/10 bg-white/6 p-1">
+        <div className="flex min-w-max gap-1">
+          {adminTabs.map(({ id, label, icon: Icon }) => {
+            const active = activeAdminTab === id;
+            return (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setActiveAdminTab(id)}
+                aria-pressed={active}
+                className={`inline-flex items-center gap-2 rounded px-4 py-3 text-sm font-black transition ${
+                  active ? 'bg-white text-ink shadow-lg shadow-black/20' : 'text-slate-300 hover:bg-white/8 hover:text-white'
+                }`}
+              >
+                <Icon size={17} />
+                {label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {activeAdminTab === 'users' && (
       <section className="mb-6 grid gap-6 lg:grid-cols-[1.1fr,0.9fr]">
         <form onSubmit={createUser} className="rounded border border-white/10 bg-white/6 p-5">
           <div className="mb-5 flex items-center gap-3">
@@ -499,7 +640,9 @@ export default function AdminPage() {
           </div>
         </aside>
       </section>
+      )}
 
+      {activeAdminTab === 'library' && (
       <div className="grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
         <form onSubmit={startImport} className="rounded border border-white/10 bg-white/6 p-5">
           <div className="mb-5 flex items-center gap-3">
@@ -600,7 +743,9 @@ export default function AdminPage() {
           )}
         </aside>
       </div>
+      )}
 
+      {activeAdminTab === 'epg' && (
       <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
         <form onSubmit={startEpgImport} className="rounded border border-white/10 bg-white/6 p-5">
           <div className="mb-5 flex items-center gap-3">
@@ -703,7 +848,10 @@ export default function AdminPage() {
           )}
         </aside>
       </section>
+      )}
 
+      {activeAdminTab === 'metadata' && (
+      <>
       <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
         <form onSubmit={saveTmdbSettings} className="rounded border border-white/10 bg-white/6 p-5">
           <div className="mb-5 flex items-center gap-3">
@@ -873,6 +1021,168 @@ export default function AdminPage() {
           )}
         </aside>
       </section>
+
+      <section className="mt-6 grid gap-6 lg:grid-cols-[1.2fr,0.8fr]">
+        <form onSubmit={saveAiSettings} className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-ocean text-ink">
+              <Sparkles size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">Assistente IA</h2>
+              <p className="text-sm text-slate-400">
+                {aiStatus?.configured
+                  ? `Ativo em ${aiStatus.model}`
+                  : 'Opcional: limpa nomes confusos, melhora a busca e gera sinopse quando nao houver fonte.'}
+              </p>
+            </div>
+          </div>
+
+          <label className="mb-4 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+            <input checked={aiEnabled} onChange={(event) => setAiEnabled(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+            Ativar assistente IA
+          </label>
+
+          <div className="grid gap-3 sm:grid-cols-[1fr_1fr]">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">URL da IA</span>
+              <input
+                value={aiBaseUrl}
+                onChange={(event) => setAiBaseUrl(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder="http://localhost:11434/v1"
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Modelo</span>
+              <input
+                value={aiModel}
+                onChange={(event) => setAiModel(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder="llama3.1 ou modelo OpenAI"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-[1fr_140px]">
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Chave da IA</span>
+              <input
+                value={aiApiKey}
+                onChange={(event) => setAiApiKey(event.target.value)}
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none placeholder:text-slate-500"
+                placeholder={aiStatus?.apiKeyMasked || 'Opcional para IA local'}
+              />
+            </label>
+            <label className="block">
+              <span className="text-sm font-bold text-slate-200">Limite</span>
+              <input
+                value={aiLimit}
+                onChange={(event) => setAiLimit(event.target.value)}
+                type="number"
+                min="1"
+                max="1000"
+                className="mt-2 w-full rounded border border-white/10 bg-black/24 px-3 py-3 text-white outline-none"
+              />
+            </label>
+          </div>
+
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+              <input checked={aiGenerateSynopsis} onChange={(event) => setAiGenerateSynopsis(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+              Gerar sinopse se nao encontrar
+            </label>
+            <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+              <input checked={aiRunAll} onChange={(event) => setAiRunAll(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+              Processar todos os lotes
+            </label>
+          </div>
+
+          {aiMessage && <p className="mt-4 text-sm text-slate-300">{aiMessage}</p>}
+
+          <div className="mt-5 flex flex-wrap gap-3">
+            <button disabled={busy} className="inline-flex items-center gap-2 rounded bg-white px-5 py-3 text-sm font-black text-ink hover:bg-slate-200 disabled:opacity-60">
+              <KeyRound size={17} />
+              Salvar IA
+            </button>
+            <button
+              type="button"
+              onClick={startAiAssistant}
+              disabled={busy || ['queued', 'running', 'paused'].includes(aiJob?.status)}
+              className="inline-flex items-center gap-2 rounded bg-ocean px-5 py-3 text-sm font-black text-ink hover:bg-cyan-300 disabled:opacity-60"
+            >
+              <Wand2 size={17} />
+              Rodar assistente
+            </button>
+          </div>
+        </form>
+
+        <aside className="rounded border border-white/10 bg-white/6 p-5">
+          <div className="mb-5 flex items-center gap-3">
+            <div className="grid size-11 place-items-center rounded bg-white text-ink">
+              <Wand2 size={21} />
+            </div>
+            <div>
+              <h2 className="text-xl font-black text-white">IA em lote</h2>
+              <p className="text-sm text-slate-400">{aiJob?.message || 'Sem fila ativa'}</p>
+            </div>
+          </div>
+
+          {aiJob ? (
+            <div className="space-y-4">
+              <div>
+                <div className="mb-2 flex justify-between text-sm text-slate-300">
+                  <span>{aiJob.status}</span>
+                  <span>{aiJob.processed}/{aiJob.total}</span>
+                </div>
+                <div className="h-3 overflow-hidden rounded bg-black/40">
+                  <div
+                    className="h-full rounded bg-ocean transition-all"
+                    style={{ width: `${aiJob.total ? Math.round((aiJob.processed / aiJob.total) * 100) : 0}%` }}
+                  />
+                </div>
+                {aiJob.currentTitle && <p className="mt-2 truncate text-xs text-slate-400">{aiJob.currentTitle}</p>}
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <StatBox label="Normalizados" value={aiJob.normalized || 0} />
+                <StatBox label="Encontrados" value={aiJob.matched || 0} />
+                <StatBox label="Sinopses IA" value={aiJob.synopsisGenerated || 0} />
+                <StatBox label="Revisar" value={aiJob.review || 0} />
+                <StatBox label="Sem match" value={aiJob.skipped || 0} />
+                <StatBox label="Erros" value={aiJob.errors || 0} />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {aiJob.status === 'running' && (
+                  <button onClick={() => controlAiJob('pause')} className="rounded border border-white/10 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/8">
+                    Pausar
+                  </button>
+                )}
+                {aiJob.status === 'paused' && (
+                  <button onClick={() => controlAiJob('resume')} className="rounded bg-white px-3 py-2 text-sm font-black text-ink hover:bg-slate-200">
+                    Continuar
+                  </button>
+                )}
+                {['running', 'paused', 'queued'].includes(aiJob.status) && (
+                  <button onClick={() => controlAiJob('stop')} className="rounded border border-white/10 px-3 py-2 text-sm font-bold text-slate-200 hover:bg-white/8">
+                    Parar
+                  </button>
+                )}
+              </div>
+              {aiJob.errorSamples?.length > 0 && (
+                <div className="rounded bg-red-950/30 p-3 text-xs text-red-200">
+                  {aiJob.errorSamples.map((sample) => (
+                    <p key={sample} className="truncate">{sample}</p>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-slate-400">Use quando a lista de problemas estiver alta. A IA tenta limpar nomes antes de consultar as fontes e so gera sinopse quando nenhuma fonte resolve.</p>
+          )}
+        </aside>
+      </section>
+      </>
+      )}
     </div>
   );
 }

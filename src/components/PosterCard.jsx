@@ -17,9 +17,11 @@ export default function PosterCard({ item, onFavoriteChange }) {
   const [imageOk, setImageOk] = useState(Boolean(item?.posterUrl));
   const title = item?.displayTitle || item?.title || item?.seriesTitle || 'Sem titulo';
   const isChannel = item?.type === 'channel';
+  const itemYear = item?.releaseYear || item?.firstAirYear;
+  const yearAndCategory = [itemYear, item?.category].filter(Boolean).join(' | ');
   const subtitle = item?.matchSource === 'actor' && item?.actorName
     ? `${item.actorName}${item.character ? ` como ${item.character}` : ''}`
-    : isChannel && item?.currentProgram?.title ? `Agora: ${item.currentProgram.title}` : item?.category;
+    : isChannel && item?.currentProgram?.title ? `Agora: ${item.currentProgram.title}` : yearAndCategory || item?.category;
   const percent = progressPercent(item?.progress);
 
   return (

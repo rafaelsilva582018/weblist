@@ -67,7 +67,7 @@ export default function Layout() {
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-              placeholder="Buscar titulo ou ator"
+              placeholder="Buscar titulo, ator ou ano"
             />
           </form>
 

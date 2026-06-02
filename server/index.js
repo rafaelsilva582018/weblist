@@ -7,6 +7,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { clearLibrary, db, ensureSearchIndex, getSetting, getStats, initDatabase, projectRoot, rebuildSearchIndex, setSetting, uploadsDir } from './db.js';
+import { getActiveAiMetadataJob, getAiMetadataJob, getAiMetadataPublicConfig, queueAiMetadataAssistant, updateAiMetadataJob } from './services/aiMetadata.js';
 import { getActiveEnrichJob, getEnrichJob, queueTmdbEnrichment, updateEnrichJob } from './services/enricher.js';
 import { attachCurrentPrograms, getChannelGuide, getCurrentProgram, getEpgJob, getEpgStatus, getNextProgram, queueEpgImport } from './services/epg.js';
 import { getImportJob, queueImport } from './services/importer.js';
@@ -191,6 +192,26 @@ function buildFtsQuery(q) {
   return tokens.map((token) => `${token}*`).join(' ');
 }
 
+function extractYearSearch(q = '', explicitYear = '', type = '') {
+  const hasYearColumn = type !== 'channel';
+  const explicit = /^\d{4}$/.test(String(explicitYear || '')) ? Number(explicitYear) : null;
+  if (!hasYearColumn) return { q, year: null };
+  if (explicit) {
+    return {
+      q: String(q || '').replace(/\b(19\d{2}|20\d{2})\b/g, ' ').replace(/\s+/g, ' ').trim(),
+      year: explicit
+    };
+  }
+
+  const match = String(q || '').match(/\b(19\d{2}|20\d{2})\b/);
+  if (!match) return { q, year: null };
+
+  return {
+    q: String(q || '').replace(match[0], ' ').replace(/\s+/g, ' ').trim(),
+    year: Number(match[0])
+  };
+}
+
 function shouldHideAdult(value) {
   return !['0', 'false', 'no'].includes(String(value ?? 'true').toLowerCase());
 }
@@ -229,8 +250,9 @@ function isAdultRecord(record = {}) {
 }
 
 function addSearchFilters({ where, params, alias, type, q, category, metadata = 'all', year = '', hideAdult = true }) {
-  if (q) {
-    const fts = buildFtsQuery(q);
+  const search = extractYearSearch(q, year, type);
+  if (search.q) {
+    const fts = buildFtsQuery(search.q);
     if (fts) {
       where.push(`${alias}.id IN (SELECT content_id FROM search_index WHERE type = ? AND search_index MATCH ?)`);
       params.push(type, fts);
@@ -251,11 +273,11 @@ function addSearchFilters({ where, params, alias, type, q, category, metadata = 
     addAdultFilters(where, alias);
   }
 
-  if (year && /^\d{4}$/.test(String(year))) {
+  if (search.year) {
     const column = type === 'series' ? 'first_air_year' : 'release_year';
     if (type !== 'channel') {
       where.push(`${alias}.${column} = ?`);
-      params.push(Number(year));
+      params.push(search.year);
     }
   }
 
@@ -599,32 +621,33 @@ function mediaSearch({ q = '', type = 'all', limit = 30 }) {
 
   const like = `%${raw}%`;
   const normalizedLike = `%${normalized}%`;
+  const year = raw.match(/^\d{4}$/) ? Number(raw) : null;
   const items = [];
 
   if (type === 'all' || type === 'movie') {
     items.push(...db.prepare(`
       SELECT
         m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl,
-        m.backdrop_url AS backdropUrl, m.overview, c.name AS category
+        m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear, c.name AS category
       FROM movies m
       LEFT JOIN categories c ON c.id = m.category_id
-      WHERE m.title LIKE ? COLLATE NOCASE OR m.normalized_title LIKE ? COLLATE NOCASE
-      ORDER BY m.title COLLATE NOCASE
+      WHERE m.title LIKE ? COLLATE NOCASE OR m.normalized_title LIKE ? COLLATE NOCASE OR (? IS NOT NULL AND m.release_year = ?)
+      ORDER BY COALESCE(m.release_year, 0) DESC, m.title COLLATE NOCASE
       LIMIT ?
-    `).all(like, normalizedLike, limit));
+    `).all(like, normalizedLike, year, year, limit));
   }
 
   if (type === 'all' || type === 'series') {
     items.push(...db.prepare(`
       SELECT
         s.id, 'series' AS type, s.title, s.poster_url AS posterUrl,
-        s.backdrop_url AS backdropUrl, s.overview, c.name AS category
+        s.backdrop_url AS backdropUrl, s.overview, s.first_air_year AS firstAirYear, c.name AS category
       FROM series s
       LEFT JOIN categories c ON c.id = s.category_id
-      WHERE s.title LIKE ? COLLATE NOCASE OR s.normalized_title LIKE ? COLLATE NOCASE
-      ORDER BY s.title COLLATE NOCASE
+      WHERE s.title LIKE ? COLLATE NOCASE OR s.normalized_title LIKE ? COLLATE NOCASE OR (? IS NOT NULL AND s.first_air_year = ?)
+      ORDER BY COALESCE(s.first_air_year, 0) DESC, s.title COLLATE NOCASE
       LIMIT ?
-    `).all(like, normalizedLike, limit));
+    `).all(like, normalizedLike, year, year, limit));
   }
 
   if (type === 'all' || type === 'channel') {
@@ -697,6 +720,8 @@ function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page
   const order = {
     name: 'm.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, m.title COLLATE NOCASE ASC',
+    yearDesc: 'COALESCE(m.release_year, 0) DESC, m.title COLLATE NOCASE ASC',
+    yearAsc: 'COALESCE(m.release_year, 9999) ASC, m.title COLLATE NOCASE ASC',
     imported: 'm.imported_at DESC, m.id DESC',
     random: 'RANDOM()'
   }[sort] || 'm.imported_at DESC, m.id DESC';
@@ -732,6 +757,8 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
   const order = {
     name: 's.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, s.title COLLATE NOCASE ASC',
+    yearDesc: 'COALESCE(s.first_air_year, 0) DESC, s.title COLLATE NOCASE ASC',
+    yearAsc: 'COALESCE(s.first_air_year, 9999) ASC, s.title COLLATE NOCASE ASC',
     imported: 's.imported_at DESC, s.id DESC',
     random: 'RANDOM()'
   }[sort] || 's.imported_at DESC, s.id DESC';
@@ -1225,9 +1252,13 @@ app.get('/api/admin/settings', requireAdmin, (req, res) => {
   res.json({
     tmdb: getTmdbPublicConfig(),
     omdb: getOmdbPublicConfig(),
+    ai: getAiMetadataPublicConfig(),
     epg: getEpgStatus(),
     raw: {
-      tmdbLanguage: getSetting('tmdb_language', process.env.TMDB_LANGUAGE || 'pt-BR')
+      tmdbLanguage: getSetting('tmdb_language', process.env.TMDB_LANGUAGE || 'pt-BR'),
+      aiEnabled: getSetting('ai_metadata_enabled', process.env.AI_METADATA_ENABLED || 'false') === 'true',
+      aiBaseUrl: getSetting('ai_metadata_base_url', process.env.AI_METADATA_BASE_URL || 'http://localhost:11434/v1'),
+      aiModel: getSetting('ai_metadata_model', process.env.AI_METADATA_MODEL || '')
     }
   });
 });
@@ -1249,8 +1280,21 @@ app.put('/api/admin/settings', requireAdmin, (req, res) => {
   if (Object.hasOwn(req.body, 'tmdbLanguage')) {
     setSetting('tmdb_language', String(req.body.tmdbLanguage || 'pt-BR').trim() || 'pt-BR');
   }
+  if (Object.hasOwn(req.body, 'aiEnabled')) {
+    setSetting('ai_metadata_enabled', req.body.aiEnabled ? 'true' : 'false');
+  }
+  if (Object.hasOwn(req.body, 'aiBaseUrl')) {
+    setSetting('ai_metadata_base_url', String(req.body.aiBaseUrl || '').trim() || 'http://localhost:11434/v1');
+  }
+  if (Object.hasOwn(req.body, 'aiModel')) {
+    setSetting('ai_metadata_model', String(req.body.aiModel || '').trim());
+  }
+  if (Object.hasOwn(req.body, 'aiApiKey')) {
+    const aiApiKey = String(req.body.aiApiKey || '').trim();
+    if (aiApiKey) setSetting('ai_metadata_api_key', aiApiKey);
+  }
 
-  res.json({ tmdb: getTmdbPublicConfig(), omdb: getOmdbPublicConfig() });
+  res.json({ tmdb: getTmdbPublicConfig(), omdb: getOmdbPublicConfig(), ai: getAiMetadataPublicConfig() });
 });
 
 app.get('/api/epg/status', requireAdmin, (req, res) => {
@@ -1316,6 +1360,35 @@ app.get('/api/tmdb/enrich/:id', requireAdmin, (req, res) => {
 app.patch('/api/tmdb/enrich/:id', requireAdmin, (req, res) => {
   const job = updateEnrichJob(req.params.id, String(req.body.action || ''));
   if (!job) return res.status(404).json({ error: 'Atualizacao nao encontrada' });
+  res.json({ job });
+});
+
+app.post('/api/ai/metadata/run', requireAdmin, (req, res) => {
+  try {
+    const job = queueAiMetadataAssistant({
+      limit: req.body.limit,
+      runAll: req.body.runAll,
+      generateSynopsis: req.body.generateSynopsis
+    });
+    res.status(202).json({ jobId: job.id, job });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/ai/metadata/active', requireAdmin, (req, res) => {
+  res.json({ job: getActiveAiMetadataJob() });
+});
+
+app.get('/api/ai/metadata/:id', requireAdmin, (req, res) => {
+  const job = getAiMetadataJob(req.params.id);
+  if (!job) return res.status(404).json({ error: 'Fila IA nao encontrada' });
+  res.json({ job });
+});
+
+app.patch('/api/ai/metadata/:id', requireAdmin, (req, res) => {
+  const job = updateAiMetadataJob(req.params.id, String(req.body.action || ''));
+  if (!job) return res.status(404).json({ error: 'Fila IA nao encontrada' });
   res.json({ job });
 });
 

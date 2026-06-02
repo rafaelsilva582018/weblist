@@ -99,7 +99,7 @@ export default function CatalogPage({ type }) {
               value={query}
               onChange={(event) => updateParam('q', event.target.value)}
               className="w-full bg-transparent text-sm text-white outline-none placeholder:text-slate-500"
-              placeholder="Buscar"
+              placeholder={type === 'channel' ? 'Buscar' : 'Buscar titulo ou ano'}
             />
           </label>
           <select value={category} onChange={(event) => updateParam('category', event.target.value)} className="rounded border border-white/10 bg-panel px-3 py-2 text-sm text-white">
@@ -114,6 +114,8 @@ export default function CatalogPage({ type }) {
             <option value="imported">Recentes</option>
             <option value="name">Nome</option>
             <option value="category">Categoria</option>
+            {type !== 'channel' && <option value="yearDesc">Ano mais novo</option>}
+            {type !== 'channel' && <option value="yearAsc">Ano mais antigo</option>}
           </select>
         </div>
       </div>
