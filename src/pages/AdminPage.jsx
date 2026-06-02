@@ -37,6 +37,7 @@ export default function AdminPage() {
   const [aiLimit, setAiLimit] = useState(100);
   const [aiRunAll, setAiRunAll] = useState(false);
   const [aiGenerateSynopsis, setAiGenerateSynopsis] = useState(true);
+  const [aiRetryRecent, setAiRetryRecent] = useState(true);
   const [epgStatus, setEpgStatus] = useState(null);
   const [epgUrl, setEpgUrl] = useState('');
   const [epgContent, setEpgContent] = useState('');
@@ -409,7 +410,8 @@ export default function AdminPage() {
         body: {
           limit: Number(aiLimit) || 100,
           runAll: aiRunAll,
-          generateSynopsis: aiGenerateSynopsis
+          generateSynopsis: aiGenerateSynopsis,
+          retryRecent: aiRetryRecent
         }
       });
       setAiJob(data.job);
@@ -1087,10 +1089,14 @@ export default function AdminPage() {
             </label>
           </div>
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="mt-4 grid gap-3 lg:grid-cols-3">
             <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
               <input checked={aiGenerateSynopsis} onChange={(event) => setAiGenerateSynopsis(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
               Gerar sinopse se nao encontrar
+            </label>
+            <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+              <input checked={aiRetryRecent} onChange={(event) => setAiRetryRecent(event.target.checked)} type="checkbox" className="size-4 accent-brand" />
+              Incluir tentados recentes
             </label>
             <label className="flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
               <input checked={aiRunAll} onChange={(event) => setAiRunAll(event.target.checked)} type="checkbox" className="size-4 accent-brand" />

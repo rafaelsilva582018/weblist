@@ -1368,7 +1368,8 @@ app.post('/api/ai/metadata/run', requireAdmin, (req, res) => {
     const job = queueAiMetadataAssistant({
       limit: req.body.limit,
       runAll: req.body.runAll,
-      generateSynopsis: req.body.generateSynopsis
+      generateSynopsis: req.body.generateSynopsis,
+      retryRecent: req.body.retryRecent
     });
     res.status(202).json({ jobId: job.id, job });
   } catch (error) {

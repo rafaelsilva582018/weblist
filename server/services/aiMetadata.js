@@ -137,8 +137,12 @@ export function queueAiMetadataAssistant(options = {}) {
     batchSize: Math.min(Math.max(Number(options.limit || options.batchSize || 100), 1), 1000),
     runAll: Boolean(options.runAll),
     generateSynopsis: options.generateSynopsis !== false,
+    retryRecent: options.retryRecent !== false,
     delayMs: Math.min(Math.max(Number(options.delayMs || 250), 80), 3000),
-    attemptCooldownDays: Math.min(Math.max(Number(options.attemptCooldownDays || 14), 0), 365),
+    attemptCooldownDays: Math.min(Math.max(
+      Object.hasOwn(options, 'attemptCooldownDays') ? Number(options.attemptCooldownDays) : 14,
+      0
+    ), 365),
     minConfidence: Math.min(Math.max(Number(options.minConfidence || 0.45), 0.1), 0.95)
   });
 
@@ -162,7 +166,11 @@ function getCandidateFilter(job) {
   ];
   const params = [];
 
-  if (job.options.attemptCooldownDays > 0) {
+  if (job.options.retryRecent && job.startedAt) {
+    clauses.push("(metadata_updated_at IS NULL OR metadata_updated_at < ?)");
+    seriesClauses.push("(metadata_updated_at IS NULL OR metadata_updated_at < ?)");
+    params.push(job.startedAt);
+  } else if (job.options.attemptCooldownDays > 0) {
     clauses.push("(metadata_updated_at IS NULL OR metadata_updated_at < datetime('now', ?))");
     seriesClauses.push("(metadata_updated_at IS NULL OR metadata_updated_at < datetime('now', ?))");
     params.push(`-${job.options.attemptCooldownDays} days`);
@@ -453,6 +461,14 @@ async function runAiMetadataJob(job) {
   console.log(`[AI Metadata] inicio: ${job.id} lote ${job.batch} ${job.processed}/${job.total}`);
 
   try {
+    if (job.total === 0) {
+      job.status = 'done';
+      job.message = 'Nenhum item pendente para IA';
+      job.finishedAt = new Date().toISOString();
+      console.log(`[AI Metadata] vazio: ${job.id} lote ${job.batch} ${job.processed}/${job.total}`);
+      return;
+    }
+
     do {
       if (job.requestedStop) {
         job.status = 'stopped';
