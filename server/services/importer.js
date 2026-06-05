@@ -2,7 +2,16 @@ import fs from 'node:fs';
 import readline from 'node:readline';
 import { randomUUID } from 'node:crypto';
 import { db, rebuildSearchIndex, setSetting } from '../db.js';
-import { classifyItem, cleanCatalogTitle, isProbablyPlayableUrl, parseExtInf, parseM3uHeader } from '../parser/m3uParser.js';
+import {
+  classifyItem,
+  cleanCatalogTitle,
+  cleanChannelTitle,
+  extractStreamVariantInfo,
+  formatSourceLabel,
+  isProbablyPlayableUrl,
+  parseExtInf,
+  parseM3uHeader
+} from '../parser/m3uParser.js';
 import { compactSpaces, normalizeTitle, padNumber } from '../utils/normalize.js';
 
 const jobs = new Map();
@@ -104,14 +113,23 @@ function prepareStatements() {
       INSERT INTO movies (title, normalized_title, stream_url, poster_url, category_id)
       VALUES (?, ?, ?, ?, ?)
     `),
+    selectChannelByTvgId: db.prepare(`
+      SELECT id, logo_url AS logoUrl, tvg_id AS tvgId, tvg_name AS tvgName
+      FROM channels
+      WHERE lower(tvg_id) = lower(?)
+      ORDER BY id ASC
+      LIMIT 1
+    `),
     selectChannelIdentity: db.prepare(`
-      SELECT id, logo_url AS logoUrl
+      SELECT id, logo_url AS logoUrl, tvg_id AS tvgId, tvg_name AS tvgName
       FROM channels
       WHERE normalized_title = ? AND category_id = ?
       ORDER BY id ASC
       LIMIT 1
     `),
     updateChannelLogo: db.prepare("UPDATE channels SET logo_url = ? WHERE id = ? AND (logo_url IS NULL OR logo_url = '')"),
+    updateChannelTvgId: db.prepare("UPDATE channels SET tvg_id = ? WHERE id = ? AND (tvg_id IS NULL OR tvg_id = '')"),
+    updateChannelTvgName: db.prepare("UPDATE channels SET tvg_name = ? WHERE id = ? AND (tvg_name IS NULL OR tvg_name = '')"),
     insertChannel: db.prepare(`
       INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -157,31 +175,24 @@ function sourceHost(streamUrl) {
   }
 }
 
-function addStreamSource(statements, type, id, streamUrl, isPrimary = false) {
+function buildSourceLabelFromMeta(meta = {}) {
+  const attrs = meta.attrs ? Object.values(meta.attrs).join(' ') : '';
+  const variant = extractStreamVariantInfo(
+    compactSpaces(`${meta.group || ''} ${meta.name || ''} ${meta.rawTitle || ''} ${meta.tvgName || ''} ${attrs}`)
+  );
+  return formatSourceLabel(variant);
+}
+
+function addStreamSource(statements, type, id, streamUrl, label, isPrimary = false) {
   const current = statements.countSources.get(type, id).total;
-  const label = `Opcao ${current + 1}`;
-  const result = statements.insertSource.run(type, id, label, streamUrl, sourceHost(streamUrl), isPrimary ? 1 : 0);
+  const fallbackLabel = `Opcao ${current + 1}`;
+  const sourceLabel = compactSpaces(label || fallbackLabel) || fallbackLabel;
+  const result = statements.insertSource.run(type, id, sourceLabel, streamUrl, sourceHost(streamUrl), isPrimary ? 1 : 0);
   return result.changes > 0;
 }
 
-function detectAudioVariant(meta = {}) {
-  const attrs = meta.attrs ? Object.values(meta.attrs).join(' ') : '';
-  const haystack = normalizeTitle(`${meta.group || ''} ${meta.name || ''} ${meta.rawTitle || ''} ${meta.tvgName || ''} ${attrs}`);
-  if (/\b(legendado|legendada|legendados|legendadas|leg|sub|subtitulado|subtitulada)\b/.test(haystack)) {
-    return 'Legendado';
-  }
-  if (/\b(dublado|dublada|dublados|dubladas|dub)\b/.test(haystack)) {
-    return 'Dublado';
-  }
-  return '';
-}
-
-function appendAudioVariant(title, variant) {
-  if (!variant) return title;
-  const normalizedTitle = normalizeTitle(title);
-  const normalizedVariant = normalizeTitle(variant);
-  if (new RegExp(`\\b${normalizedVariant}\\b`).test(normalizedTitle)) return title;
-  return `${title} (${variant})`;
+function normalizeIdentifier(value = '') {
+  return compactSpaces(value).toLowerCase();
 }
 
 function importItem(meta, url, statements, cache, job) {
@@ -199,12 +210,13 @@ function importItem(meta, url, statements, cache, job) {
   const classification = classifyItem(meta, streamUrl);
   const rawTitle = compactSpaces(meta.name || meta.rawTitle || 'Sem titulo');
   const title = classification.type === 'channel' ? rawTitle : cleanCatalogTitle(rawTitle);
+  const sourceLabel = buildSourceLabelFromMeta(meta);
   const posterUrl = compactSpaces(meta.logo || '');
 
   try {
     if (classification.type === 'episode') {
       const categoryId = getCategoryId(statements, cache, 'series', meta.group);
-      const seriesTitle = appendAudioVariant(compactSpaces(classification.seriesTitle), detectAudioVariant(meta));
+      const seriesTitle = compactSpaces(classification.seriesTitle);
       const normalizedSeries = normalizeTitle(seriesTitle);
 
       if (!normalizedSeries) {
@@ -252,7 +264,7 @@ function importItem(meta, url, statements, cache, job) {
         if (posterUrl && !existingEpisode.posterUrl) {
           statements.updateEpisodePoster.run(posterUrl, existingEpisode.id);
         }
-        if (addStreamSource(statements, 'episode', existingEpisode.id, streamUrl)) {
+        if (addStreamSource(statements, 'episode', existingEpisode.id, streamUrl, sourceLabel)) {
           job.imported.sources += 1;
         } else {
           job.duplicates += 1;
@@ -271,20 +283,44 @@ function importItem(meta, url, statements, cache, job) {
         posterUrl || null,
         categoryId
       );
-      addStreamSource(statements, 'episode', Number(result.lastInsertRowid), streamUrl, true);
+      addStreamSource(statements, 'episode', Number(result.lastInsertRowid), streamUrl, sourceLabel, true);
       job.imported.episodes += 1;
       return;
     }
 
     if (classification.type === 'channel') {
       const categoryId = getCategoryId(statements, cache, 'channel', meta.group);
-      const normalizedChannel = normalizeTitle(title);
-      const existingChannel = statements.selectChannelIdentity.get(normalizedChannel, categoryId);
+      const channelTitle = cleanChannelTitle(rawTitle) || rawTitle;
+      const normalizedChannel = normalizeTitle(channelTitle);
+      const channelTvgId = compactSpaces(meta.tvgId || meta.attrs?.['tvg-id'] || '');
+      const channelTvgName = cleanChannelTitle(meta.tvgName || meta.name || channelTitle) || channelTitle;
+
+      let existingChannel = channelTvgId
+        ? statements.selectChannelByTvgId.get(channelTvgId)
+        : null;
+
+      if (!existingChannel) {
+        existingChannel = statements.selectChannelIdentity.get(normalizedChannel, categoryId);
+        if (
+          existingChannel?.tvgId &&
+          channelTvgId &&
+          normalizeIdentifier(existingChannel.tvgId) !== normalizeIdentifier(channelTvgId)
+        ) {
+          existingChannel = null;
+        }
+      }
+
       if (existingChannel) {
         if (posterUrl && !existingChannel.logoUrl) {
           statements.updateChannelLogo.run(posterUrl, existingChannel.id);
         }
-        if (addStreamSource(statements, 'channel', existingChannel.id, streamUrl)) {
+        if (channelTvgId && !existingChannel.tvgId) {
+          statements.updateChannelTvgId.run(channelTvgId, existingChannel.id);
+        }
+        if (channelTvgName && !existingChannel.tvgName) {
+          statements.updateChannelTvgName.run(channelTvgName, existingChannel.id);
+        }
+        if (addStreamSource(statements, 'channel', existingChannel.id, streamUrl, sourceLabel)) {
           job.imported.sources += 1;
         } else {
           job.duplicates += 1;
@@ -293,15 +329,15 @@ function importItem(meta, url, statements, cache, job) {
       }
 
       const result = statements.insertChannel.run(
-        title,
+        channelTitle,
         normalizedChannel,
-        compactSpaces(meta.tvgId || meta.attrs?.['tvg-id'] || ''),
-        compactSpaces(meta.tvgName || meta.name || ''),
+        channelTvgId,
+        channelTvgName,
         streamUrl,
         posterUrl || null,
         categoryId
       );
-      addStreamSource(statements, 'channel', Number(result.lastInsertRowid), streamUrl, true);
+      addStreamSource(statements, 'channel', Number(result.lastInsertRowid), streamUrl, sourceLabel, true);
       job.imported.channels += 1;
       return;
     }
@@ -313,7 +349,7 @@ function importItem(meta, url, statements, cache, job) {
       if (posterUrl && !existingMovie.posterUrl) {
         statements.updateMoviePoster.run(posterUrl, existingMovie.id);
       }
-      if (addStreamSource(statements, 'movie', existingMovie.id, streamUrl)) {
+      if (addStreamSource(statements, 'movie', existingMovie.id, streamUrl, sourceLabel)) {
         job.imported.sources += 1;
       } else {
         job.duplicates += 1;
@@ -322,7 +358,7 @@ function importItem(meta, url, statements, cache, job) {
     }
 
     const result = statements.insertMovie.run(title, normalizedMovie, streamUrl, posterUrl || null, categoryId);
-    addStreamSource(statements, 'movie', Number(result.lastInsertRowid), streamUrl, true);
+    addStreamSource(statements, 'movie', Number(result.lastInsertRowid), streamUrl, sourceLabel, true);
     job.imported.movies += 1;
   } catch (error) {
     if (String(error.message).includes('UNIQUE')) {

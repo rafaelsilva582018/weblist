@@ -3,6 +3,8 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
+import { cleanCatalogTitle, cleanChannelTitle, extractStreamVariantInfo, formatSourceLabel } from './parser/m3uParser.js';
+import { compactSpaces, normalizeTitle, padNumber } from './utils/normalize.js';
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
 export const projectRoot = path.resolve(serverDir, '..');
@@ -256,6 +258,7 @@ function migrateColumns() {
   db.prepare("UPDATE channels SET tvg_name = title WHERE tvg_name IS NULL OR tvg_name = ''").run();
 
   seedPrimaryStreamSources();
+  runLibraryGroupingMigration();
 }
 
 function seedPrimaryStreamSources() {
@@ -279,6 +282,507 @@ function seedPrimaryStreamSources() {
     FROM channels
     WHERE stream_url IS NOT NULL AND stream_url != ''
   `).run();
+}
+
+const libraryGroupingVersion = '2026-06-04-variant-groups';
+
+function isGenericSourceLabel(label = '') {
+  return /^opcao(?:\s+\d+)?$/i.test(compactSpaces(label));
+}
+
+function buildSourceLabelFromText(value = '', fallback = 'Opcao') {
+  return formatSourceLabel(extractStreamVariantInfo(value), fallback);
+}
+
+function sourceHost(streamUrl = '') {
+  try {
+    return new URL(streamUrl).host.replace(/^www\./i, '');
+  } catch {
+    return '';
+  }
+}
+
+function pickPreferredValue(...values) {
+  return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') ?? null;
+}
+
+function displayTitle(seriesTitle, seasonNumber, episodeNumber, episodeTitle) {
+  return `${seriesTitle} S${padNumber(seasonNumber)}E${padNumber(episodeNumber)} - ${episodeTitle}`;
+}
+
+function mergeFavorites(contentType, fromId, toId) {
+  if (!fromId || !toId || fromId === toId) return;
+
+  db.prepare(`
+    INSERT OR IGNORE INTO favorites (user_id, content_type, content_id, created_at)
+    SELECT user_id, ?, ?, created_at
+    FROM favorites
+    WHERE content_type = ? AND content_id = ?
+  `).run(contentType, toId, contentType, fromId);
+
+  db.prepare('DELETE FROM favorites WHERE content_type = ? AND content_id = ?').run(contentType, fromId);
+}
+
+function mergeWatchProgress(contentType, fromId, toId) {
+  if (!fromId || !toId || fromId === toId) return;
+
+  const rows = db.prepare(`
+    SELECT user_id, position, duration, completed_at AS completedAt, updated_at AS updatedAt
+    FROM watch_progress
+    WHERE content_type = ? AND content_id = ?
+  `).all(contentType, fromId);
+
+  const upsert = db.prepare(`
+    INSERT INTO watch_progress (
+      user_id, progress_key, content_type, content_id, episode_id, position, duration, completed_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(progress_key) DO UPDATE SET
+      position = CASE
+        WHEN excluded.updated_at >= watch_progress.updated_at THEN excluded.position
+        ELSE watch_progress.position
+      END,
+      duration = CASE
+        WHEN excluded.updated_at >= watch_progress.updated_at THEN excluded.duration
+        ELSE watch_progress.duration
+      END,
+      completed_at = COALESCE(watch_progress.completed_at, excluded.completed_at),
+      updated_at = CASE
+        WHEN excluded.updated_at >= watch_progress.updated_at THEN excluded.updated_at
+        ELSE watch_progress.updated_at
+      END
+  `);
+
+  for (const row of rows) {
+    upsert.run(
+      row.user_id,
+      `${row.user_id}:${contentType}:${toId}`,
+      contentType,
+      toId,
+      contentType === 'episode' ? toId : null,
+      row.position,
+      row.duration,
+      row.completedAt,
+      row.updatedAt || new Date().toISOString()
+    );
+  }
+
+  db.prepare('DELETE FROM watch_progress WHERE content_type = ? AND content_id = ?').run(contentType, fromId);
+}
+
+function chooseChannelCanonical(rows) {
+  const legendPattern = /\b(legendado|legendados|dublado|dublados)\b/i;
+  return rows
+    .slice()
+    .sort((left, right) => {
+      const leftScore = (left.tvgId ? 40 : 0)
+        + (left.logoUrl ? 12 : 0)
+        + (left.programCount ? 8 : 0)
+        + (legendPattern.test(left.categoryName || '') ? -6 : 0);
+      const rightScore = (right.tvgId ? 40 : 0)
+        + (right.logoUrl ? 12 : 0)
+        + (right.programCount ? 8 : 0)
+        + (legendPattern.test(right.categoryName || '') ? -6 : 0);
+      if (leftScore !== rightScore) return rightScore - leftScore;
+      return left.id - right.id;
+    })[0];
+}
+
+function chooseSeriesCanonical(rows) {
+  return rows
+    .slice()
+    .sort((left, right) => {
+      const leftScore = (left.tmdbId ? 60 : 0)
+        + (left.posterUrl ? 15 : 0)
+        + (left.backdropUrl ? 15 : 0)
+        + (left.overview ? 12 : 0)
+        + (left.year ? 6 : 0)
+        + (left.episodeCount || 0);
+      const rightScore = (right.tmdbId ? 60 : 0)
+        + (right.posterUrl ? 15 : 0)
+        + (right.backdropUrl ? 15 : 0)
+        + (right.overview ? 12 : 0)
+        + (right.year ? 6 : 0)
+        + (right.episodeCount || 0);
+      if (leftScore !== rightScore) return rightScore - leftScore;
+      return left.id - right.id;
+    })[0];
+}
+
+function mergeChannelVariants() {
+  const rows = db.prepare(`
+    SELECT
+      ch.id,
+      ch.title,
+      ch.normalized_title AS normalizedTitle,
+      ch.tvg_id AS tvgId,
+      ch.tvg_name AS tvgName,
+      ch.stream_url AS streamUrl,
+      ch.logo_url AS logoUrl,
+      ch.category_id AS categoryId,
+      c.name AS categoryName,
+      (
+        SELECT COUNT(*)
+        FROM epg_programs ep
+        WHERE ep.channel_id = ch.id
+      ) AS programCount
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    ORDER BY ch.id ASC
+  `).all();
+
+  const groups = new Map();
+  for (const row of rows) {
+    const key = normalizeTitle(cleanChannelTitle(row.tvgId || row.tvgName || row.title));
+    if (!key) continue;
+    const bucket = groups.get(key) || [];
+    bucket.push(row);
+    groups.set(key, bucket);
+  }
+
+  const selectSources = db.prepare(`
+    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = 'channel' AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `);
+  const insertSource = db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (
+      content_type, content_id, label, stream_url, source_host, is_primary
+    ) VALUES ('channel', ?, ?, ?, ?, ?)
+  `);
+  const updateSourceLabel = db.prepare(`
+    UPDATE stream_sources
+    SET label = ?, source_host = COALESCE(NULLIF(?, ''), source_host)
+    WHERE id = ?
+  `);
+  const updateChannel = db.prepare(`
+    UPDATE channels
+    SET
+      title = ?,
+      normalized_title = ?,
+      tvg_id = COALESCE(NULLIF(?, ''), tvg_id),
+      tvg_name = COALESCE(NULLIF(?, ''), tvg_name),
+      logo_url = COALESCE(NULLIF(?, ''), logo_url),
+      category_id = COALESCE(?, category_id)
+    WHERE id = ?
+  `);
+
+  let changed = false;
+
+  for (const [key, bucket] of groups.entries()) {
+    if (bucket.length <= 1) continue;
+    changed = true;
+
+    const canonical = chooseChannelCanonical(bucket);
+    const cleanTitle = cleanChannelTitle(canonical.tvgId || canonical.tvgName || canonical.title) || canonical.title;
+    const canonicalCategoryId = bucket.find((row) => !/\blegendad/i.test(row.categoryName || ''))?.categoryId ?? canonical.categoryId;
+
+    for (const row of bucket) {
+      const hint = compactSpaces(`${row.title || ''} ${row.tvgName || ''}`);
+      const label = buildSourceLabelFromText(hint);
+      const currentSources = selectSources.all(row.id);
+
+      for (const source of currentSources) {
+        const nextLabel = isGenericSourceLabel(source.label) ? label : source.label;
+        if (row.id === canonical.id) {
+          const nextHost = source.sourceHost || sourceHost(source.streamUrl || row.streamUrl);
+          if (nextLabel !== source.label || nextHost) {
+            updateSourceLabel.run(nextLabel, nextHost, source.id);
+          }
+          continue;
+        }
+
+        insertSource.run(
+          canonical.id,
+          nextLabel,
+          source.streamUrl,
+          source.sourceHost || sourceHost(source.streamUrl),
+          0
+        );
+      }
+
+      insertSource.run(canonical.id, label, row.streamUrl, sourceHost(row.streamUrl), row.id === canonical.id ? 1 : 0);
+
+      if (row.id === canonical.id) continue;
+
+      db.prepare('UPDATE epg_programs SET channel_id = ? WHERE channel_id = ?').run(canonical.id, row.id);
+      mergeFavorites('channel', row.id, canonical.id);
+      mergeWatchProgress('channel', row.id, canonical.id);
+      db.prepare("DELETE FROM stream_sources WHERE content_type = 'channel' AND content_id = ?").run(row.id);
+      db.prepare('DELETE FROM channels WHERE id = ?').run(row.id);
+    }
+
+    updateChannel.run(
+      cleanTitle,
+      key,
+      pickPreferredValue(canonical.tvgId, ...bucket.map((row) => row.tvgId)) || '',
+      cleanChannelTitle(pickPreferredValue(canonical.tvgName, ...bucket.map((row) => row.tvgName), cleanTitle) || cleanTitle),
+      pickPreferredValue(canonical.logoUrl, ...bucket.map((row) => row.logoUrl)) || '',
+      canonicalCategoryId || null,
+      canonical.id
+    );
+  }
+
+  return changed;
+}
+
+function mergeSeriesAudioVariants() {
+  const rows = db.prepare(`
+    SELECT
+      s.id,
+      s.title,
+      s.normalized_title AS normalizedTitle,
+      s.poster_url AS posterUrl,
+      s.backdrop_url AS backdropUrl,
+      s.overview,
+      s.original_title AS originalTitle,
+      s.first_air_year AS year,
+      s.tmdb_id AS tmdbId,
+      s.category_id AS categoryId,
+      (
+        SELECT COUNT(*)
+        FROM episodes e
+        WHERE e.series_id = s.id
+      ) AS episodeCount
+    FROM series s
+    ORDER BY s.id ASC
+  `).all();
+
+  const groups = new Map();
+  for (const row of rows) {
+    const cleanTitle = cleanCatalogTitle(row.title);
+    const key = normalizeTitle(cleanTitle);
+    if (!key) continue;
+    const bucket = groups.get(key) || [];
+    bucket.push({ ...row, cleanTitle, variantInfo: extractStreamVariantInfo(row.title) });
+    groups.set(key, bucket);
+  }
+
+  const selectSeasons = db.prepare(`
+    SELECT id, season_number AS seasonNumber, title, poster_url AS posterUrl, backdrop_url AS backdropUrl
+    FROM seasons
+    WHERE series_id = ?
+    ORDER BY season_number ASC, id ASC
+  `);
+  const selectEpisodes = db.prepare(`
+    SELECT
+      id,
+      season_id AS seasonId,
+      season_number AS seasonNumber,
+      episode_number AS episodeNumber,
+      title,
+      display_title AS displayTitle,
+      stream_url AS streamUrl,
+      poster_url AS posterUrl,
+      category_id AS categoryId
+    FROM episodes
+    WHERE series_id = ?
+    ORDER BY season_number ASC, episode_number ASC, id ASC
+  `);
+  const selectEpisodeByIdentity = db.prepare(`
+    SELECT id, poster_url AS posterUrl
+    FROM episodes
+    WHERE series_id = ? AND season_number = ? AND episode_number = ?
+    ORDER BY id ASC
+    LIMIT 1
+  `);
+  const selectSources = db.prepare(`
+    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = 'episode' AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `);
+  const insertSeason = db.prepare(`
+    INSERT INTO seasons (series_id, season_number, title, poster_url, backdrop_url)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  const updateSeason = db.prepare(`
+    UPDATE seasons
+    SET
+      title = COALESCE(NULLIF(?, ''), title),
+      poster_url = COALESCE(NULLIF(?, ''), poster_url),
+      backdrop_url = COALESCE(NULLIF(?, ''), backdrop_url)
+    WHERE id = ?
+  `);
+  const moveEpisode = db.prepare(`
+    UPDATE episodes
+    SET
+      series_id = ?,
+      season_id = ?,
+      category_id = COALESCE(?, category_id),
+      display_title = ?
+    WHERE id = ?
+  `);
+  const updateEpisode = db.prepare(`
+    UPDATE episodes
+    SET
+      title = COALESCE(NULLIF(?, ''), title),
+      display_title = ?,
+      poster_url = COALESCE(NULLIF(?, ''), poster_url),
+      category_id = COALESCE(?, category_id)
+    WHERE id = ?
+  `);
+  const insertSource = db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (
+      content_type, content_id, label, stream_url, source_host, is_primary
+    ) VALUES ('episode', ?, ?, ?, ?, ?)
+  `);
+  const updateSourceLabel = db.prepare(`
+    UPDATE stream_sources
+    SET label = ?, source_host = COALESCE(NULLIF(?, ''), source_host)
+    WHERE id = ?
+  `);
+  const updateSeries = db.prepare(`
+    UPDATE series
+    SET
+      title = ?,
+      normalized_title = ?,
+      poster_url = COALESCE(NULLIF(?, ''), poster_url),
+      backdrop_url = COALESCE(NULLIF(?, ''), backdrop_url),
+      overview = COALESCE(NULLIF(?, ''), overview),
+      original_title = COALESCE(NULLIF(?, ''), original_title),
+      first_air_year = COALESCE(?, first_air_year),
+      tmdb_id = COALESCE(?, tmdb_id),
+      category_id = COALESCE(?, category_id)
+    WHERE id = ?
+  `);
+
+  let changed = false;
+
+  for (const [key, bucket] of groups.entries()) {
+    if (bucket.length <= 1) continue;
+    if (!bucket.some((row) => row.variantInfo?.language || row.variantInfo?.quality || row.variantInfo?.codec)) continue;
+    changed = true;
+
+    const canonical = chooseSeriesCanonical(bucket);
+    const baseTitle = canonical.cleanTitle || cleanCatalogTitle(canonical.title) || canonical.title;
+    const canonicalSeasonMap = new Map();
+
+    for (const season of selectSeasons.all(canonical.id)) {
+      canonicalSeasonMap.set(Number(season.seasonNumber), season);
+    }
+
+    for (const row of bucket) {
+      const seriesAudioLabel = buildSourceLabelFromText(row.title, '');
+      const seasons = selectSeasons.all(row.id);
+      const episodes = selectEpisodes.all(row.id);
+
+      for (const season of seasons) {
+        const seasonNumber = Number(season.seasonNumber);
+        if (!canonicalSeasonMap.has(seasonNumber)) {
+          const result = insertSeason.run(
+            canonical.id,
+            seasonNumber,
+            compactSpaces(season.title || `Temporada ${seasonNumber}`),
+            season.posterUrl || null,
+            season.backdropUrl || null
+          );
+          canonicalSeasonMap.set(seasonNumber, {
+            id: Number(result.lastInsertRowid),
+            seasonNumber,
+            title: compactSpaces(season.title || `Temporada ${seasonNumber}`),
+            posterUrl: season.posterUrl,
+            backdropUrl: season.backdropUrl
+          });
+        } else if (row.id !== canonical.id) {
+          const targetSeason = canonicalSeasonMap.get(seasonNumber);
+          updateSeason.run(season.title || '', season.posterUrl || '', season.backdropUrl || '', targetSeason.id);
+        }
+      }
+
+      for (const episode of episodes) {
+        const targetSeason = canonicalSeasonMap.get(Number(episode.seasonNumber));
+        const fallbackLabel = seriesAudioLabel || buildSourceLabelFromText(episode.displayTitle, 'Opcao');
+        const targetDisplayTitle = displayTitle(baseTitle, episode.seasonNumber, episode.episodeNumber, episode.title);
+        const existing = selectEpisodeByIdentity.get(canonical.id, episode.seasonNumber, episode.episodeNumber);
+        const currentSources = selectSources.all(episode.id);
+
+        if (existing && existing.id !== episode.id) {
+          if (episode.streamUrl) {
+            insertSource.run(existing.id, fallbackLabel, episode.streamUrl, '', 0);
+          }
+          for (const source of currentSources) {
+            insertSource.run(
+              existing.id,
+              isGenericSourceLabel(source.label) ? fallbackLabel : source.label,
+              source.streamUrl,
+              source.sourceHost || sourceHost(source.streamUrl),
+              0
+            );
+          }
+          updateEpisode.run(episode.title || '', targetDisplayTitle, episode.posterUrl || '', episode.categoryId || canonical.categoryId || null, existing.id);
+          mergeWatchProgress('episode', episode.id, existing.id);
+          db.prepare("DELETE FROM stream_sources WHERE content_type = 'episode' AND content_id = ?").run(episode.id);
+          db.prepare('DELETE FROM episodes WHERE id = ?').run(episode.id);
+          continue;
+        }
+
+        if (row.id === canonical.id && existing?.id === episode.id) {
+          for (const source of currentSources) {
+            if (isGenericSourceLabel(source.label)) {
+              updateSourceLabel.run(fallbackLabel, source.sourceHost || sourceHost(source.streamUrl), source.id);
+            }
+          }
+          updateEpisode.run(episode.title || '', targetDisplayTitle, episode.posterUrl || '', episode.categoryId || canonical.categoryId || null, episode.id);
+          continue;
+        }
+
+        moveEpisode.run(
+          canonical.id,
+          targetSeason.id,
+          episode.categoryId || canonical.categoryId || null,
+          targetDisplayTitle,
+          episode.id
+        );
+        for (const source of currentSources) {
+          if (isGenericSourceLabel(source.label)) {
+            updateSourceLabel.run(fallbackLabel, source.sourceHost || sourceHost(source.streamUrl), source.id);
+          }
+        }
+      }
+
+      if (row.id === canonical.id) continue;
+
+      mergeFavorites('series', row.id, canonical.id);
+      db.prepare('DELETE FROM seasons WHERE series_id = ?').run(row.id);
+      db.prepare('DELETE FROM series WHERE id = ?').run(row.id);
+    }
+
+    updateSeries.run(
+      baseTitle,
+      key,
+      pickPreferredValue(canonical.posterUrl, ...bucket.map((row) => row.posterUrl)) || '',
+      pickPreferredValue(canonical.backdropUrl, ...bucket.map((row) => row.backdropUrl)) || '',
+      pickPreferredValue(canonical.overview, ...bucket.map((row) => row.overview)) || '',
+      pickPreferredValue(canonical.originalTitle, ...bucket.map((row) => row.originalTitle)) || '',
+      pickPreferredValue(canonical.year, ...bucket.map((row) => row.year)) || null,
+      pickPreferredValue(canonical.tmdbId, ...bucket.map((row) => row.tmdbId)) || null,
+      pickPreferredValue(canonical.categoryId, ...bucket.map((row) => row.categoryId)) || null,
+      canonical.id
+    );
+  }
+
+  return changed;
+}
+
+function runLibraryGroupingMigration() {
+  if (getSetting('library_grouping_version', '') === libraryGroupingVersion) return;
+
+  let changed = false;
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    changed = mergeSeriesAudioVariants() || changed;
+    changed = mergeChannelVariants() || changed;
+    setSetting('library_grouping_version', libraryGroupingVersion);
+    db.exec('COMMIT');
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
+
+  if (changed) {
+    rebuildSearchIndex();
+  }
 }
 
 export function ensureDefaultAdmin() {

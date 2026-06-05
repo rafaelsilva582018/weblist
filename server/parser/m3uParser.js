@@ -1,5 +1,51 @@
 import { compactSpaces, normalizeTitle } from '../utils/normalize.js';
 
+const variantTokenPattern = [
+  '2160p',
+  '1080p',
+  '720p',
+  '480p',
+  '4k',
+  'uhd',
+  'full hd',
+  'fhd',
+  'hd',
+  'sd',
+  'h265',
+  'h\\.265',
+  'hevc',
+  'x265',
+  'x\\.265',
+  'dual audio',
+  'multi audio',
+  'dublado',
+  'dublada',
+  'dub',
+  'legendado',
+  'legendada',
+  'leg',
+  'subtitulado',
+  'subtitulada',
+  'sub'
+].join('|');
+
+const qualityPatterns = [
+  { label: '4K', regex: /\b(?:2160p|4k|uhd)\b/i },
+  { label: 'Full HD', regex: /\b(?:1080p|full hd|fhd)\b/i },
+  { label: 'HD', regex: /\b(?:720p|hd)\b/i },
+  { label: 'SD', regex: /\b(?:480p|sd)\b/i }
+];
+
+const languagePatterns = [
+  { label: 'Dual Audio', regex: /\b(?:dual audio|multi audio)\b/i },
+  { label: 'Legendado', regex: /\b(?:legendado|legendada|leg|subtitulado|subtitulada|sub)\b/i },
+  { label: 'Dublado', regex: /\b(?:dublado|dublada|dub)\b/i }
+];
+
+const codecPatterns = [
+  { label: 'HEVC', regex: /\b(?:hevc|h265|h\.265|x265|x\.265)\b/i }
+];
+
 function splitOutsideQuotes(value, separator = ',') {
   let quote = null;
   for (let index = 0; index < value.length; index += 1) {
@@ -40,6 +86,54 @@ function cleanMediaName(value = '') {
   );
 }
 
+function extractSuperscriptEdition(value = '') {
+  const match = String(value).match(/([¹²³⁴⁵⁶⁷⁸⁹]+)\s*$/);
+  if (!match) return null;
+
+  const digits = match[1]
+    .replace(/¹/g, '1')
+    .replace(/²/g, '2')
+    .replace(/³/g, '3')
+    .replace(/⁴/g, '4')
+    .replace(/⁵/g, '5')
+    .replace(/⁶/g, '6')
+    .replace(/⁷/g, '7')
+    .replace(/⁸/g, '8')
+    .replace(/⁹/g, '9');
+
+  const edition = Number.parseInt(digits, 10);
+  return Number.isInteger(edition) && edition > 1 ? edition : null;
+}
+
+export function extractStreamVariantInfo(value = '') {
+  const text = compactSpaces(value);
+  const quality = qualityPatterns.find((entry) => entry.regex.test(text))?.label || '';
+  const language = languagePatterns.find((entry) => entry.regex.test(text))?.label || '';
+  const codec = codecPatterns.find((entry) => entry.regex.test(text))?.label || '';
+  const edition = extractSuperscriptEdition(text);
+
+  return { quality, language, codec, edition };
+}
+
+export function formatSourceLabel(variant = {}, fallback = 'Opcao') {
+  const parts = [variant.quality, variant.language, variant.codec].filter(Boolean);
+  let label = parts.join(' - ') || fallback;
+  if (variant.edition) {
+    label = `${label} (${variant.edition})`;
+  }
+  return label;
+}
+
+export function stripVariantTokens(value = '') {
+  return compactSpaces(
+    String(value)
+      .replace(/\[[^\]]*(2160p|1080p|720p|480p|4k|uhd|full hd|fhd|hd|sd|h265|h\.265|hevc|x265|x\.265|dual audio|multi audio|dublado|dublada|dub|legendado|legendada|leg|subtitulado|subtitulada|sub)[^\]]*\]/gi, ' ')
+      .replace(/\([^)]*(2160p|1080p|720p|480p|4k|uhd|full hd|fhd|hd|sd|h265|h\.265|hevc|x265|x\.265|dual audio|multi audio|dublado|dublada|dub|legendado|legendada|leg|subtitulado|subtitulada|sub)[^)]*\)/gi, ' ')
+      .replace(new RegExp(`(?:^|\\s|[\\/|_-])(?:${variantTokenPattern})(?=$|\\s|[\\/|_\\-()\\[\\]¹²³⁴⁵⁶⁷⁸⁹])`, 'gi'), ' ')
+      .replace(/[¹²³⁴⁵⁶⁷⁸⁹]+/g, ' ')
+  );
+}
+
 export function parseExtInf(line) {
   const payload = line.replace(/^#EXTINF:/i, '');
   const [attributesPart, titlePart] = splitOutsideQuotes(payload, ',');
@@ -58,12 +152,7 @@ export function parseExtInf(line) {
 }
 
 function stripQualityTags(value) {
-  return compactSpaces(
-    value
-      .replace(/\[[^\]]+\]/g, ' ')
-      .replace(/\([^)]*(1080p|720p|2160p|4k|uhd|fhd|hd|sd|dual audio|dublado|legendado)[^)]*\)/gi, ' ')
-      .replace(/\b(2160p|1080p|720p|480p|4k|uhd|fhd|h265|hd|sd|dual audio|dublado|legendado|dub|leg)\b/gi, ' ')
-  );
+  return stripVariantTokens(value);
 }
 
 function cleanSeriesTitle(value) {
@@ -126,6 +215,15 @@ export function cleanCatalogTitle(value = '') {
   );
 }
 
+export function cleanChannelTitle(value = '') {
+  return compactSpaces(
+    stripVariantTokens(cleanMediaName(value))
+      .replace(/^\[xxx\]\s*/i, '')
+      .replace(/\s+-\s*$/g, '')
+      .replace(/\s+\/\s*$/g, '')
+  );
+}
+
 export function extractMetadataTitle(value = '') {
   const cleaned = cleanCatalogTitle(value);
   const yearMatch = cleaned.match(/\((19\d{2}|20\d{2})\)\s*$/);
@@ -138,6 +236,17 @@ function isSeriesGroup(group) {
   return /\b(series|serie|seriados|novelas|novela|anime|animes|dorama|doramas|programas)\b/.test(normalizeTitle(group));
 }
 
+function isLikelyTvgChannel(meta = {}) {
+  const tvgId = compactSpaces(meta.tvgId || meta.attrs?.['tvg-id'] || '');
+  if (!tvgId) return false;
+  if (isSeriesGroup(meta.group)) return false;
+
+  const title = cleanChannelTitle(meta.name || meta.rawTitle || meta.tvgName || '');
+  if (!title) return false;
+
+  return !parseEpisodeInfo(title);
+}
+
 export function classifyItem(meta, url) {
   if (isChannelGroup(meta.group, meta.name)) {
     return { type: 'channel' };
@@ -146,6 +255,10 @@ export function classifyItem(meta, url) {
   const episodeInfo = parseEpisodeInfo(meta.name || meta.rawTitle || '');
   if (episodeInfo) {
     return { type: 'episode', ...episodeInfo };
+  }
+
+  if (isLikelyTvgChannel(meta)) {
+    return { type: 'channel' };
   }
 
   if (isSeriesGroup(meta.group)) {
