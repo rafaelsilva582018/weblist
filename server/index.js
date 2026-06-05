@@ -7,6 +7,7 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
 import { clearLibrary, db, ensureSearchIndex, getSetting, getStats, initDatabase, projectRoot, rebuildSearchIndex, setSetting, uploadsDir } from './db.js';
+import { extractStreamVariantInfo } from './parser/m3uParser.js';
 import { getActiveAiMetadataJob, getAiMetadataJob, getAiMetadataPublicConfig, queueAiMetadataAssistant, updateAiMetadataJob } from './services/aiMetadata.js';
 import { getActiveEnrichJob, getEnrichJob, queueTmdbEnrichment, updateEnrichJob } from './services/enricher.js';
 import { attachCurrentPrograms, getChannelGuide, getCurrentProgram, getEpgJob, getEpgStatus, getNextProgram, queueEpgImport } from './services/epg.js';
@@ -317,6 +318,7 @@ function sourceHost(streamUrl = '') {
 }
 
 function getStreamSources(contentType, contentId, fallbackUrl = '') {
+  const qualityRank = { '4K': 4, 'Full HD': 3, HD: 2, SD: 1, '': 0 };
   const rows = db.prepare(`
     SELECT
       id,
@@ -337,12 +339,24 @@ function getStreamSources(contentType, contentId, fallbackUrl = '') {
     isPrimary: 1
   }] : []);
 
-  return sources.map((source, index) => ({
-    ...source,
-    label: source.label === 'Opcao' ? `Opcao ${index + 1}` : source.label,
-    sourceHost: source.sourceHost || sourceHost(source.streamUrl),
-    isPrimary: Boolean(source.isPrimary)
-  }));
+  return sources
+    .map((source, index) => {
+      const label = source.label === 'Opcao' ? `Opcao ${index + 1}` : source.label;
+      return {
+        ...source,
+        label,
+        ...extractStreamVariantInfo(label),
+        sourceHost: source.sourceHost || sourceHost(source.streamUrl),
+        isPrimary: Boolean(source.isPrimary)
+      };
+    })
+    .sort((left, right) => {
+      if (left.isPrimary !== right.isPrimary) return Number(right.isPrimary) - Number(left.isPrimary);
+      const qualityDelta = (qualityRank[right.quality] || 0) - (qualityRank[left.quality] || 0);
+      if (qualityDelta !== 0) return qualityDelta;
+      if (left.language !== right.language) return String(left.language || '').localeCompare(String(right.language || ''), 'pt-BR');
+      return Number(left.id || 0) - Number(right.id || 0);
+    });
 }
 
 function publicSources(sources) {
