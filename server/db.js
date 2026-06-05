@@ -284,7 +284,7 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-04-variant-groups';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v4';
 
 function isGenericSourceLabel(label = '') {
   return /^opcao(?:\s+\d+)?$/i.test(compactSpaces(label));
@@ -406,6 +406,169 @@ function chooseSeriesCanonical(rows) {
       if (leftScore !== rightScore) return rightScore - leftScore;
       return left.id - right.id;
     })[0];
+}
+
+function chooseMovieCanonical(rows) {
+  return rows
+    .slice()
+    .sort((left, right) => {
+      const leftScore = (left.tmdbId ? 60 : 0)
+        + (left.posterUrl ? 15 : 0)
+        + (left.backdropUrl ? 15 : 0)
+        + (left.overview ? 12 : 0)
+        + (left.year ? 6 : 0);
+      const rightScore = (right.tmdbId ? 60 : 0)
+        + (right.posterUrl ? 15 : 0)
+        + (right.backdropUrl ? 15 : 0)
+        + (right.overview ? 12 : 0)
+        + (right.year ? 6 : 0);
+      if (leftScore !== rightScore) return rightScore - leftScore;
+      return left.id - right.id;
+    })[0];
+}
+
+function mergeMovieVariants() {
+  const rows = db.prepare(`
+    SELECT
+      m.id,
+      m.title,
+      m.normalized_title AS normalizedTitle,
+      m.stream_url AS streamUrl,
+      m.poster_url AS posterUrl,
+      m.backdrop_url AS backdropUrl,
+      m.overview,
+      m.original_title AS originalTitle,
+      m.release_year AS year,
+      m.tmdb_id AS tmdbId,
+      m.category_id AS categoryId,
+      c.name AS categoryName
+    FROM movies m
+    LEFT JOIN categories c ON c.id = m.category_id
+    ORDER BY m.id ASC
+  `).all();
+
+  const groups = new Map();
+  for (const row of rows) {
+    const cleanTitle = cleanCatalogTitle(row.title);
+    const key = normalizeTitle(cleanTitle);
+    if (!key) continue;
+    const bucket = groups.get(key) || [];
+    bucket.push({
+      ...row,
+      cleanTitle,
+      variantInfo: extractStreamVariantInfo(row.title),
+      categoryVariantInfo: extractStreamVariantInfo(row.categoryName || '')
+    });
+    groups.set(key, bucket);
+  }
+
+  const selectSources = db.prepare(`
+    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = 'movie' AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `);
+  const insertSource = db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (
+      content_type, content_id, label, stream_url, source_host, is_primary
+    ) VALUES ('movie', ?, ?, ?, ?, ?)
+  `);
+  const updateSourceLabel = db.prepare(`
+    UPDATE stream_sources
+    SET label = ?, source_host = COALESCE(NULLIF(?, ''), source_host)
+    WHERE id = ?
+  `);
+  const updateMovie = db.prepare(`
+    UPDATE movies
+    SET
+      title = ?,
+      normalized_title = ?,
+      poster_url = COALESCE(NULLIF(?, ''), poster_url),
+      backdrop_url = COALESCE(NULLIF(?, ''), backdrop_url),
+      overview = COALESCE(NULLIF(?, ''), overview),
+      original_title = COALESCE(NULLIF(?, ''), original_title),
+      release_year = COALESCE(?, release_year),
+      tmdb_id = COALESCE(?, tmdb_id),
+      category_id = COALESCE(?, category_id)
+    WHERE id = ?
+  `);
+
+  let changed = false;
+
+  for (const [, bucket] of groups.entries()) {
+    if (bucket.length <= 1) continue;
+    if (!bucket.some((row) => (
+      row.variantInfo?.language ||
+      row.variantInfo?.quality ||
+      row.variantInfo?.codec ||
+      row.categoryVariantInfo?.language ||
+      row.categoryVariantInfo?.quality ||
+      row.categoryVariantInfo?.codec ||
+      row.cleanTitle !== row.title
+    ))) continue;
+
+    const tmdbIds = new Set(bucket.map((row) => row.tmdbId).filter(Boolean));
+    const years = new Set(bucket.map((row) => row.year).filter(Boolean));
+    if (tmdbIds.size > 1 || years.size > 1) continue;
+
+    changed = true;
+    const canonical = chooseMovieCanonical(bucket);
+    const baseTitle = canonical.cleanTitle || cleanCatalogTitle(canonical.title) || canonical.title;
+
+    for (const row of bucket) {
+      const label = buildSourceLabelFromText(`${row.title || ''} ${row.categoryName || ''}`, '');
+      const currentSources = selectSources.all(row.id);
+
+      for (const source of currentSources) {
+        const nextLabel = isGenericSourceLabel(source.label) && label ? label : source.label;
+        if (row.id === canonical.id) {
+          const nextHost = source.sourceHost || sourceHost(source.streamUrl || row.streamUrl);
+          if ((nextLabel && nextLabel !== source.label) || nextHost) {
+            updateSourceLabel.run(nextLabel || source.label, nextHost, source.id);
+          }
+          continue;
+        }
+
+        insertSource.run(
+          canonical.id,
+          nextLabel || source.label || 'Opcao',
+          source.streamUrl,
+          source.sourceHost || sourceHost(source.streamUrl),
+          0
+        );
+      }
+
+      insertSource.run(
+        canonical.id,
+        label || 'Opcao',
+        row.streamUrl,
+        sourceHost(row.streamUrl),
+        row.id === canonical.id ? 1 : 0
+      );
+
+      if (row.id === canonical.id) continue;
+
+      mergeFavorites('movie', row.id, canonical.id);
+      mergeWatchProgress('movie', row.id, canonical.id);
+      db.prepare("DELETE FROM stream_sources WHERE content_type = 'movie' AND content_id = ?").run(row.id);
+      db.prepare('DELETE FROM movies WHERE id = ?').run(row.id);
+    }
+
+    updateMovie.run(
+      baseTitle,
+      normalizeTitle(baseTitle),
+      pickPreferredValue(canonical.posterUrl, ...bucket.map((row) => row.posterUrl)) || '',
+      pickPreferredValue(canonical.backdropUrl, ...bucket.map((row) => row.backdropUrl)) || '',
+      pickPreferredValue(canonical.overview, ...bucket.map((row) => row.overview)) || '',
+      pickPreferredValue(canonical.originalTitle, ...bucket.map((row) => row.originalTitle)) || '',
+      pickPreferredValue(canonical.year, ...bucket.map((row) => row.year)) || null,
+      pickPreferredValue(canonical.tmdbId, ...bucket.map((row) => row.tmdbId)) || null,
+      pickPreferredValue(canonical.categoryId, ...bucket.map((row) => row.categoryId)) || null,
+      canonical.id
+    );
+  }
+
+  return changed;
 }
 
 function mergeChannelVariants() {
@@ -771,6 +934,7 @@ function runLibraryGroupingMigration() {
   let changed = false;
   db.exec('BEGIN IMMEDIATE');
   try {
+    changed = mergeMovieVariants() || changed;
     changed = mergeSeriesAudioVariants() || changed;
     changed = mergeChannelVariants() || changed;
     setSetting('library_grouping_version', libraryGroupingVersion);

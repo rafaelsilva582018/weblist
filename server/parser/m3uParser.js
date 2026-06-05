@@ -20,9 +20,13 @@ const variantTokenPattern = [
   'multi audio',
   'dublado',
   'dublada',
+  'dublados',
+  'dubladas',
   'dub',
   'legendado',
   'legendada',
+  'legendados',
+  'legendadas',
   'leg',
   'subtitulado',
   'subtitulada',
@@ -38,8 +42,8 @@ const qualityPatterns = [
 
 const languagePatterns = [
   { label: 'Dual Audio', regex: /\b(?:dual audio|multi audio)\b/i },
-  { label: 'Legendado', regex: /\b(?:legendado|legendada|leg|subtitulado|subtitulada|sub)\b/i },
-  { label: 'Dublado', regex: /\b(?:dublado|dublada|dub)\b/i }
+  { label: 'Legendado', regex: /\b(?:legendado|legendada|legendados|legendadas|leg|subtitulado|subtitulada|sub)\b/i },
+  { label: 'Dublado', regex: /\b(?:dublado|dublada|dublados|dubladas|dub)\b/i }
 ];
 
 const codecPatterns = [

@@ -15,6 +15,11 @@ function isMpegTs(item) {
   return item?.streamFormat === 'mpegts' || /\.ts(\?|#|$)/i.test(item?.directStreamUrl || item?.streamUrl || '');
 }
 
+function sourceSummary(source, index) {
+  const parts = [source?.quality, source?.language, source?.codec].filter(Boolean);
+  return parts.join(' - ') || source?.label || `Opcao ${index + 1}`;
+}
+
 const liveStashBufferBytes = 4 * 1024 * 1024;
 const liveBackwardBufferSeconds = 10;
 const liveStartupBufferSeconds = 10;
@@ -24,6 +29,38 @@ const liveMaxLatencySeconds = 24;
 const liveMinBufferAheadSeconds = 1.5;
 const liveStallTimeoutMs = 12000;
 const liveRestartCooldownMs = 8000;
+
+function safelyCall(target, method) {
+  try {
+    target?.[method]?.();
+  } catch {
+    // Media teardown varies a little between HLS, MPEG-TS and Android WebView.
+  }
+}
+
+function releaseVideoElement(video) {
+  if (!video) return;
+  try {
+    video.pause();
+  } catch {
+    // Ignore teardown errors from already released media elements.
+  }
+  try {
+    video.removeAttribute('src');
+    video.load();
+  } catch {
+    // Some WebViews throw while a MediaSource is detaching.
+  }
+}
+
+function destroyMediaInstance(instance) {
+  safelyCall(instance, 'pause');
+  safelyCall(instance, 'stopLoad');
+  safelyCall(instance, 'unload');
+  safelyCall(instance, 'detachMedia');
+  safelyCall(instance, 'detachMediaElement');
+  safelyCall(instance, 'destroy');
+}
 
 export default function PlayerPage() {
   const { type, id } = useParams();
@@ -94,11 +131,12 @@ export default function PlayerPage() {
   }
 
   const saveProgress = useCallback((options = {}) => {
-    const video = videoRef.current;
+    const opts = options?.currentTarget ? {} : options;
+    const video = opts.video || videoRef.current;
     if (!video || !item) return;
 
     const duration = type === 'channel' ? 0 : Number.isFinite(video.duration) ? video.duration : 0;
-    const completed = options?.completed === true;
+    const completed = opts?.completed === true;
     const position = completed && duration
       ? duration
       : type === 'channel' ? Math.max(1, video.currentTime || 0) : video.currentTime || 0;
@@ -116,11 +154,18 @@ export default function PlayerPage() {
 
   useEffect(() => {
     autoPlayAttemptedRef.current = false;
+    pendingLivePlayRef.current = false;
+    shouldResumeLiveRef.current = false;
+    lowLiveBufferSinceRef.current = 0;
+    setLiveBuffering(false);
+    setLiveBufferAhead(0);
+    setGuideOpen(false);
     setCurrent(0);
     setDuration(0);
     setIsPlaying(false);
     setItem(null);
     setError('');
+    releaseVideoElement(videoRef.current);
     const sourceQuery = sourceParam ? `?source=${encodeURIComponent(sourceParam)}` : '';
     apiFetch(`/play/${type}/${id}${sourceQuery}`)
       .then((data) => setItem(data.item))
@@ -137,6 +182,7 @@ export default function PlayerPage() {
     let liveWatchdog;
     let disposed = false;
     mediaPlayerRef.current = null;
+    releaseVideoElement(video);
     setError('');
 
     const latestBufferedEnd = () => {
@@ -349,7 +395,7 @@ export default function PlayerPage() {
       disposed = true;
       pendingLivePlayRef.current = false;
       setLiveBuffering(false);
-      saveProgress();
+      saveProgress({ video });
       window.clearInterval(liveWatchdog);
       video.removeEventListener('loadedmetadata', onLoaded);
       video.removeEventListener('loadeddata', onPlayable);
@@ -366,8 +412,9 @@ export default function PlayerPage() {
       if (mediaPlayerRef.current === tsPlayer || mediaPlayerRef.current === hls) {
         mediaPlayerRef.current = null;
       }
-      hls?.destroy();
-      tsPlayer?.destroy();
+      destroyMediaInstance(hls);
+      destroyMediaInstance(tsPlayer);
+      releaseVideoElement(video);
     };
   }, [autoPlayParam, id, isLive, item, navigate, saveProgress, shouldAutoplayNext, streamReloadKey, type]);
 
@@ -649,7 +696,7 @@ export default function PlayerPage() {
       onMouseMove={showControls}
       onMouseDown={showControls}
       onTouchStart={showControls}
-      className={`min-h-screen bg-black text-white ${controlsVisible ? 'cursor-default' : 'cursor-none'}`}
+      className={`fixed inset-0 h-[100dvh] w-screen overflow-hidden bg-black text-white ${controlsVisible ? 'cursor-default' : 'cursor-none'}`}
     >
       <div className={`pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/82 via-black/42 to-transparent p-4 pb-20 transition-opacity duration-300 sm:p-6 sm:pb-24 ${controlsVisible ? 'opacity-100' : 'opacity-0'}`}>
         <div className={`${controlsVisible ? 'pointer-events-auto' : 'pointer-events-none'} flex items-center justify-between gap-3`}>
@@ -678,12 +725,13 @@ export default function PlayerPage() {
       </div>
 
       <video
+        key={`${type}-${id}-${sourceParam || 'primary'}-${streamReloadKey}`}
         ref={videoRef}
         playsInline
         poster={item?.backdropUrl || item?.posterUrl || undefined}
         onClick={togglePlay}
         onDoubleClick={fullscreen}
-        className="h-screen w-screen bg-black object-contain"
+        className="h-full w-full bg-black object-contain"
       />
 
       {item?.nextEpisode && (
@@ -785,7 +833,7 @@ export default function PlayerPage() {
             )}
             <div className="ml-auto flex items-center gap-2">
               {sourceOptions.length > 1 && (
-                <label className="flex h-10 max-w-[190px] items-center gap-2 rounded bg-white/10 px-2 text-white hover:bg-white/16" title="Opcoes de link">
+                <label className="flex h-10 max-w-[230px] items-center gap-2 rounded bg-white/10 px-2 text-white hover:bg-white/16" title="Qualidade e idioma">
                   <Server size={17} className="shrink-0" />
                   <select
                     value={item?.activeSourceId || ''}
@@ -794,7 +842,7 @@ export default function PlayerPage() {
                   >
                     {sourceOptions.map((source, index) => (
                       <option key={source.id || `source-${index}`} value={source.id || ''} className="bg-ink text-white">
-                        {source.label || `Opcao ${index + 1}`}{source.sourceHost ? ` - ${source.sourceHost}` : ''}
+                        {sourceSummary(source, index)}{source.sourceHost ? ` - ${source.sourceHost}` : ''}
                       </option>
                     ))}
                   </select>

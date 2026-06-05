@@ -6,6 +6,11 @@ import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
 
+function sourceSummary(source, index) {
+  const parts = [source?.quality, source?.language, source?.codec].filter(Boolean);
+  return parts.join(' - ') || source?.label || `Opcao ${index + 1}`;
+}
+
 export default function MovieDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -73,7 +78,7 @@ export default function MovieDetails() {
           </div>
           {sources.length > 1 && (
             <div className="mt-6 max-w-2xl">
-              <p className="mb-2 text-sm font-black uppercase tracking-wide text-slate-300">Opcoes de link</p>
+              <p className="mb-2 text-sm font-black uppercase tracking-wide text-slate-300">Qualidade e idioma</p>
               <div className="flex flex-wrap gap-2">
                 {sources.map((source, index) => (
                   <Link
@@ -81,7 +86,7 @@ export default function MovieDetails() {
                     to={`/watch/movie/${movie.id}${source.id ? `?source=${source.id}` : ''}`}
                     className="rounded border border-white/10 bg-white/8 px-3 py-2 text-sm font-bold text-white hover:bg-white/14"
                   >
-                    {source.label || `Opcao ${index + 1}`}
+                    {sourceSummary(source, index)}
                     {source.sourceHost ? <span className="ml-2 text-xs font-semibold text-slate-400">{source.sourceHost}</span> : null}
                   </Link>
                 ))}
