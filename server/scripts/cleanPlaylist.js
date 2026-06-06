@@ -13,10 +13,22 @@ if (!inputPath) {
 }
 
 const normalizedAdultGroups = new Set(['casa do patrao']);
+const alwaysChannelGroupMap = new Map([
+  ['eleven sports', 'CANAIS | ELEVEN SPORTS'],
+  ['infantis', 'CANAIS | INFANTIS'],
+  ['max', 'CANAIS | MAX'],
+  ['musicas', 'CANAIS | MUSICAS'],
+  ['noticias internacionais', 'CANAIS | NOTICIAS INTERNACIONAIS'],
+  ['pay per view', 'CANAIS | PAY-PER-VIEW'],
+  ['nba pay per view', 'CANAIS | NBA PAY-PER-VIEW'],
+  ['record tv', 'CANAIS | RECORD TV'],
+  ['sbt', 'CANAIS | SBT'],
+  ['sportv', 'CANAIS | SPORTV'],
+  ['variedades', 'CANAIS | VARIEDADES']
+]);
 const forcedGroupMap = new Map([
   ['jogos do dia', 'ESPORTES AO VIVO'],
   ['brasileirao', 'ESPORTES AO VIVO'],
-  ['pay per view', 'CANAIS | PAY-PER-VIEW'],
   ['abertos', 'CANAIS | ABERTOS'],
   ['noticias', 'CANAIS | NOTICIAS'],
   ['esportes', 'CANAIS | ESPORTES']
@@ -167,6 +179,21 @@ function chooseOverrides(meta, url) {
       stats.syntheticTvgIds += 1;
     }
     overrides.tvgName = title;
+    stats.forcedChannels += 1;
+    return overrides;
+  }
+
+  if (alwaysChannelGroupMap.has(groupKey)) {
+    overrides.group = alwaysChannelGroupMap.get(groupKey);
+    if (!overrides.tvgId) {
+      const isEventGroup = /\bpay per view\b/.test(groupKey);
+      overrides.tvgId = syntheticTvgId(meta, isEventGroup && titleLooksEvent(title) ? 'EVENTO' : 'CANAL');
+      stats.syntheticTvgIds += 1;
+    }
+    overrides.tvgName = title;
+    if (overrides.group !== group) {
+      stats.groupRetags += 1;
+    }
     stats.forcedChannels += 1;
     return overrides;
   }

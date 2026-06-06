@@ -50,6 +50,20 @@ const codecPatterns = [
   { label: 'HEVC', regex: /\b(?:hevc|h265|h\.265|x265|x\.265)\b/i }
 ];
 
+const explicitChannelGroups = new Set([
+  'cine sky',
+  'eleven sports',
+  'infantis',
+  'max',
+  'musicas',
+  'noticias internacionais',
+  'pay per view',
+  'record tv',
+  'sbt',
+  'sportv',
+  'variedades'
+]);
+
 function splitOutsideQuotes(value, separator = ',') {
   let quote = null;
   for (let index = 0; index < value.length; index += 1) {
@@ -204,6 +218,7 @@ function isChannelGroup(group, name) {
   const normalizedGroup = normalizeTitle(group);
   const normalizedName = normalizeTitle(name);
 
+  if (explicitChannelGroups.has(normalizedGroup) || /\bpay per view\b/.test(normalizedGroup)) return true;
   if (/\b(canal|canais|ao vivo|radio)\b/.test(normalizedGroup)) return true;
   if (/\b24h\b|\b24 horas\b/.test(normalizedGroup) && !isSeriesGroup(group)) return true;
 

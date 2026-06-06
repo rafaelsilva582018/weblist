@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
-import { cleanCatalogTitle, cleanChannelTitle, extractStreamVariantInfo, formatSourceLabel } from './parser/m3uParser.js';
+import { cleanCatalogTitle, cleanChannelTitle, extractStreamVariantInfo, formatSourceLabel, parseEpisodeInfo } from './parser/m3uParser.js';
 import { isAdultText } from './utils/adult.js';
 import { compactSpaces, normalizeTitle, padNumber } from './utils/normalize.js';
 
@@ -285,9 +285,22 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-05-variant-groups-v6';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v8';
 
-const linearChannelBrandPattern = /\b(?:a&e|adult swim|animal planet|band|bandnews|canal brasil|cartoon network|cnn|combate|discovery|disney(?: channel| junior)?|espn|fx|globo(?:news)?|gnt|hbo(?:\s*2| family| mundi| pop| signature| xtreme)?|history|megapix|multishow|nick(?:elodeon)?|off|paramount|premiere|record|sbt|sony|space|sportv|star channel|telecine(?: action| cult| fun| pipoca| premium| touch)?|tnt|viva|warner)\b/i;
+const explicitLinearChannelCategories = new Set([
+  'cine sky',
+  'eleven sports',
+  'infantis',
+  'max',
+  'musicas',
+  'noticias internacionais',
+  'record tv',
+  'sbt',
+  'sportv',
+  'variedades'
+]);
+
+const linearChannelBrandPattern = /\b(?:a&e|adult swim|animal planet|band|bandnews|bbc world|canal brasil|cartoon network|cgtn|cine\s*sky|cnn(?: internacional| espanhol)?|combate|comedy central|discovery|disney(?: channel| junior)?|dw news|eleven sports|espn|fashion tv|fifa tv|flograppling|france 24h?|furacao tv|fx|globo(?:news)?|gnt|hbo(?:\s*2| family| mundi| pop| signature| xtreme)?|history|malhacao fast|megapix|mtv(?: live| 00s)?|multishow|music box brazil|nhk world japan|nick(?:elodeon)?|off|paramount|play kids|polishop tv|premiere|prime box brasil|rai italia|record|sbt|sic internacional|sony|space|sportv|star channel|telecine(?: action| cult| fun| pipoca| premium| touch)?|tooncast|top tv|tnt|travel box brazil|tv5 monde|uol tv|universal reality|urban travel|viva|warner)\b/i;
 
 function isGenericSourceLabel(label = '') {
   return /^opcao(?:\s+\d+)?$/i.test(compactSpaces(label));
@@ -445,6 +458,13 @@ function isAdultLibraryRow(row = {}) {
 
 function isLikelyLinearChannelMovie(row = {}, cleanTitle = cleanChannelTitle(row.title || '')) {
   if (!cleanTitle) return false;
+  if (parseEpisodeInfo(cleanTitle)) return false;
+
+  const normalizedCategory = normalizeTitle(row.categoryName || '');
+  if (explicitLinearChannelCategories.has(normalizedCategory) || /\bpay per view\b/.test(normalizedCategory)) {
+    return true;
+  }
+
   if (row.tmdbId || row.year || row.overview || row.originalTitle || row.backdropUrl) return false;
   if (/\((19\d{2}|20\d{2})\)\s*$/i.test(cleanTitle)) return false;
 
