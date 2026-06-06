@@ -285,7 +285,7 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-05-variant-groups-v8';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v10';
 
 const explicitLinearChannelCategories = new Set([
   'cine sky',
@@ -316,6 +316,21 @@ function sourceHost(streamUrl = '') {
   } catch {
     return '';
   }
+}
+
+function isLikelyVodStreamUrl(streamUrl = '') {
+  const url = String(streamUrl || '').toLowerCase();
+  return /\/movie\//.test(url) || /\.(mp4|mkv|avi|mov)(?:$|\?)/.test(url);
+}
+
+function hasYearToken(value = '') {
+  return /\b(19\d{2}|20\d{2})\b/.test(String(value || ''));
+}
+
+function isLikelyMovieCategoryName(categoryName = '') {
+  return /\b(?:acao|adultos?|animacao|aventura|cinema|comedia|dc|documentarios?|drama|fantasia|ficcao|filmes?|infantil|lancamentos|legendados?|marvel|nacionais|romance|shows?|suspense|terror)\b/.test(
+    normalizeTitle(categoryName)
+  );
 }
 
 function pickPreferredValue(...values) {
@@ -460,16 +475,26 @@ function isLikelyLinearChannelMovie(row = {}, cleanTitle = cleanChannelTitle(row
   if (!cleanTitle) return false;
   if (parseEpisodeInfo(cleanTitle)) return false;
 
+  if (isLikelyVodStreamUrl(row.streamUrl)) return false;
+
   const normalizedCategory = normalizeTitle(row.categoryName || '');
   if (explicitLinearChannelCategories.has(normalizedCategory) || /\bpay per view\b/.test(normalizedCategory)) {
     return true;
   }
 
   if (row.tmdbId || row.year || row.overview || row.originalTitle || row.backdropUrl) return false;
-  if (/\((19\d{2}|20\d{2})\)\s*$/i.test(cleanTitle)) return false;
+  if (hasYearToken(cleanTitle)) return false;
 
   const hint = compactSpaces(`${row.categoryName || ''} ${cleanTitle}`);
   return linearChannelBrandPattern.test(hint);
+}
+
+function isLikelyMovieChannelRow(row = {}, cleanTitle = cleanCatalogTitle(row.title || '')) {
+  if (!cleanTitle) return false;
+  if (parseEpisodeInfo(cleanTitle)) return false;
+  if (!isLikelyVodStreamUrl(row.streamUrl)) return false;
+  if (hasYearToken(cleanTitle)) return true;
+  return isLikelyMovieCategoryName(row.categoryName);
 }
 
 function chooseChannelCanonical(rows) {
@@ -615,6 +640,116 @@ function reclassifyMovieChannels() {
     moveWatchProgressAcrossTypes('movie', row.id, 'channel', channelId);
     db.prepare("DELETE FROM stream_sources WHERE content_type = 'movie' AND content_id = ?").run(row.id);
     db.prepare('DELETE FROM movies WHERE id = ?').run(row.id);
+  }
+
+  return changed;
+}
+
+function reclassifyChannelMovies() {
+  const rows = db.prepare(`
+    SELECT
+      ch.id,
+      ch.title,
+      ch.normalized_title AS normalizedTitle,
+      ch.tvg_id AS tvgId,
+      ch.tvg_name AS tvgName,
+      ch.stream_url AS streamUrl,
+      ch.logo_url AS logoUrl,
+      ch.category_id AS categoryId,
+      c.name AS categoryName
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    ORDER BY ch.id ASC
+  `).all();
+
+  const selectSources = db.prepare(`
+    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = 'channel' AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `);
+  const insertMovie = db.prepare(`
+    INSERT OR IGNORE INTO movies (title, normalized_title, stream_url, poster_url, category_id)
+    VALUES (?, ?, ?, ?, ?)
+  `);
+  const selectMovieByUrl = db.prepare(`
+    SELECT id, poster_url AS posterUrl, category_id AS categoryId
+    FROM movies
+    WHERE stream_url = ?
+  `);
+  const updateMovie = db.prepare(`
+    UPDATE movies
+    SET
+      poster_url = CASE
+        WHEN (poster_url IS NULL OR poster_url = '') AND ? IS NOT NULL AND ? != '' THEN ?
+        ELSE poster_url
+      END,
+      category_id = COALESCE(category_id, ?)
+    WHERE id = ?
+  `);
+  const insertSource = db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (
+      content_type, content_id, label, stream_url, source_host, is_primary
+    ) VALUES ('movie', ?, ?, ?, ?, ?)
+  `);
+
+  let changed = false;
+
+  for (const row of rows) {
+    const cleanTitle = cleanCatalogTitle(row.title) || row.title;
+    const normalizedMovie = normalizeTitle(cleanTitle);
+    if (!normalizedMovie) continue;
+    if (!isLikelyMovieChannelRow(row, cleanTitle)) continue;
+
+    changed = true;
+    const movieCategoryId = ensureCategoryId('movie', row.categoryName || 'Sem categoria');
+    insertMovie.run(
+      row.title,
+      normalizedMovie,
+      row.streamUrl,
+      row.logoUrl || null,
+      movieCategoryId
+    );
+
+    const movie = selectMovieByUrl.get(row.streamUrl);
+    if (!movie?.id) continue;
+
+    updateMovie.run(
+      row.logoUrl || null,
+      row.logoUrl || null,
+      row.logoUrl || null,
+      movieCategoryId,
+      movie.id
+    );
+
+    const currentSources = selectSources.all(row.id);
+    const fallbackLabel = buildSourceLabelFromText(`${row.title || ''} ${row.categoryName || ''}`, '');
+
+    if (currentSources.length === 0 && row.streamUrl) {
+      insertSource.run(
+        movie.id,
+        fallbackLabel || 'Opcao',
+        row.streamUrl,
+        sourceHost(row.streamUrl),
+        1
+      );
+    }
+
+    for (const source of currentSources) {
+      const nextLabel = isGenericSourceLabel(source.label) && fallbackLabel ? fallbackLabel : source.label;
+      insertSource.run(
+        movie.id,
+        nextLabel || source.label || 'Opcao',
+        source.streamUrl,
+        source.sourceHost || sourceHost(source.streamUrl),
+        Number(Boolean(source.isPrimary))
+      );
+    }
+
+    moveFavoritesAcrossTypes('channel', row.id, 'movie', movie.id);
+    moveWatchProgressAcrossTypes('channel', row.id, 'movie', movie.id);
+    db.prepare("DELETE FROM stream_sources WHERE content_type = 'channel' AND content_id = ?").run(row.id);
+    db.prepare('DELETE FROM channels WHERE id = ?').run(row.id);
   }
 
   return changed;
@@ -1017,6 +1152,7 @@ function runLibraryGroupingMigration() {
   let changed = false;
   db.exec('BEGIN IMMEDIATE');
   try {
+    changed = reclassifyChannelMovies() || changed;
     changed = reclassifyMovieChannels() || changed;
     changed = mergeMovieVariants() || changed;
     changed = mergeSeriesAudioVariants() || changed;
