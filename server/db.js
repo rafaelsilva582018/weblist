@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
 import { cleanCatalogTitle, cleanChannelTitle, extractStreamVariantInfo, formatSourceLabel } from './parser/m3uParser.js';
+import { isAdultText } from './utils/adult.js';
 import { compactSpaces, normalizeTitle, padNumber } from './utils/normalize.js';
 
 const serverDir = path.dirname(fileURLToPath(import.meta.url));
@@ -284,7 +285,9 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-05-variant-groups-v4';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v5';
+
+const linearChannelBrandPattern = /\b(?:a&e|adult swim|animal planet|band|bandnews|canal brasil|cartoon network|cnn|combate|discovery|disney(?: channel| junior)?|espn|fx|globo(?:news)?|gnt|hbo(?:\s*2| family| mundi| pop| signature| xtreme)?|history|megapix|multishow|nick(?:elodeon)?|off|paramount|premiere|record|sbt|sony|space|sportv|star channel|telecine(?: action| cult| fun| pipoca| premium| touch)?|tnt|viva|warner)\b/i;
 
 function isGenericSourceLabel(label = '') {
   return /^opcao(?:\s+\d+)?$/i.test(compactSpaces(label));
@@ -304,6 +307,14 @@ function sourceHost(streamUrl = '') {
 
 function pickPreferredValue(...values) {
   return values.find((value) => value !== undefined && value !== null && String(value).trim() !== '') ?? null;
+}
+
+function ensureCategoryId(type, name) {
+  const categoryName = compactSpaces(name || 'Sem categoria') || 'Sem categoria';
+  const existing = db.prepare('SELECT id FROM categories WHERE name = ? AND type = ?').get(categoryName, type);
+  if (existing?.id) return existing.id;
+  const result = db.prepare('INSERT INTO categories (name, type) VALUES (?, ?)').run(categoryName, type);
+  return Number(result.lastInsertRowid);
 }
 
 function displayTitle(seriesTitle, seasonNumber, episodeNumber, episodeTitle) {
@@ -369,6 +380,78 @@ function mergeWatchProgress(contentType, fromId, toId) {
   db.prepare('DELETE FROM watch_progress WHERE content_type = ? AND content_id = ?').run(contentType, fromId);
 }
 
+function moveFavoritesAcrossTypes(fromType, fromId, toType, toId) {
+  if (!fromId || !toId) return;
+
+  db.prepare(`
+    INSERT OR IGNORE INTO favorites (user_id, content_type, content_id, created_at)
+    SELECT user_id, ?, ?, created_at
+    FROM favorites
+    WHERE content_type = ? AND content_id = ?
+  `).run(toType, toId, fromType, fromId);
+
+  db.prepare('DELETE FROM favorites WHERE content_type = ? AND content_id = ?').run(fromType, fromId);
+}
+
+function moveWatchProgressAcrossTypes(fromType, fromId, toType, toId) {
+  if (!fromId || !toId) return;
+
+  const rows = db.prepare(`
+    SELECT user_id, position, duration, completed_at AS completedAt, updated_at AS updatedAt
+    FROM watch_progress
+    WHERE content_type = ? AND content_id = ?
+  `).all(fromType, fromId);
+
+  const upsert = db.prepare(`
+    INSERT INTO watch_progress (
+      user_id, progress_key, content_type, content_id, episode_id, position, duration, completed_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON CONFLICT(progress_key) DO UPDATE SET
+      position = CASE
+        WHEN excluded.updated_at >= watch_progress.updated_at THEN excluded.position
+        ELSE watch_progress.position
+      END,
+      duration = CASE
+        WHEN excluded.updated_at >= watch_progress.updated_at THEN excluded.duration
+        ELSE watch_progress.duration
+      END,
+      completed_at = COALESCE(watch_progress.completed_at, excluded.completed_at),
+      updated_at = CASE
+        WHEN excluded.updated_at >= watch_progress.updated_at THEN excluded.updated_at
+        ELSE watch_progress.updated_at
+      END
+  `);
+
+  for (const row of rows) {
+    upsert.run(
+      row.user_id,
+      `${row.user_id}:${toType}:${toId}`,
+      toType,
+      toId,
+      toType === 'episode' ? toId : null,
+      row.position,
+      row.duration,
+      row.completedAt,
+      row.updatedAt || new Date().toISOString()
+    );
+  }
+
+  db.prepare('DELETE FROM watch_progress WHERE content_type = ? AND content_id = ?').run(fromType, fromId);
+}
+
+function isAdultLibraryRow(row = {}) {
+  return isAdultText(row.title, row.categoryName);
+}
+
+function isLikelyLinearChannelMovie(row = {}, cleanTitle = cleanChannelTitle(row.title || '')) {
+  if (!cleanTitle) return false;
+  if (row.tmdbId || row.year || row.overview || row.originalTitle || row.backdropUrl) return false;
+  if (/\((19\d{2}|20\d{2})\)\s*$/i.test(cleanTitle)) return false;
+
+  const hint = compactSpaces(`${row.categoryName || ''} ${cleanTitle}`);
+  return linearChannelBrandPattern.test(hint);
+}
+
 function chooseChannelCanonical(rows) {
   const legendPattern = /\b(legendado|legendados|dublado|dublados)\b/i;
   return rows
@@ -427,6 +510,136 @@ function chooseMovieCanonical(rows) {
     })[0];
 }
 
+function reclassifyMovieChannels() {
+  const rows = db.prepare(`
+    SELECT
+      m.id,
+      m.title,
+      m.normalized_title AS normalizedTitle,
+      m.stream_url AS streamUrl,
+      m.poster_url AS posterUrl,
+      m.backdrop_url AS backdropUrl,
+      m.overview,
+      m.original_title AS originalTitle,
+      m.release_year AS year,
+      m.tmdb_id AS tmdbId,
+      m.category_id AS categoryId,
+      c.name AS categoryName
+    FROM movies m
+    LEFT JOIN categories c ON c.id = m.category_id
+    ORDER BY m.id ASC
+  `).all();
+
+  const selectSources = db.prepare(`
+    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = 'movie' AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `);
+  const selectChannel = db.prepare(`
+    SELECT
+      id,
+      title,
+      normalized_title AS normalizedTitle,
+      stream_url AS streamUrl,
+      logo_url AS logoUrl,
+      category_id AS categoryId
+    FROM channels
+    WHERE normalized_title = ?
+    ORDER BY id ASC
+    LIMIT 1
+  `);
+  const insertChannel = db.prepare(`
+    INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const updateChannel = db.prepare(`
+    UPDATE channels
+    SET
+      title = ?,
+      normalized_title = ?,
+      tvg_name = COALESCE(NULLIF(tvg_name, ''), ?),
+      logo_url = COALESCE(NULLIF(?, ''), logo_url),
+      category_id = COALESCE(?, category_id)
+    WHERE id = ?
+  `);
+  const insertSource = db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (
+      content_type, content_id, label, stream_url, source_host, is_primary
+    ) VALUES ('channel', ?, ?, ?, ?, ?)
+  `);
+
+  let changed = false;
+
+  for (const row of rows) {
+    const cleanTitle = cleanChannelTitle(row.title) || row.title;
+    const normalizedChannel = normalizeTitle(cleanTitle);
+    if (!normalizedChannel) continue;
+
+    const existingChannel = selectChannel.get(normalizedChannel);
+    if (!existingChannel && !isLikelyLinearChannelMovie(row, cleanTitle)) continue;
+
+    changed = true;
+    const isNewChannel = !existingChannel;
+    const channelCategoryId = existingChannel?.categoryId
+      || ensureCategoryId('channel', row.categoryName || 'Sem categoria');
+
+    let channelId = existingChannel?.id;
+    if (!channelId) {
+      const result = insertChannel.run(
+        cleanTitle,
+        normalizedChannel,
+        null,
+        cleanTitle,
+        row.streamUrl,
+        row.posterUrl || null,
+        channelCategoryId
+      );
+      channelId = Number(result.lastInsertRowid);
+    } else {
+      updateChannel.run(
+        cleanTitle,
+        normalizedChannel,
+        cleanTitle,
+        row.posterUrl || '',
+        channelCategoryId || null,
+        channelId
+      );
+    }
+
+    const currentSources = selectSources.all(row.id);
+    const fallbackLabel = buildSourceLabelFromText(`${row.title || ''} ${row.categoryName || ''}`, '');
+
+    if (currentSources.length === 0 && row.streamUrl) {
+      insertSource.run(
+        channelId,
+        fallbackLabel || 'Opcao',
+        row.streamUrl,
+        sourceHost(row.streamUrl),
+        isNewChannel ? 1 : 0
+      );
+    }
+
+    for (const source of currentSources) {
+      const nextLabel = isGenericSourceLabel(source.label) && fallbackLabel ? fallbackLabel : source.label;
+      insertSource.run(
+        channelId,
+        nextLabel || source.label || 'Opcao',
+        source.streamUrl,
+        source.sourceHost || sourceHost(source.streamUrl),
+        isNewChannel ? Number(Boolean(source.isPrimary)) : 0
+      );
+    }
+
+    moveFavoritesAcrossTypes('movie', row.id, 'channel', channelId);
+    moveWatchProgressAcrossTypes('movie', row.id, 'channel', channelId);
+    db.prepare("DELETE FROM stream_sources WHERE content_type = 'movie' AND content_id = ?").run(row.id);
+    db.prepare('DELETE FROM movies WHERE id = ?').run(row.id);
+  }
+
+  return changed;
+}
+
 function mergeMovieVariants() {
   const rows = db.prepare(`
     SELECT
@@ -450,8 +663,9 @@ function mergeMovieVariants() {
   const groups = new Map();
   for (const row of rows) {
     const cleanTitle = cleanCatalogTitle(row.title);
-    const key = normalizeTitle(cleanTitle);
-    if (!key) continue;
+    const normalizedKey = normalizeTitle(cleanTitle);
+    if (!normalizedKey) continue;
+    const key = `${normalizedKey}|adult:${isAdultLibraryRow(row) ? 1 : 0}|channel:${isLikelyLinearChannelMovie(row, cleanTitle) ? 1 : 0}`;
     const bucket = groups.get(key) || [];
     bucket.push({
       ...row,
@@ -595,8 +809,9 @@ function mergeChannelVariants() {
 
   const groups = new Map();
   for (const row of rows) {
-    const key = normalizeTitle(cleanChannelTitle(row.tvgId || row.tvgName || row.title));
-    if (!key) continue;
+    const normalizedKey = normalizeTitle(cleanChannelTitle(row.tvgId || row.tvgName || row.title));
+    if (!normalizedKey) continue;
+    const key = `${normalizedKey}|adult:${isAdultLibraryRow(row) ? 1 : 0}`;
     const bucket = groups.get(key) || [];
     bucket.push(row);
     groups.set(key, bucket);
@@ -677,7 +892,7 @@ function mergeChannelVariants() {
 
     updateChannel.run(
       cleanTitle,
-      key,
+      normalizeTitle(cleanTitle),
       pickPreferredValue(canonical.tvgId, ...bucket.map((row) => row.tvgId)) || '',
       cleanChannelTitle(pickPreferredValue(canonical.tvgName, ...bucket.map((row) => row.tvgName), cleanTitle) || cleanTitle),
       pickPreferredValue(canonical.logoUrl, ...bucket.map((row) => row.logoUrl)) || '',
@@ -702,20 +917,23 @@ function mergeSeriesAudioVariants() {
       s.first_air_year AS year,
       s.tmdb_id AS tmdbId,
       s.category_id AS categoryId,
+      c.name AS categoryName,
       (
         SELECT COUNT(*)
         FROM episodes e
         WHERE e.series_id = s.id
       ) AS episodeCount
     FROM series s
+    LEFT JOIN categories c ON c.id = s.category_id
     ORDER BY s.id ASC
   `).all();
 
   const groups = new Map();
   for (const row of rows) {
     const cleanTitle = cleanCatalogTitle(row.title);
-    const key = normalizeTitle(cleanTitle);
-    if (!key) continue;
+    const normalizedKey = normalizeTitle(cleanTitle);
+    if (!normalizedKey) continue;
+    const key = `${normalizedKey}|adult:${isAdultLibraryRow(row) ? 1 : 0}`;
     const bucket = groups.get(key) || [];
     bucket.push({ ...row, cleanTitle, variantInfo: extractStreamVariantInfo(row.title) });
     groups.set(key, bucket);
@@ -913,7 +1131,7 @@ function mergeSeriesAudioVariants() {
 
     updateSeries.run(
       baseTitle,
-      key,
+      normalizeTitle(baseTitle),
       pickPreferredValue(canonical.posterUrl, ...bucket.map((row) => row.posterUrl)) || '',
       pickPreferredValue(canonical.backdropUrl, ...bucket.map((row) => row.backdropUrl)) || '',
       pickPreferredValue(canonical.overview, ...bucket.map((row) => row.overview)) || '',
@@ -934,6 +1152,7 @@ function runLibraryGroupingMigration() {
   let changed = false;
   db.exec('BEGIN IMMEDIATE');
   try {
+    changed = reclassifyMovieChannels() || changed;
     changed = mergeMovieVariants() || changed;
     changed = mergeSeriesAudioVariants() || changed;
     changed = mergeChannelVariants() || changed;

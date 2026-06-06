@@ -14,6 +14,7 @@ import { attachCurrentPrograms, getChannelGuide, getCurrentProgram, getEpgJob, g
 import { getImportJob, queueImport } from './services/importer.js';
 import { getIptvOrgEpgJob, queueIptvOrgEpgImport } from './services/iptvOrgEpg.js';
 import { getOmdbPublicConfig, getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, searchTmdbPersonCredits, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
+import { buildAdultExclusionClauses, isAdultText } from './utils/adult.js';
 import { normalizeTitle } from './utils/normalize.js';
 import { startAutoTmdbEnrichment } from './services/autoTmdb.js';
 
@@ -226,18 +227,10 @@ function effectiveHideAdult(req, user = getLocalUser(req)) {
 }
 
 function adultFilterClauses(alias, categoryAlias = 'c') {
-  return [
-    `COALESCE(${categoryAlias}.name, '') NOT LIKE '%Adult%' COLLATE NOCASE`,
-    `COALESCE(${categoryAlias}.name, '') NOT LIKE '%XXX%' COLLATE NOCASE`,
-    `COALESCE(${categoryAlias}.name, '') NOT LIKE '%+18%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%[XXX]%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%XXX%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%18+%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%+18%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%sexo%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%porn%' COLLATE NOCASE`,
-    `${alias}.title NOT LIKE '%erot%' COLLATE NOCASE`
-  ];
+  return buildAdultExclusionClauses({
+    titleColumn: `${alias}.title`,
+    categoryColumn: `${categoryAlias}.name`
+  });
 }
 
 function addAdultFilters(where, alias, categoryAlias = 'c') {
@@ -246,8 +239,7 @@ function addAdultFilters(where, alias, categoryAlias = 'c') {
 
 function isAdultRecord(record = {}) {
   if (!record) return false;
-  const text = `${record.title || ''} ${record.category || ''}`;
-  return /adult|xxx|\+18|18\+|sexo|porn|erot/i.test(text);
+  return isAdultText(record.title, record.category);
 }
 
 function addSearchFilters({ where, params, alias, type, q, category, metadata = 'all', year = '', hideAdult = true }) {
@@ -1050,7 +1042,7 @@ function getLoginBackgroundItems(limit = 56) {
 function getCategoryRows(userId = 1, hideAdult = true) {
   const rows = [];
   const categoryAdultClause = hideAdult
-    ? `AND c.name NOT LIKE '%Adult%' COLLATE NOCASE AND c.name NOT LIKE '%XXX%' COLLATE NOCASE AND c.name NOT LIKE '%+18%' COLLATE NOCASE`
+    ? `AND ${buildAdultExclusionClauses({ categoryColumn: 'c.name' }).join(' AND ')}`
     : '';
   const movieCategories = db.prepare(`
     SELECT c.id, c.name, COUNT(m.id) AS total, MAX(m.imported_at) AS recent
@@ -1543,9 +1535,7 @@ app.get('/api/categories', (req, res) => {
     params.push(type);
   }
   if (!canShowAdult(user)) {
-    where.push("name NOT LIKE '%Adult%' COLLATE NOCASE");
-    where.push("name NOT LIKE '%XXX%' COLLATE NOCASE");
-    where.push("name NOT LIKE '%+18%' COLLATE NOCASE");
+    where.push(...buildAdultExclusionClauses({ categoryColumn: 'name' }));
   }
 
   const categories = db.prepare(`
