@@ -113,23 +113,6 @@ function prepareStatements() {
       INSERT INTO movies (title, normalized_title, stream_url, poster_url, category_id)
       VALUES (?, ?, ?, ?, ?)
     `),
-    selectChannelByTvgId: db.prepare(`
-      SELECT id, logo_url AS logoUrl, tvg_id AS tvgId, tvg_name AS tvgName
-      FROM channels
-      WHERE lower(tvg_id) = lower(?)
-      ORDER BY id ASC
-      LIMIT 1
-    `),
-    selectChannelIdentity: db.prepare(`
-      SELECT id, logo_url AS logoUrl, tvg_id AS tvgId, tvg_name AS tvgName
-      FROM channels
-      WHERE normalized_title = ? AND category_id = ?
-      ORDER BY id ASC
-      LIMIT 1
-    `),
-    updateChannelLogo: db.prepare("UPDATE channels SET logo_url = ? WHERE id = ? AND (logo_url IS NULL OR logo_url = '')"),
-    updateChannelTvgId: db.prepare("UPDATE channels SET tvg_id = ? WHERE id = ? AND (tvg_id IS NULL OR tvg_id = '')"),
-    updateChannelTvgName: db.prepare("UPDATE channels SET tvg_name = ? WHERE id = ? AND (tvg_name IS NULL OR tvg_name = '')"),
     insertChannel: db.prepare(`
       INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
       VALUES (?, ?, ?, ?, ?, ?, ?)
@@ -294,39 +277,6 @@ function importItem(meta, url, statements, cache, job) {
       const normalizedChannel = normalizeTitle(channelTitle);
       const channelTvgId = compactSpaces(meta.tvgId || meta.attrs?.['tvg-id'] || '');
       const channelTvgName = cleanChannelTitle(meta.tvgName || meta.name || channelTitle) || channelTitle;
-
-      let existingChannel = channelTvgId
-        ? statements.selectChannelByTvgId.get(channelTvgId)
-        : null;
-
-      if (!existingChannel) {
-        existingChannel = statements.selectChannelIdentity.get(normalizedChannel, categoryId);
-        if (
-          existingChannel?.tvgId &&
-          channelTvgId &&
-          normalizeIdentifier(existingChannel.tvgId) !== normalizeIdentifier(channelTvgId)
-        ) {
-          existingChannel = null;
-        }
-      }
-
-      if (existingChannel) {
-        if (posterUrl && !existingChannel.logoUrl) {
-          statements.updateChannelLogo.run(posterUrl, existingChannel.id);
-        }
-        if (channelTvgId && !existingChannel.tvgId) {
-          statements.updateChannelTvgId.run(channelTvgId, existingChannel.id);
-        }
-        if (channelTvgName && !existingChannel.tvgName) {
-          statements.updateChannelTvgName.run(channelTvgName, existingChannel.id);
-        }
-        if (addStreamSource(statements, 'channel', existingChannel.id, streamUrl, sourceLabel)) {
-          job.imported.sources += 1;
-        } else {
-          job.duplicates += 1;
-        }
-        return;
-      }
 
       const result = statements.insertChannel.run(
         channelTitle,

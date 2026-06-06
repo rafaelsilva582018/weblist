@@ -285,7 +285,7 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-05-variant-groups-v5';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v6';
 
 const linearChannelBrandPattern = /\b(?:a&e|adult swim|animal planet|band|bandnews|canal brasil|cartoon network|cnn|combate|discovery|disney(?: channel| junior)?|espn|fx|globo(?:news)?|gnt|hbo(?:\s*2| family| mundi| pop| signature| xtreme)?|history|megapix|multishow|nick(?:elodeon)?|off|paramount|premiere|record|sbt|sony|space|sportv|star channel|telecine(?: action| cult| fun| pipoca| premium| touch)?|tnt|viva|warner)\b/i;
 
@@ -536,32 +536,9 @@ function reclassifyMovieChannels() {
     WHERE content_type = 'movie' AND content_id = ?
     ORDER BY is_primary DESC, id ASC
   `);
-  const selectChannel = db.prepare(`
-    SELECT
-      id,
-      title,
-      normalized_title AS normalizedTitle,
-      stream_url AS streamUrl,
-      logo_url AS logoUrl,
-      category_id AS categoryId
-    FROM channels
-    WHERE normalized_title = ?
-    ORDER BY id ASC
-    LIMIT 1
-  `);
   const insertChannel = db.prepare(`
     INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
     VALUES (?, ?, ?, ?, ?, ?, ?)
-  `);
-  const updateChannel = db.prepare(`
-    UPDATE channels
-    SET
-      title = ?,
-      normalized_title = ?,
-      tvg_name = COALESCE(NULLIF(tvg_name, ''), ?),
-      logo_url = COALESCE(NULLIF(?, ''), logo_url),
-      category_id = COALESCE(?, category_id)
-    WHERE id = ?
   `);
   const insertSource = db.prepare(`
     INSERT OR IGNORE INTO stream_sources (
@@ -575,37 +552,20 @@ function reclassifyMovieChannels() {
     const cleanTitle = cleanChannelTitle(row.title) || row.title;
     const normalizedChannel = normalizeTitle(cleanTitle);
     if (!normalizedChannel) continue;
-
-    const existingChannel = selectChannel.get(normalizedChannel);
-    if (!existingChannel && !isLikelyLinearChannelMovie(row, cleanTitle)) continue;
+    if (!isLikelyLinearChannelMovie(row, cleanTitle)) continue;
 
     changed = true;
-    const isNewChannel = !existingChannel;
-    const channelCategoryId = existingChannel?.categoryId
-      || ensureCategoryId('channel', row.categoryName || 'Sem categoria');
-
-    let channelId = existingChannel?.id;
-    if (!channelId) {
-      const result = insertChannel.run(
-        cleanTitle,
-        normalizedChannel,
-        null,
-        cleanTitle,
-        row.streamUrl,
-        row.posterUrl || null,
-        channelCategoryId
-      );
-      channelId = Number(result.lastInsertRowid);
-    } else {
-      updateChannel.run(
-        cleanTitle,
-        normalizedChannel,
-        cleanTitle,
-        row.posterUrl || '',
-        channelCategoryId || null,
-        channelId
-      );
-    }
+    const channelCategoryId = ensureCategoryId('channel', row.categoryName || 'Sem categoria');
+    const created = insertChannel.run(
+      cleanTitle,
+      normalizedChannel,
+      null,
+      cleanTitle,
+      row.streamUrl,
+      row.posterUrl || null,
+      channelCategoryId
+    );
+    const channelId = Number(created.lastInsertRowid);
 
     const currentSources = selectSources.all(row.id);
     const fallbackLabel = buildSourceLabelFromText(`${row.title || ''} ${row.categoryName || ''}`, '');
@@ -616,7 +576,7 @@ function reclassifyMovieChannels() {
         fallbackLabel || 'Opcao',
         row.streamUrl,
         sourceHost(row.streamUrl),
-        isNewChannel ? 1 : 0
+        1
       );
     }
 
@@ -627,7 +587,7 @@ function reclassifyMovieChannels() {
         nextLabel || source.label || 'Opcao',
         source.streamUrl,
         source.sourceHost || sourceHost(source.streamUrl),
-        isNewChannel ? Number(Boolean(source.isPrimary)) : 0
+        Number(Boolean(source.isPrimary))
       );
     }
 
@@ -786,122 +746,7 @@ function mergeMovieVariants() {
 }
 
 function mergeChannelVariants() {
-  const rows = db.prepare(`
-    SELECT
-      ch.id,
-      ch.title,
-      ch.normalized_title AS normalizedTitle,
-      ch.tvg_id AS tvgId,
-      ch.tvg_name AS tvgName,
-      ch.stream_url AS streamUrl,
-      ch.logo_url AS logoUrl,
-      ch.category_id AS categoryId,
-      c.name AS categoryName,
-      (
-        SELECT COUNT(*)
-        FROM epg_programs ep
-        WHERE ep.channel_id = ch.id
-      ) AS programCount
-    FROM channels ch
-    LEFT JOIN categories c ON c.id = ch.category_id
-    ORDER BY ch.id ASC
-  `).all();
-
-  const groups = new Map();
-  for (const row of rows) {
-    const normalizedKey = normalizeTitle(cleanChannelTitle(row.tvgId || row.tvgName || row.title));
-    if (!normalizedKey) continue;
-    const key = `${normalizedKey}|adult:${isAdultLibraryRow(row) ? 1 : 0}`;
-    const bucket = groups.get(key) || [];
-    bucket.push(row);
-    groups.set(key, bucket);
-  }
-
-  const selectSources = db.prepare(`
-    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
-    FROM stream_sources
-    WHERE content_type = 'channel' AND content_id = ?
-    ORDER BY is_primary DESC, id ASC
-  `);
-  const insertSource = db.prepare(`
-    INSERT OR IGNORE INTO stream_sources (
-      content_type, content_id, label, stream_url, source_host, is_primary
-    ) VALUES ('channel', ?, ?, ?, ?, ?)
-  `);
-  const updateSourceLabel = db.prepare(`
-    UPDATE stream_sources
-    SET label = ?, source_host = COALESCE(NULLIF(?, ''), source_host)
-    WHERE id = ?
-  `);
-  const updateChannel = db.prepare(`
-    UPDATE channels
-    SET
-      title = ?,
-      normalized_title = ?,
-      tvg_id = COALESCE(NULLIF(?, ''), tvg_id),
-      tvg_name = COALESCE(NULLIF(?, ''), tvg_name),
-      logo_url = COALESCE(NULLIF(?, ''), logo_url),
-      category_id = COALESCE(?, category_id)
-    WHERE id = ?
-  `);
-
-  let changed = false;
-
-  for (const [key, bucket] of groups.entries()) {
-    if (bucket.length <= 1) continue;
-    changed = true;
-
-    const canonical = chooseChannelCanonical(bucket);
-    const cleanTitle = cleanChannelTitle(canonical.tvgId || canonical.tvgName || canonical.title) || canonical.title;
-    const canonicalCategoryId = bucket.find((row) => !/\blegendad/i.test(row.categoryName || ''))?.categoryId ?? canonical.categoryId;
-
-    for (const row of bucket) {
-      const hint = compactSpaces(`${row.title || ''} ${row.tvgName || ''}`);
-      const label = buildSourceLabelFromText(hint);
-      const currentSources = selectSources.all(row.id);
-
-      for (const source of currentSources) {
-        const nextLabel = isGenericSourceLabel(source.label) ? label : source.label;
-        if (row.id === canonical.id) {
-          const nextHost = source.sourceHost || sourceHost(source.streamUrl || row.streamUrl);
-          if (nextLabel !== source.label || nextHost) {
-            updateSourceLabel.run(nextLabel, nextHost, source.id);
-          }
-          continue;
-        }
-
-        insertSource.run(
-          canonical.id,
-          nextLabel,
-          source.streamUrl,
-          source.sourceHost || sourceHost(source.streamUrl),
-          0
-        );
-      }
-
-      insertSource.run(canonical.id, label, row.streamUrl, sourceHost(row.streamUrl), row.id === canonical.id ? 1 : 0);
-
-      if (row.id === canonical.id) continue;
-
-      db.prepare('UPDATE epg_programs SET channel_id = ? WHERE channel_id = ?').run(canonical.id, row.id);
-      mergeFavorites('channel', row.id, canonical.id);
-      mergeWatchProgress('channel', row.id, canonical.id);
-      db.prepare("DELETE FROM stream_sources WHERE content_type = 'channel' AND content_id = ?").run(row.id);
-      db.prepare('DELETE FROM channels WHERE id = ?').run(row.id);
-    }
-
-    updateChannel.run(
-      cleanTitle,
-      normalizeTitle(cleanTitle),
-      pickPreferredValue(canonical.tvgId, ...bucket.map((row) => row.tvgId)) || '',
-      cleanChannelTitle(pickPreferredValue(canonical.tvgName, ...bucket.map((row) => row.tvgName), cleanTitle) || cleanTitle),
-      pickPreferredValue(canonical.logoUrl, ...bucket.map((row) => row.logoUrl)) || '',
-      canonicalCategoryId || null,
-      canonical.id
-    );
-  }
-
-  return changed;
+  return false;
 }
 
 function mergeSeriesAudioVariants() {
@@ -1155,7 +1000,6 @@ function runLibraryGroupingMigration() {
     changed = reclassifyMovieChannels() || changed;
     changed = mergeMovieVariants() || changed;
     changed = mergeSeriesAudioVariants() || changed;
-    changed = mergeChannelVariants() || changed;
     setSetting('library_grouping_version', libraryGroupingVersion);
     db.exec('COMMIT');
   } catch (error) {
