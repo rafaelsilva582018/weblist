@@ -967,6 +967,46 @@ function getContinueWatching(userId, mode = 'all', hideAdult = true) {
     ORDER BY updated_at DESC
     LIMIT 20
   `).all(userId);
+  const completedEpisodeRows = mode === 'channels'
+    ? []
+    : db.prepare(`
+      SELECT *
+      FROM watch_progress
+      WHERE user_id = ?
+        AND content_type = 'episode'
+        AND completed_at IS NOT NULL
+      ORDER BY updated_at DESC
+      LIMIT 40
+    `).all(userId);
+  const selectEpisodeOrder = db.prepare(`
+    SELECT
+      e.series_id AS seriesId,
+      e.season_number AS seasonNumber,
+      e.episode_number AS episodeNumber
+    FROM episodes e
+    WHERE e.id = ?
+  `);
+  const selectNextEpisode = db.prepare(`
+    SELECT
+      e.id, 'episode' AS type, e.title, e.display_title AS displayTitle,
+      COALESCE(NULLIF(s.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(e.poster_url, '')) AS posterUrl,
+      s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl,
+      e.season_number AS seasonNumber, e.episode_number AS episodeNumber,
+      c.name AS category,
+      wp.position AS progressPosition,
+      wp.duration AS progressDuration,
+      wp.completed_at AS completedAt
+    FROM episodes e
+    JOIN seasons se ON se.id = e.season_id
+    JOIN series s ON s.id = e.series_id
+    LEFT JOIN categories c ON c.id = COALESCE(e.category_id, s.category_id)
+    LEFT JOIN watch_progress wp ON wp.user_id = ? AND wp.content_type = 'episode' AND wp.content_id = e.id
+    WHERE e.series_id = ?
+      AND (e.season_number > ? OR (e.season_number = ? AND e.episode_number > ?))
+      AND (wp.completed_at IS NULL OR wp.completed_at = '')
+    ORDER BY e.season_number ASC, e.episode_number ASC
+    LIMIT 1
+  `);
 
   const items = [];
   const seenSeriesIds = new Set();
@@ -1025,6 +1065,33 @@ function getContinueWatching(userId, mode = 'all', hideAdult = true) {
       if (hideAdult && isAdultRecord(item)) continue;
       if (item) items.push({ ...item, progress: row });
     }
+  }
+
+  for (const row of completedEpisodeRows) {
+    const currentEpisode = selectEpisodeOrder.get(row.content_id);
+    if (!currentEpisode?.seriesId || seenSeriesIds.has(currentEpisode.seriesId)) continue;
+
+    const nextEpisode = selectNextEpisode.get(
+      userId,
+      currentEpisode.seriesId,
+      currentEpisode.seasonNumber,
+      currentEpisode.seasonNumber,
+      currentEpisode.episodeNumber
+    );
+    if (!nextEpisode) continue;
+    if (hideAdult && isAdultRecord({ ...nextEpisode, title: `${nextEpisode.title || ''} ${nextEpisode.seriesTitle || ''}` })) continue;
+
+    seenSeriesIds.add(nextEpisode.seriesId);
+    items.push({
+      ...nextEpisode,
+      cardTitle: nextEpisode.seriesTitle,
+      cardSubtitle: `Proximo: ${nextEpisode.displayTitle || `${nextEpisode.seasonNumber || ''}x${nextEpisode.episodeNumber || ''} ${nextEpisode.title || ''}`.trim()}`,
+      progress: nextEpisode.progressPosition > 5 ? {
+        position: nextEpisode.progressPosition,
+        duration: nextEpisode.progressDuration,
+        completed_at: nextEpisode.completedAt
+      } : null
+    });
   }
 
   return mode === 'channels' ? attachCurrentPrograms(items) : items;
