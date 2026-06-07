@@ -1,10 +1,45 @@
-import { Info, Play } from 'lucide-react';
+import { Film, Info, MonitorPlay, Play, TrendingUp, Tv } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch, mediaLink, watchLink } from '../api.js';
 import ContentRow from '../components/ContentRow.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
+
+function typeLabel(type) {
+  if (type === 'movie') return 'Filme';
+  if (type === 'series') return 'Serie';
+  if (type === 'channel') return 'Canal';
+  return 'Destaque';
+}
+
+function heroEyebrow(item) {
+  const completed = Number(item?.completedCount || 0);
+  const watched = Number(item?.watchCount || 0);
+  if (completed > 0 || watched > 0) return 'Top 10 mais assistidos';
+  return 'Adicionado recentemente';
+}
+
+function heroMeta(item) {
+  const completed = Number(item?.completedCount || 0);
+  const watched = Number(item?.watchCount || 0);
+  const parts = [typeLabel(item?.type), item?.category, item?.releaseYear || item?.firstAirYear].filter(Boolean);
+  if (completed > 0) parts.push(`${completed} finalizacao${completed === 1 ? '' : 'es'}`);
+  else if (watched > 0) parts.push(`${watched} reproduc${watched === 1 ? 'ao' : 'oes'}`);
+  return parts;
+}
+
+function HomeStatCard({ icon: Icon, label, value, tone = 'bg-white/10 text-white' }) {
+  return (
+    <div className="rounded-[22px] border border-white/10 bg-white/6 p-4 backdrop-blur">
+      <div className={`mb-3 inline-flex size-11 items-center justify-center rounded-2xl ${tone}`}>
+        <Icon size={19} />
+      </div>
+      <p className="text-sm text-slate-400">{label}</p>
+      <p className="mt-2 text-2xl font-black text-white">{value ?? 0}</p>
+    </div>
+  );
+}
 
 export default function Home() {
   const [data, setData] = useState(null);
@@ -53,12 +88,16 @@ export default function Home() {
       ...current,
       featured: updateItem(current.featured),
       featuredItems: updateItems(current.featuredItems),
+      trending: updateItems(current.trending),
       continueWatching: updateItems(current.continueWatching),
       continueMoviesSeries: updateItems(current.continueMoviesSeries),
       continueChannels: updateItems(current.continueChannels),
       favorites: next
         ? updateItems(current.favorites)
         : current.favorites?.filter((item) => !(item.type === target.type && item.id === target.id)),
+      popularMovies: updateItems(current.popularMovies),
+      popularSeries: updateItems(current.popularSeries),
+      popularChannels: updateItems(current.popularChannels),
       randomMovies: updateItems(current.randomMovies),
       randomSeries: updateItems(current.randomSeries),
       liveChannels: updateItems(current.liveChannels),
@@ -79,9 +118,16 @@ export default function Home() {
           <div className="relative mx-auto flex min-h-[74vh] max-w-7xl flex-col justify-end px-4 pb-16 pt-32 sm:px-6 lg:px-8">
             <div className="max-w-2xl">
               <p className="mb-3 inline-flex rounded bg-brand px-3 py-1 text-xs font-black uppercase tracking-wide text-white">
-                Destaque
+                {heroEyebrow(featured)}
               </p>
               <h1 className="text-4xl font-black leading-tight text-white sm:text-6xl">{featured.title}</h1>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {heroMeta(featured).map((part) => (
+                  <span key={`${featured.type}-${featured.id}-${part}`} className="rounded-full border border-white/12 bg-white/10 px-3 py-1 text-xs font-bold text-white/88 backdrop-blur">
+                    {part}
+                  </span>
+                ))}
+              </div>
               <p className="mt-4 line-clamp-3 max-w-xl text-base text-slate-300 sm:text-lg">
                 {featured.overview || 'Conteudo importado da sua playlist local, pronto para assistir e continuar depois.'}
               </p>
@@ -127,13 +173,21 @@ export default function Home() {
         </section>
       )}
 
-      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <ContentRow title="Meus favoritos" items={data.favorites} onFavoriteChange={updateFavoriteInHome} />
+      <div className="mx-auto -mt-10 max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <section className="relative z-10 mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <HomeStatCard icon={TrendingUp} label="Assistidos por voce" value={data.profileStats?.watched || 0} tone="bg-brand text-white" />
+          <HomeStatCard icon={Film} label="Filmes na biblioteca" value={data.stats.movies} tone="bg-white text-ink" />
+          <HomeStatCard icon={MonitorPlay} label="Series na biblioteca" value={data.stats.series} tone="bg-ocean text-ink" />
+          <HomeStatCard icon={Tv} label="Canais na biblioteca" value={data.stats.channels} tone="bg-white/14 text-white" />
+        </section>
+
         <ContentRow title="Continue assistindo filmes e series" items={data.continueMoviesSeries || data.continueWatching} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Continue assistindo canais" items={data.continueChannels} onFavoriteChange={updateFavoriteInHome} />
-        <ContentRow title="Filmes aleatorios" items={data.randomMovies || data.recentMovies} onFavoriteChange={updateFavoriteInHome} />
-        <ContentRow title="Series aleatorias" items={data.randomSeries || data.recentSeries} onFavoriteChange={updateFavoriteInHome} />
-        <ContentRow title="Canais ao vivo" items={data.liveChannels} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Top 10 da biblioteca" items={data.trending} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Filmes mais assistidos" items={data.popularMovies || data.randomMovies || data.recentMovies} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Series mais assistidas" items={data.popularSeries || data.randomSeries || data.recentSeries} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Canais em alta" items={data.popularChannels || data.liveChannels} onFavoriteChange={updateFavoriteInHome} />
+        <ContentRow title="Meus favoritos" items={data.favorites} onFavoriteChange={updateFavoriteInHome} />
         {data.rows.map((row) => (
           <ContentRow key={`${row.type}-${row.title}`} title={row.title} items={row.items} onFavoriteChange={updateFavoriteInHome} />
         ))}

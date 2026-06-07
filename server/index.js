@@ -293,6 +293,63 @@ function whereClause(where) {
   return where.length ? `WHERE ${where.join(' AND ')}` : '';
 }
 
+function getCategoryPreviewStatement(type, hideAdult) {
+  if (type === 'movie') {
+    return db.prepare(`
+      SELECT
+        m.title,
+        m.poster_url AS imageUrl,
+        COALESCE(NULLIF(m.backdrop_url, ''), NULLIF(m.poster_url, '')) AS heroUrl
+      FROM movies m
+      LEFT JOIN categories c ON c.id = m.category_id
+      WHERE m.category_id = ?
+        AND m.poster_url IS NOT NULL
+        AND m.poster_url != ''
+        ${hideAdult ? `AND ${adultFilterClauses('m').join(' AND ')}` : ''}
+      ORDER BY
+        CASE WHEN m.backdrop_url IS NOT NULL AND m.backdrop_url != '' THEN 0 ELSE 1 END,
+        m.imported_at DESC,
+        m.id DESC
+      LIMIT 4
+    `);
+  }
+
+  if (type === 'series') {
+    return db.prepare(`
+      SELECT
+        s.title,
+        s.poster_url AS imageUrl,
+        COALESCE(NULLIF(s.backdrop_url, ''), NULLIF(s.poster_url, '')) AS heroUrl
+      FROM series s
+      LEFT JOIN categories c ON c.id = s.category_id
+      WHERE s.category_id = ?
+        AND s.poster_url IS NOT NULL
+        AND s.poster_url != ''
+        ${hideAdult ? `AND ${adultFilterClauses('s').join(' AND ')}` : ''}
+      ORDER BY
+        CASE WHEN s.backdrop_url IS NOT NULL AND s.backdrop_url != '' THEN 0 ELSE 1 END,
+        s.imported_at DESC,
+        s.id DESC
+      LIMIT 4
+    `);
+  }
+
+  return db.prepare(`
+    SELECT
+      ch.title,
+      ch.logo_url AS imageUrl,
+      ch.logo_url AS heroUrl
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    WHERE ch.category_id = ?
+      AND ch.logo_url IS NOT NULL
+      AND ch.logo_url != ''
+      ${hideAdult ? `AND ${adultFilterClauses('ch').join(' AND ')}` : ''}
+    ORDER BY ch.imported_at DESC, ch.id DESC
+    LIMIT 4
+  `);
+}
+
 function streamFormat(url = '') {
   const clean = String(url).split('?')[0].toLowerCase();
   if (clean.endsWith('.m3u8')) return 'hls';
@@ -912,7 +969,8 @@ function getRecentProfileItems(userId, hideAdult = true, limit = 18) {
     FROM watch_progress
     WHERE user_id = ?
       AND content_type IN ('movie', 'episode')
-      AND (position > 5 OR completed_at IS NOT NULL)
+      AND position > 5
+      AND completed_at IS NULL
     ORDER BY updated_at DESC
     LIMIT ?
   `).all(userId, limit);
@@ -953,40 +1011,157 @@ function getRecentProfileItems(userId, hideAdult = true, limit = 18) {
   return items;
 }
 
-function getFeaturedItems(hideAdult = true) {
-  const movieAdult = hideAdult ? `${adultFilterClauses('m').join(' AND ')} AND` : '';
-  const seriesAdult = hideAdult ? `${adultFilterClauses('s').join(' AND ')} AND` : '';
-  const items = db.prepare(`
+function getWatchedProfileItems(userId, hideAdult = true, limit = 24) {
+  const rows = db.prepare(`
     SELECT *
-    FROM (
+    FROM watch_progress
+    WHERE user_id = ?
+      AND content_type IN ('movie', 'episode')
+      AND completed_at IS NOT NULL
+    ORDER BY completed_at DESC, updated_at DESC
+    LIMIT ?
+  `).all(userId, limit);
+
+  const items = [];
+  for (const row of rows) {
+    if (row.content_type === 'movie') {
+      const item = db.prepare(`
+        SELECT
+          m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.backdrop_url AS backdropUrl,
+          m.release_year AS releaseYear, c.name AS category,
+          EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
+        FROM movies m
+        LEFT JOIN categories c ON c.id = m.category_id
+        WHERE m.id = ?
+      `).get(userId, row.content_id);
+      if (hideAdult && isAdultRecord(item)) continue;
+      if (item) items.push({ ...item, progress: row, watchedAt: row.completed_at });
+      continue;
+    }
+
+    const item = db.prepare(`
       SELECT
-        m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl,
-        m.backdrop_url AS backdropUrl, m.overview, m.imported_at AS importedAt
-      FROM movies m
-      LEFT JOIN categories c ON c.id = m.category_id
-      WHERE ${movieAdult} (m.backdrop_url IS NOT NULL OR m.poster_url IS NOT NULL)
+        e.id, 'episode' AS type, e.title, e.display_title AS displayTitle,
+        COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
+        s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl,
+        s.first_air_year AS firstAirYear, c.name AS category
+      FROM episodes e
+      JOIN seasons se ON se.id = e.season_id
+      JOIN series s ON s.id = e.series_id
+      LEFT JOIN categories c ON c.id = COALESCE(e.category_id, s.category_id)
+      WHERE e.id = ?
+    `).get(row.content_id);
+    if (hideAdult && isAdultRecord({ ...item, title: `${item?.title || ''} ${item?.seriesTitle || ''}` })) continue;
+    if (item) items.push({ ...item, progress: row, watchedAt: row.completed_at });
+  }
 
-      UNION ALL
+  return items;
+}
 
-      SELECT
-        s.id, 'series' AS type, s.title, s.poster_url AS posterUrl,
-        s.backdrop_url AS backdropUrl, s.overview, s.imported_at AS importedAt
-      FROM series s
-      LEFT JOIN categories c ON c.id = s.category_id
-      WHERE ${seriesAdult} (s.backdrop_url IS NOT NULL OR s.poster_url IS NOT NULL)
-    )
-    ORDER BY RANDOM()
-    LIMIT 5
-  `).all();
+function sortByLibraryActivity(left, right) {
+  const completedDiff = Number(right?.completedCount || 0) - Number(left?.completedCount || 0);
+  if (completedDiff) return completedDiff;
 
-  if (items.length) return items;
+  const watchDiff = Number(right?.watchCount || 0) - Number(left?.watchCount || 0);
+  if (watchDiff) return watchDiff;
 
+  const recentDiff = new Date(right?.lastWatchedAt || 0).getTime() - new Date(left?.lastWatchedAt || 0).getTime();
+  if (recentDiff) return recentDiff;
+
+  return new Date(right?.importedAt || 0).getTime() - new Date(left?.importedAt || 0).getTime();
+}
+
+function getPopularMovies(userId, hideAdult = true, limit = 20) {
   return db.prepare(`
+    SELECT
+      m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.backdrop_url AS backdropUrl,
+      m.overview, m.release_year AS releaseYear, m.imported_at AS importedAt,
+      c.name AS category,
+      COUNT(wp.id) AS watchCount,
+      SUM(CASE WHEN wp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completedCount,
+      MAX(wp.updated_at) AS lastWatchedAt,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
+    FROM movies m
+    LEFT JOIN categories c ON c.id = m.category_id
+    LEFT JOIN watch_progress wp ON wp.content_type = 'movie' AND wp.content_id = m.id
+    ${hideAdult ? `WHERE ${adultFilterClauses('m').join(' AND ')}` : ''}
+    GROUP BY m.id
+    ORDER BY completedCount DESC, watchCount DESC, lastWatchedAt DESC, m.imported_at DESC, m.title COLLATE NOCASE ASC
+    LIMIT ?
+  `).all(userId, limit);
+}
+
+function getPopularSeries(userId, hideAdult = true, limit = 20) {
+  return db.prepare(`
+    SELECT
+      s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.backdrop_url AS backdropUrl,
+      s.overview, s.first_air_year AS firstAirYear, s.imported_at AS importedAt,
+      c.name AS category,
+      COUNT(wp.id) AS watchCount,
+      SUM(CASE WHEN wp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completedCount,
+      MAX(wp.updated_at) AS lastWatchedAt,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'series' AND f.content_id = s.id) AS isFavorite
+    FROM series s
+    LEFT JOIN categories c ON c.id = s.category_id
+    LEFT JOIN episodes e ON e.series_id = s.id
+    LEFT JOIN watch_progress wp ON wp.content_type = 'episode' AND wp.content_id = e.id
+    ${hideAdult ? `WHERE ${adultFilterClauses('s').join(' AND ')}` : ''}
+    GROUP BY s.id
+    ORDER BY completedCount DESC, watchCount DESC, lastWatchedAt DESC, s.imported_at DESC, s.title COLLATE NOCASE ASC
+    LIMIT ?
+  `).all(userId, limit);
+}
+
+function getPopularChannels(userId, hideAdult = true, limit = 20) {
+  const items = db.prepare(`
+    SELECT
+      ch.id, 'channel' AS type, ch.title, ch.logo_url AS posterUrl,
+      ch.imported_at AS importedAt, c.name AS category,
+      COUNT(wp.id) AS watchCount,
+      SUM(CASE WHEN wp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completedCount,
+      MAX(wp.updated_at) AS lastWatchedAt,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'channel' AND f.content_id = ch.id) AS isFavorite
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    LEFT JOIN watch_progress wp ON wp.content_type = 'channel' AND wp.content_id = ch.id
+    ${hideAdult ? `WHERE ${adultFilterClauses('ch').join(' AND ')}` : ''}
+    GROUP BY ch.id
+    ORDER BY watchCount DESC, lastWatchedAt DESC, ch.imported_at DESC, ch.title COLLATE NOCASE ASC
+    LIMIT ?
+  `).all(userId, limit);
+
+  return attachCurrentPrograms(items);
+}
+
+function getPopularMediaItems(movies = [], series = [], limit = 10) {
+  return [...movies, ...series]
+    .sort(sortByLibraryActivity)
+    .slice(0, limit);
+}
+
+const HOME_FEATURED_LIMIT = 10;
+const HOME_ROW_ITEM_LIMIT = 18;
+const HOME_ROW_MIN_ITEMS = 8;
+const HOME_MOVIE_ROW_COUNT = 5;
+const HOME_SERIES_ROW_COUNT = 4;
+const HOME_CATEGORY_LOOKAHEAD = 12;
+
+function getFeaturedItems(popularMovies = [], popularSeries = [], hideAdult = true, limit = 5) {
+  const featured = getPopularMediaItems(popularMovies, popularSeries, popularMovies.length + popularSeries.length)
+    .filter((item) => item?.backdropUrl || item?.posterUrl)
+    .slice(0, limit);
+
+  if (featured.length >= limit) return featured;
+
+  const seen = new Set(featured.map((item) => `${item.type}-${item.id}`));
+  const fallback = db.prepare(`
     SELECT *
     FROM (
       SELECT
         m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl,
-        m.backdrop_url AS backdropUrl, m.overview, m.imported_at AS importedAt
+        m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear,
+        m.imported_at AS importedAt, c.name AS category,
+        0 AS watchCount, 0 AS completedCount, NULL AS lastWatchedAt, 0 AS isFavorite
       FROM movies m
       LEFT JOIN categories c ON c.id = m.category_id
       ${hideAdult ? `WHERE ${adultFilterClauses('m').join(' AND ')}` : ''}
@@ -995,14 +1170,27 @@ function getFeaturedItems(hideAdult = true) {
 
       SELECT
         s.id, 'series' AS type, s.title, s.poster_url AS posterUrl,
-        s.backdrop_url AS backdropUrl, s.overview, s.imported_at AS importedAt
+        s.backdrop_url AS backdropUrl, s.overview, s.first_air_year AS firstAirYear,
+        s.imported_at AS importedAt, c.name AS category,
+        0 AS watchCount, 0 AS completedCount, NULL AS lastWatchedAt, 0 AS isFavorite
       FROM series s
       LEFT JOIN categories c ON c.id = s.category_id
       ${hideAdult ? `WHERE ${adultFilterClauses('s').join(' AND ')}` : ''}
     )
-    ORDER BY RANDOM()
-    LIMIT 5
+    WHERE (backdropUrl IS NOT NULL AND backdropUrl != '') OR (posterUrl IS NOT NULL AND posterUrl != '')
+    ORDER BY importedAt DESC
+    LIMIT 20
   `).all();
+
+  for (const item of fallback) {
+    const key = `${item.type}-${item.id}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    featured.push(item);
+    if (featured.length >= limit) break;
+  }
+
+  return featured.slice(0, limit);
 }
 
 function getLoginBackgroundItems(limit = 56) {
@@ -1044,23 +1232,30 @@ function getCategoryRows(userId = 1, hideAdult = true) {
   const categoryAdultClause = hideAdult
     ? `AND ${buildAdultExclusionClauses({ categoryColumn: 'c.name' }).join(' AND ')}`
     : '';
+  const movieAdultClause = hideAdult ? `AND ${adultFilterClauses('m').join(' AND ')}` : '';
+  const seriesAdultClause = hideAdult ? `AND ${adultFilterClauses('s').join(' AND ')}` : '';
   const movieCategories = db.prepare(`
     SELECT c.id, c.name, COUNT(m.id) AS total, MAX(m.imported_at) AS recent
     FROM categories c
     JOIN movies m ON m.category_id = c.id
     WHERE c.type = 'movie'
       ${categoryAdultClause}
+      ${movieAdultClause}
     GROUP BY c.id
-    ORDER BY RANDOM()
-    LIMIT 5
-  `).all();
+    HAVING COUNT(m.id) >= ?
+    ORDER BY total DESC, recent DESC, c.name COLLATE NOCASE ASC
+    LIMIT ?
+  `).all(HOME_ROW_MIN_ITEMS, HOME_CATEGORY_LOOKAHEAD);
 
   for (const category of movieCategories) {
+    const items = listMovies({ category: category.id, sort: 'imported', limit: HOME_ROW_ITEM_LIMIT, userId, hideAdult }).items;
+    if (items.length < HOME_ROW_MIN_ITEMS) continue;
     rows.push({
       title: category.name,
       type: 'movie',
-      items: listMovies({ category: category.id, sort: 'random', limit: 18, userId, hideAdult }).items
+      items
     });
+    if (rows.filter((row) => row.type === 'movie').length >= HOME_MOVIE_ROW_COUNT) break;
   }
 
   const seriesCategories = db.prepare(`
@@ -1069,17 +1264,22 @@ function getCategoryRows(userId = 1, hideAdult = true) {
     JOIN series s ON s.category_id = c.id
     WHERE c.type = 'series'
       ${categoryAdultClause}
+      ${seriesAdultClause}
     GROUP BY c.id
-    ORDER BY RANDOM()
-    LIMIT 4
-  `).all();
+    HAVING COUNT(s.id) >= ?
+    ORDER BY total DESC, recent DESC, c.name COLLATE NOCASE ASC
+    LIMIT ?
+  `).all(HOME_ROW_MIN_ITEMS, HOME_CATEGORY_LOOKAHEAD);
 
   for (const category of seriesCategories) {
+    const items = listSeries({ category: category.id, sort: 'imported', limit: HOME_ROW_ITEM_LIMIT, userId, hideAdult }).items;
+    if (items.length < HOME_ROW_MIN_ITEMS) continue;
     rows.push({
       title: `${category.name} - series`,
       type: 'series',
-      items: listSeries({ category: category.id, sort: 'random', limit: 18, userId, hideAdult }).items
+      items
     });
+    if (rows.filter((row) => row.type === 'series').length >= HOME_SERIES_ROW_COUNT) break;
   }
 
   return rows;
@@ -1120,7 +1320,8 @@ app.get('/api/me/profile', requireAuth, (req, res) => {
   res.json({
     user: formattedUser,
     stats: getUserProfileStats(formattedUser.id),
-    recent: getRecentProfileItems(formattedUser.id, hideAdult)
+    recent: getRecentProfileItems(formattedUser.id, hideAdult),
+    history: getWatchedProfileItems(formattedUser.id, hideAdult)
   });
 });
 
@@ -1192,7 +1393,8 @@ app.delete('/api/me/progress', requireAuth, (req, res) => {
     removed: result.changes || 0,
     user: formatUser(user),
     stats: getUserProfileStats(req.user.id),
-    recent: []
+    recent: [],
+    history: []
   });
 });
 
@@ -1531,6 +1733,11 @@ app.get('/api/categories', (req, res) => {
   const type = String(req.query.type || '').trim();
   const allowedTypes = new Set(['movie', 'series', 'channel']);
   const requestedTypes = allowedTypes.has(type) ? [type] : ['movie', 'series', 'channel'];
+  const previewStatements = {
+    movie: getCategoryPreviewStatement('movie', hideAdult),
+    series: getCategoryPreviewStatement('series', hideAdult),
+    channel: getCategoryPreviewStatement('channel', hideAdult)
+  };
 
   const categories = requestedTypes.flatMap((currentType) => {
     if (currentType === 'movie') {
@@ -1571,7 +1778,14 @@ app.get('/api/categories', (req, res) => {
     `).all();
   }).map((category) => ({
     ...category,
-    total: Number(category.total || 0)
+    total: Number(category.total || 0),
+    previewImages: previewStatements[category.type]
+      .all(category.id)
+      .map((item) => ({
+        title: item.title,
+        imageUrl: item.imageUrl,
+        heroUrl: item.heroUrl
+      }))
   }));
 
   res.json({ categories });
@@ -1624,17 +1838,27 @@ app.delete('/api/favorites/:type/:id', (req, res) => {
 app.get('/api/home', (req, res) => {
   const user = getLocalUser(req);
   const hideAdult = !canShowAdult(user) || user.preferHideAdult !== false;
-  const featuredItems = getFeaturedItems(hideAdult);
+  const profileStats = getUserProfileStats(user.id);
+  const popularMovies = getPopularMovies(user.id, hideAdult, 20);
+  const popularSeries = getPopularSeries(user.id, hideAdult, 20);
+  const popularChannels = getPopularChannels(user.id, hideAdult, 20);
+  const trending = getPopularMediaItems(popularMovies, popularSeries, 10);
+  const featuredItems = getFeaturedItems(popularMovies, popularSeries, hideAdult, HOME_FEATURED_LIMIT);
   res.json({
     featured: featuredItems[0] || null,
     featuredItems,
+    trending,
     continueWatching: getContinueWatching(user.id, 'all', hideAdult),
     continueMoviesSeries: getContinueWatching(user.id, 'media', hideAdult),
     continueChannels: getContinueWatching(user.id, 'channels', hideAdult),
     favorites: listFavorites(user.id, { limit: 20, hideAdult }).items,
-    randomMovies: listMovies({ sort: 'random', limit: 20, userId: user.id, hideAdult }).items,
-    randomSeries: listSeries({ sort: 'random', limit: 20, userId: user.id, hideAdult }).items,
-    liveChannels: listChannels({ sort: 'random', limit: 20, userId: user.id, hideAdult }).items,
+    profileStats,
+    popularMovies,
+    popularSeries,
+    popularChannels,
+    randomMovies: popularMovies,
+    randomSeries: popularSeries,
+    liveChannels: popularChannels,
     rows: getCategoryRows(user.id, hideAdult),
     stats: getStats()
   });

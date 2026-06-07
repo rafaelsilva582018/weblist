@@ -27,11 +27,28 @@ function initials(user) {
     .join('');
 }
 
+function formatWatchedAt(value) {
+  if (!value) return '';
+  const normalized = String(value).includes('T')
+    ? String(value)
+    : `${String(value).replace(' ', 'T')}Z`;
+  const date = new Date(normalized);
+  if (Number.isNaN(date.getTime())) return '';
+  return date.toLocaleString('pt-BR', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
 export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
   const [recent, setRecent] = useState([]);
+  const [history, setHistory] = useState([]);
   const [form, setForm] = useState({ displayName: '', email: '', preferHideAdult: true, autoplayNext: true });
   const [passwordForm, setPasswordForm] = useState({ currentPassword: '', newPassword: '', confirmPassword: '' });
   const [avatarFile, setAvatarFile] = useState(null);
@@ -45,6 +62,7 @@ export default function ProfilePage() {
     setProfile(nextUser);
     setStats(data.stats || null);
     setRecent(data.recent || []);
+    setHistory(data.history || []);
     setForm({
       displayName: nextUser?.displayName || '',
       email: nextUser?.email || '',
@@ -79,7 +97,7 @@ export default function ProfilePage() {
         method: 'PATCH',
         body: form
       });
-      applyProfileData({ ...data, recent });
+      applyProfileData({ ...data, recent, history });
       setMessage('Perfil atualizado');
     } catch (err) {
       setError(err.message);
@@ -145,6 +163,7 @@ export default function ProfilePage() {
       const data = await apiFetch('/me/progress', { method: 'DELETE' });
       setStats(data.stats || null);
       setRecent([]);
+      setHistory([]);
       updateUser?.(data.user);
       setMessage(`${data.removed || 0} registro(s) removido(s)`);
     } catch (err) {
@@ -156,6 +175,9 @@ export default function ProfilePage() {
 
   function updateRecentFavorite(target, next) {
     setRecent((items) => items.map((item) => (
+      item.type === target.type && item.id === target.id ? { ...item, isFavorite: next } : item
+    )));
+    setHistory((items) => items.map((item) => (
       item.type === target.type && item.id === target.id ? { ...item, isFavorite: next } : item
     )));
   }
@@ -249,16 +271,17 @@ export default function ProfilePage() {
               Pular para o proximo episodio automaticamente
             </label>
 
-            <label className="mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
-              <input
-                checked={!canViewAdult || form.preferHideAdult}
-                disabled={!canViewAdult}
-                onChange={(event) => setForm((value) => ({ ...value, preferHideAdult: event.target.checked }))}
-                type="checkbox"
-                className="size-4 accent-brand disabled:opacity-50"
-              />
-              Ocultar +18 por padrao
-            </label>
+            {canViewAdult && (
+              <label className="mt-3 flex items-center gap-3 rounded border border-white/10 bg-black/18 px-3 py-3 text-sm text-slate-200">
+                <input
+                  checked={form.preferHideAdult}
+                  onChange={(event) => setForm((value) => ({ ...value, preferHideAdult: event.target.checked }))}
+                  type="checkbox"
+                  className="size-4 accent-brand"
+                />
+                Ocultar +18 por padrao
+              </label>
+            )}
 
             <button disabled={busy} className="mt-5 inline-flex items-center gap-2 rounded bg-white px-5 py-3 text-sm font-black text-ink hover:bg-slate-200 disabled:opacity-60">
               <Save size={17} />
@@ -349,7 +372,7 @@ export default function ProfilePage() {
       <section className="mt-10">
         <div className="mb-4 flex items-center gap-3">
           <History size={22} className="text-slate-300" />
-          <h2 className="text-2xl font-black text-white">Ultimos assistidos</h2>
+          <h2 className="text-2xl font-black text-white">Continue de onde parou</h2>
         </div>
         {recent.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
@@ -359,7 +382,31 @@ export default function ProfilePage() {
           </div>
         ) : (
           <div className="rounded border border-white/10 bg-white/6 p-6 text-sm text-slate-400">
-            Nada assistido ainda por este usuario.
+            Nada em andamento para retomar agora.
+          </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <div className="mb-4 flex items-center gap-3">
+          <History size={22} className="text-slate-300" />
+          <h2 className="text-2xl font-black text-white">Historico assistido</h2>
+        </div>
+        {history.length ? (
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            {history.map((item) => (
+              <div key={`${item.type}-${item.id}-${item.watchedAt || item.progress?.completed_at || item.progress?.updated_at || 'history'}`}>
+                <PosterCard item={item} onFavoriteChange={updateRecentFavorite} />
+                <p className="mt-2 px-1 text-xs font-semibold text-slate-400">
+                  {item.type === 'episode' && item.seriesTitle ? `${item.seriesTitle} - ` : ''}
+                  {item.watchedAt ? `Assistido em ${formatWatchedAt(item.watchedAt)}` : 'Assistido'}
+                </p>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="rounded border border-white/10 bg-white/6 p-6 text-sm text-slate-400">
+            Nenhum item concluido ainda neste perfil.
           </div>
         )}
       </section>
