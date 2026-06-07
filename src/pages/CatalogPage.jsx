@@ -22,6 +22,20 @@ const categoryGradients = [
   'from-[#1a2330] via-[#384b63] to-[#9fb3c8]'
 ];
 
+const posterDeckPositions = [
+  'right-[5.8rem] top-4 z-10 rotate-[-11deg] group-hover:-translate-x-1',
+  'right-3 top-7 z-30 rotate-[7deg] group-hover:-translate-y-1',
+  'right-[7.5rem] top-24 z-0 rotate-[11deg] group-hover:translate-y-1',
+  'right-0 top-[7.5rem] z-20 rotate-[-4deg] group-hover:translate-x-1'
+];
+
+const logoDeckPositions = [
+  'right-[6rem] top-5 z-10 rotate-[-8deg] group-hover:-translate-x-1',
+  'right-2 top-10 z-30 rotate-[5deg] group-hover:-translate-y-1',
+  'right-[7.2rem] top-[6.8rem] z-0 rotate-[10deg] group-hover:translate-y-1',
+  'right-1 top-[9rem] z-20 rotate-[-3deg] group-hover:translate-x-1'
+];
+
 function formatTotal(total = 0, singular = 'item', plural = 'itens') {
   return `${total} ${total === 1 ? singular : plural}`;
 }
@@ -39,28 +53,67 @@ function createNextParams(urlParams, mutate) {
 function CategoryCard({ category, config, index, onOpen }) {
   const gradient = categoryGradients[index % categoryGradients.length];
   const Icon = config.Icon;
+  const previewImages = (category.previewImages || []).filter((item) => item?.imageUrl).slice(0, 4);
+  const heroUrl = previewImages.find((item) => item?.heroUrl)?.heroUrl || previewImages[0]?.imageUrl || '';
+  const isChannel = config.endpoint === '/channels';
+  const deckPositions = isChannel ? logoDeckPositions : posterDeckPositions;
 
   return (
     <button
       type="button"
       onClick={() => onOpen(category.id)}
-      className="group relative overflow-hidden rounded-3xl border border-white/10 bg-panel/70 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-panel"
+      className="group relative isolate overflow-hidden rounded-[28px] border border-white/10 bg-panel/70 p-5 text-left transition hover:-translate-y-0.5 hover:border-white/20 hover:bg-panel"
     >
-      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-80 transition group-hover:opacity-100`} />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.22),transparent_34%)]" />
-      <div className="relative flex min-h-36 flex-col justify-between">
+      {!isChannel && heroUrl && (
+        <img
+          src={heroUrl}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 size-full scale-110 object-cover opacity-28 blur-[2px] saturate-125 transition duration-500 group-hover:scale-[1.16] group-hover:opacity-36"
+          loading="lazy"
+        />
+      )}
+      <div className={`absolute inset-0 bg-gradient-to-br ${gradient} ${heroUrl && !isChannel ? 'opacity-70' : 'opacity-88'} transition group-hover:opacity-100`} />
+      <div className="absolute inset-0 bg-[linear-gradient(110deg,rgba(6,8,12,0.94)_0%,rgba(6,8,12,0.82)_38%,rgba(6,8,12,0.26)_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.2),transparent_35%)]" />
+
+      {previewImages.length > 0 && (
+        <div className="pointer-events-none absolute inset-y-0 right-0 w-[56%]">
+          {previewImages.map((item, previewIndex) => (
+            <div
+              key={`${category.id}-${item.imageUrl}-${previewIndex}`}
+              className={`absolute transition duration-300 ${deckPositions[previewIndex] || deckPositions[0]}`}
+            >
+              <img
+                src={item.imageUrl}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                className={`h-28 w-20 rounded-2xl border border-white/10 bg-black/30 shadow-[0_18px_40px_rgba(0,0,0,0.42)] ${isChannel ? 'object-contain p-2' : 'object-cover'}`}
+              />
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div className="relative flex min-h-[16rem] flex-col justify-between">
         <div className="flex items-start justify-between gap-4">
           <span className="grid size-12 place-items-center rounded-2xl bg-black/20 text-white ring-1 ring-white/10 backdrop-blur">
             <Icon size={22} />
           </span>
-          <span className="inline-flex items-center gap-1 rounded-full bg-black/20 px-3 py-1 text-xs font-bold text-white/90 ring-1 ring-white/10">
+          <span className="inline-flex items-center gap-1 rounded-full bg-black/25 px-3 py-1 text-xs font-bold text-white/90 ring-1 ring-white/10 backdrop-blur">
             {formatTotal(category.total || 0)}
           </span>
         </div>
 
-        <div>
-          <h2 className="line-clamp-2 text-xl font-black leading-tight text-white">{category.name}</h2>
+        <div className="max-w-[58%]">
+          <h2 className="line-clamp-2 text-[1.35rem] font-black leading-tight text-white">{category.name}</h2>
           <p className="mt-2 text-sm text-white/78">{buildCategorySubtitle(category.total || 0, config)}</p>
+          {previewImages.length > 0 && (
+            <p className="mt-3 line-clamp-2 text-xs leading-5 text-white/62">
+              {previewImages.map((item) => item.title).filter(Boolean).slice(0, 2).join(' • ')}
+            </p>
+          )}
         </div>
 
         <div className="mt-5 flex items-center gap-2 text-sm font-bold text-white">
@@ -155,9 +208,10 @@ export default function CatalogPage({ type }) {
     const next = createNextParams(urlParams, (params) => {
       const resetPage = options.resetPage !== false;
       const defaults = { category: 'all', sort: 'imported', metadata: 'all', hideAdult: 'true', page: '1' };
-      const cleanValue = String(value || '').trim();
+      const rawValue = String(value ?? '');
+      const cleanValue = key === 'q' ? rawValue : rawValue.trim();
 
-      if (!cleanValue || cleanValue === defaults[key]) params.delete(key);
+      if ((key === 'q' ? rawValue.length === 0 : !cleanValue) || cleanValue === defaults[key]) params.delete(key);
       else params.set(key, cleanValue);
 
       if (resetPage) params.delete('page');
