@@ -5,6 +5,7 @@ import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function sourceSummary(source, index) {
   const parts = [source?.quality, source?.language, source?.codec].filter(Boolean);
@@ -14,6 +15,7 @@ function sourceSummary(source, index) {
 export default function MovieDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [movie, setMovie] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
@@ -32,6 +34,7 @@ export default function MovieDetails() {
   if (error) return <EmptyState title={error} />;
   if (!movie) return <div className="mx-auto max-w-7xl px-4 py-24 text-slate-300">Carregando...</div>;
   const sources = movie.sources || [];
+  const isAdmin = Boolean(user?.isAdmin);
 
   return (
     <div className="relative -mt-24 min-h-screen overflow-hidden">
@@ -64,10 +67,12 @@ export default function MovieDetails() {
               <Play size={18} fill="currentColor" />
               Assistir
             </Link>
-            <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/16">
-              <Pencil size={17} />
-              Editar
-            </button>
+            {isAdmin && (
+              <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/16">
+                <Pencil size={17} />
+                Editar
+              </button>
+            )}
             <FavoriteButton
               type="movie"
               id={movie.id}
@@ -95,7 +100,7 @@ export default function MovieDetails() {
           )}
         </div>
       </div>
-      <ManualTmdbModal item={editing ? movie : null} title="Editar filme" onClose={() => setEditing(false)} onApplied={loadMovie} />
+      <ManualTmdbModal item={isAdmin && editing ? movie : null} title="Editar filme" onClose={() => setEditing(false)} onApplied={loadMovie} />
     </div>
   );
 }

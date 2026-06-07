@@ -1,10 +1,11 @@
-import { ArrowLeft, CheckCircle2, Pencil, Play } from 'lucide-react';
+import { ArrowLeft, Check, CheckCircle2, Pencil, Play } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
+import { useAuth } from '../context/AuthContext.jsx';
 
 function episodeProgress(episode) {
   if (!episode?.progressDuration || episode.progressDuration <= 0) return 0;
@@ -14,9 +15,11 @@ function episodeProgress(episode) {
 export default function SeriesDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [series, setSeries] = useState(null);
   const [selectedSeason, setSelectedSeason] = useState(null);
   const [editing, setEditing] = useState(false);
+  const [episodeBusyId, setEpisodeBusyId] = useState(null);
   const [error, setError] = useState('');
 
   function loadSeries() {
@@ -39,8 +42,52 @@ export default function SeriesDetails() {
     return series?.seasons?.find((season) => season.id === selectedSeason) || series?.seasons?.[0];
   }, [selectedSeason, series]);
 
+  async function toggleEpisodeWatched(event, episode) {
+    event.preventDefault();
+    event.stopPropagation();
+    const nextCompleted = !Boolean(episode.completedAt);
+    setEpisodeBusyId(episode.id);
+    try {
+      const data = await apiFetch('/progress/status', {
+        method: 'PUT',
+        body: {
+          type: 'episode',
+          id: episode.id,
+          completed: nextCompleted,
+          duration: episode.progressDuration || 0
+        }
+      });
+
+      setSeries((current) => current ? {
+        ...current,
+        seasons: current.seasons.map((season) => (
+          season.id !== currentSeason?.id
+            ? season
+            : {
+                ...season,
+                episodes: season.episodes.map((item) => (
+                  item.id !== episode.id
+                    ? item
+                    : {
+                        ...item,
+                        completedAt: data.progress?.completed_at || null,
+                        progressPosition: nextCompleted ? (item.progressDuration || 1) : 0,
+                        progressDuration: nextCompleted ? (item.progressDuration || 1) : 0
+                      }
+                ))
+              }
+        ))
+      } : current);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setEpisodeBusyId(null);
+    }
+  }
+
   if (error) return <EmptyState title={error} />;
   if (!series) return <div className="mx-auto max-w-7xl px-4 py-24 text-slate-300">Carregando...</div>;
+  const isAdmin = Boolean(user?.isAdmin);
 
   return (
     <div>
@@ -62,10 +109,12 @@ export default function SeriesDetails() {
             {series.seasons.length} temporadas{series.firstAirYear ? ` - ${series.firstAirYear}` : ''}
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
-            <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/16">
-              <Pencil size={17} />
-              Editar
-            </button>
+            {isAdmin && (
+              <button onClick={() => setEditing(true)} className="inline-flex items-center gap-2 rounded bg-white/10 px-5 py-3 text-sm font-bold text-white hover:bg-white/16">
+                <Pencil size={17} />
+                Editar
+              </button>
+            )}
             <FavoriteButton
               type="series"
               id={series.id}
@@ -97,47 +146,62 @@ export default function SeriesDetails() {
             const watched = Boolean(episode.completedAt);
             const percent = episodeProgress(episode);
             return (
-              <Link key={episode.id} to={`/watch/episode/${episode.id}`} className="group flex items-center gap-4 p-4 transition hover:bg-white/8">
-                <div className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded bg-white/8 text-white sm:w-28">
-                  {episode.posterUrl ? (
-                    <img src={episode.posterUrl} alt={episode.title} className="size-full object-cover" loading="lazy" />
-                  ) : (
-                    <Play size={18} fill="currentColor" />
-                  )}
-                  <span className="absolute inset-0 grid place-items-center bg-black/18 opacity-0 transition group-hover:opacity-100">
-                    <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
-                      <Play size={16} fill="currentColor" />
+              <div key={episode.id} className="group flex items-center gap-3 p-4 transition hover:bg-white/8">
+                <Link to={`/watch/episode/${episode.id}`} className="flex min-w-0 flex-1 items-center gap-4">
+                  <div className="relative grid h-16 w-24 shrink-0 place-items-center overflow-hidden rounded bg-white/8 text-white sm:w-28">
+                    {episode.posterUrl ? (
+                      <img src={episode.posterUrl} alt={episode.title} className="size-full object-cover" loading="lazy" />
+                    ) : (
+                      <Play size={18} fill="currentColor" />
+                    )}
+                    <span className="absolute inset-0 grid place-items-center bg-black/18 opacity-0 transition group-hover:opacity-100">
+                      <span className="grid size-9 place-items-center rounded-full bg-white text-ink">
+                        <Play size={16} fill="currentColor" />
+                      </span>
                     </span>
-                  </span>
-                  {watched && (
-                    <span className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-ocean text-ink shadow">
-                      <CheckCircle2 size={15} />
-                    </span>
-                  )}
-                  {!watched && percent > 0 && (
-                    <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
-                      <div className="h-full bg-brand" style={{ width: `${percent}%` }} />
-                    </div>
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2">
-                    <p className="min-w-0 truncate font-bold text-white">
-                      {episode.episodeNumber}. {episode.title}
-                    </p>
-                    {watched && <span className="shrink-0 rounded bg-ocean/18 px-2 py-1 text-[11px] font-black uppercase text-ocean">Assistido</span>}
+                    {watched && (
+                      <span className="absolute right-1.5 top-1.5 grid size-6 place-items-center rounded-full bg-ocean text-ink shadow">
+                        <CheckCircle2 size={15} />
+                      </span>
+                    )}
+                    {!watched && percent > 0 && (
+                      <div className="absolute inset-x-0 bottom-0 h-1 bg-white/20">
+                        <div className="h-full bg-brand" style={{ width: `${percent}%` }} />
+                      </div>
+                    )}
                   </div>
-                  <p className="mt-1 truncate text-sm text-slate-400">
-                    {episode.displayTitle}
-                    {episode.sourceCount > 1 ? ` - ${episode.sourceCount} opcoes` : ''}
-                  </p>
-                </div>
-              </Link>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <p className="min-w-0 truncate font-bold text-white">
+                        {episode.episodeNumber}. {episode.title}
+                      </p>
+                      {watched && <span className="shrink-0 rounded bg-ocean/18 px-2 py-1 text-[11px] font-black uppercase text-ocean">Assistido</span>}
+                    </div>
+                    <p className="mt-1 truncate text-sm text-slate-400">
+                      {episode.displayTitle}
+                      {episode.sourceCount > 1 ? ` - ${episode.sourceCount} opcoes` : ''}
+                    </p>
+                  </div>
+                </Link>
+                <button
+                  type="button"
+                  onClick={(event) => toggleEpisodeWatched(event, episode)}
+                  disabled={episodeBusyId === episode.id}
+                  title={watched ? 'Desmarcar como assistido' : 'Marcar como assistido'}
+                  className={`grid size-10 shrink-0 place-items-center rounded-full border text-sm font-black transition disabled:opacity-60 ${
+                    watched
+                      ? 'border-ocean/40 bg-ocean/18 text-ocean hover:bg-ocean/24'
+                      : 'border-white/10 bg-white/8 text-white hover:bg-white/14'
+                  }`}
+                >
+                  <Check size={18} strokeWidth={3} />
+                </button>
+              </div>
             );
           })}
         </div>
       </section>
-      <ManualTmdbModal item={editing ? series : null} title="Editar serie" onClose={() => setEditing(false)} onApplied={loadSeries} />
+      <ManualTmdbModal item={isAdmin && editing ? series : null} title="Editar serie" onClose={() => setEditing(false)} onApplied={loadSeries} />
     </div>
   );
 }

@@ -162,9 +162,9 @@ export default function Home() {
       )}
 
       <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <ContentRow title="Top 10 da biblioteca" items={data.trending} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Continue assistindo filmes e series" items={data.continueMoviesSeries || data.continueWatching} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Continue assistindo canais" items={data.continueChannels} onFavoriteChange={updateFavoriteInHome} />
-        <ContentRow title="Top 10 da biblioteca" items={data.trending} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Filmes mais assistidos" items={data.popularMovies || data.randomMovies || data.recentMovies} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Series mais assistidas" items={data.popularSeries || data.randomSeries || data.recentSeries} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Canais em alta" items={data.popularChannels || data.liveChannels} onFavoriteChange={updateFavoriteInHome} />

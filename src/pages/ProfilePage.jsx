@@ -1,15 +1,24 @@
-import { Eraser, History, LockKeyhole, Mail, Save, Settings, ShieldCheck, Upload, UserCircle } from 'lucide-react';
+import { CheckCircle2, Eraser, Film, History, LockKeyhole, Mail, MonitorPlay, Save, Settings, ShieldCheck, Star, Tv, Upload, UserCircle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { apiFetch } from '../api.js';
 import EmptyState from '../components/EmptyState.jsx';
 import PosterCard from '../components/PosterCard.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 
-function StatBox({ label, value }) {
+function StatBox({ label, value, icon: Icon, tone = 'bg-white/10 text-white' }) {
   return (
-    <div className="rounded border border-white/10 bg-white/6 p-4">
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className="mt-2 text-3xl font-black text-white">{value ?? 0}</p>
+    <div className="rounded-[24px] border border-white/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.07),rgba(255,255,255,0.03))] p-4 shadow-[0_18px_45px_rgba(0,0,0,0.16)]">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm text-slate-400">{label}</p>
+          <p className="mt-3 text-3xl font-black text-white">{value ?? 0}</p>
+        </div>
+        {Icon && (
+          <span className={`grid size-11 shrink-0 place-items-center rounded-2xl ${tone}`}>
+            <Icon size={20} />
+          </span>
+        )}
+      </div>
     </div>
   );
 }
@@ -222,15 +231,15 @@ export default function ProfilePage() {
       )}
 
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
-        <StatBox label="Historico" value={stats?.progress} />
-        <StatBox label="Assistidos" value={stats?.watched} />
-        <StatBox label="Favoritos" value={stats?.favorites} />
+        <StatBox label="Historico" value={stats?.progress} icon={History} tone="bg-white text-ink" />
+        <StatBox label="Assistidos" value={stats?.watched} icon={CheckCircle2} tone="bg-ocean text-ink" />
+        <StatBox label="Favoritos" value={stats?.favorites} icon={Star} tone="bg-amber-300 text-ink" />
       </div>
 
       <div className="mb-8 grid gap-3 sm:grid-cols-3">
-        <StatBox label="Filmes na biblioteca" value={libraryStats?.movies} />
-        <StatBox label="Series na biblioteca" value={libraryStats?.series} />
-        <StatBox label="Canais na biblioteca" value={libraryStats?.channels} />
+        <StatBox label="Filmes na biblioteca" value={libraryStats?.movies} icon={Film} tone="bg-brand text-white" />
+        <StatBox label="Series na biblioteca" value={libraryStats?.series} icon={MonitorPlay} tone="bg-white/14 text-white" />
+        <StatBox label="Canais na biblioteca" value={libraryStats?.channels} icon={Tv} tone="bg-emerald-300 text-ink" />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[0.95fr,1.05fr]">

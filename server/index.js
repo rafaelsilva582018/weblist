@@ -350,6 +350,52 @@ function getCategoryPreviewStatement(type, hideAdult) {
   `);
 }
 
+const VISUAL_CACHE_VERSION = 1;
+
+function visualCacheMonthToken() {
+  return new Date().toISOString().slice(0, 7);
+}
+
+function visualCacheSignature() {
+  const stats = getStats();
+  return [stats.movies, stats.series, stats.channels, stats.sources].join(':');
+}
+
+function readVisualCache(key) {
+  const raw = getSetting(key, '');
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw);
+  } catch {
+    return null;
+  }
+}
+
+function getMonthlyVisualCache(key, build) {
+  const month = visualCacheMonthToken();
+  const signature = visualCacheSignature();
+  const cached = readVisualCache(key);
+
+  if (
+    cached
+    && cached.version === VISUAL_CACHE_VERSION
+    && cached.month === month
+    && cached.signature === signature
+    && cached.data !== undefined
+  ) {
+    return cached.data;
+  }
+
+  const data = build();
+  setSetting(key, JSON.stringify({
+    version: VISUAL_CACHE_VERSION,
+    month,
+    signature,
+    data
+  }));
+  return data;
+}
+
 function streamFormat(url = '') {
   const clean = String(url).split('?')[0].toLowerCase();
   if (clean.endsWith('.m3u8')) return 'hls';
@@ -923,6 +969,7 @@ function getContinueWatching(userId, mode = 'all', hideAdult = true) {
   `).all(userId);
 
   const items = [];
+  const seenSeriesIds = new Set();
   for (const row of progressRows) {
     if (row.content_type === 'movie') {
       const item = db.prepare(`
@@ -943,8 +990,9 @@ function getContinueWatching(userId, mode = 'all', hideAdult = true) {
       const item = db.prepare(`
         SELECT
           e.id, 'episode' AS type, e.title, e.display_title AS displayTitle,
-          COALESCE(NULLIF(e.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(s.poster_url, '')) AS posterUrl,
+          COALESCE(NULLIF(s.poster_url, ''), NULLIF(se.poster_url, ''), NULLIF(e.poster_url, '')) AS posterUrl,
           s.id AS seriesId, s.title AS seriesTitle, s.backdrop_url AS backdropUrl,
+          e.season_number AS seasonNumber, e.episode_number AS episodeNumber,
           c.name AS category
         FROM episodes e
         JOIN seasons se ON se.id = e.season_id
@@ -953,7 +1001,14 @@ function getContinueWatching(userId, mode = 'all', hideAdult = true) {
         WHERE e.id = ?
       `).get(row.content_id);
       if (hideAdult && isAdultRecord({ ...item, title: `${item?.title || ''} ${item?.seriesTitle || ''}` })) continue;
-      if (item) items.push({ ...item, progress: row });
+      if (!item || seenSeriesIds.has(item.seriesId)) continue;
+      seenSeriesIds.add(item.seriesId);
+      items.push({
+        ...item,
+        cardTitle: item.seriesTitle,
+        cardSubtitle: item.displayTitle || `${item.seasonNumber || ''}x${item.episodeNumber || ''} ${item.title || ''}`.trim(),
+        progress: row
+      });
       continue;
     }
 
@@ -1213,7 +1268,59 @@ function getFeaturedItems(popularMovies = [], popularSeries = [], hideAdult = tr
   return featured.slice(0, limit);
 }
 
-function getLoginBackgroundItems(limit = 56) {
+function buildCategoryPreviewCache(hideAdult = true) {
+  const previewStatements = {
+    movie: getCategoryPreviewStatement('movie', hideAdult),
+    series: getCategoryPreviewStatement('series', hideAdult),
+    channel: getCategoryPreviewStatement('channel', hideAdult)
+  };
+  const cache = {};
+
+  const categoryIds = {
+    movie: db.prepare(`
+      SELECT DISTINCT c.id
+      FROM categories c
+      JOIN movies m ON m.category_id = c.id
+      WHERE c.type = 'movie'
+      ${hideAdult ? `AND ${adultFilterClauses('m').join(' AND ')}` : ''}
+    `).all(),
+    series: db.prepare(`
+      SELECT DISTINCT c.id
+      FROM categories c
+      JOIN series s ON s.category_id = c.id
+      WHERE c.type = 'series'
+      ${hideAdult ? `AND ${adultFilterClauses('s').join(' AND ')}` : ''}
+    `).all(),
+    channel: db.prepare(`
+      SELECT DISTINCT c.id
+      FROM categories c
+      JOIN channels ch ON ch.category_id = c.id
+      WHERE c.type = 'channel'
+      ${hideAdult ? `AND ${adultFilterClauses('ch').join(' AND ')}` : ''}
+    `).all()
+  };
+
+  for (const [type, rows] of Object.entries(categoryIds)) {
+    for (const row of rows) {
+      cache[`${type}:${row.id}`] = previewStatements[type]
+        .all(row.id)
+        .map((item) => ({
+          title: item.title,
+          imageUrl: item.imageUrl,
+          heroUrl: item.heroUrl
+        }));
+    }
+  }
+
+  return cache;
+}
+
+function getCategoryPreviewCache(hideAdult = true) {
+  const cacheKey = `visual-cache:category-previews:${hideAdult ? 'hide' : 'show'}`;
+  return getMonthlyVisualCache(cacheKey, () => buildCategoryPreviewCache(hideAdult));
+}
+
+function buildLoginBackgroundItems(limit = 56) {
   return db.prepare(`
     SELECT *
     FROM (
@@ -1245,6 +1352,12 @@ function getLoginBackgroundItems(limit = 56) {
     ORDER BY RANDOM()
     LIMIT ?
   `).all(limit);
+}
+
+function getLoginBackgroundItems(limit = 56) {
+  const cacheKey = `visual-cache:login-background:${limit}`;
+  const items = getMonthlyVisualCache(cacheKey, () => buildLoginBackgroundItems(limit));
+  return Array.isArray(items) ? items.slice(0, limit) : [];
 }
 
 function getCategoryRows(userId = 1, hideAdult = true) {
@@ -1774,11 +1887,7 @@ app.get('/api/categories', (req, res) => {
   const type = String(req.query.type || '').trim();
   const allowedTypes = new Set(['movie', 'series', 'channel']);
   const requestedTypes = allowedTypes.has(type) ? [type] : ['movie', 'series', 'channel'];
-  const previewStatements = {
-    movie: getCategoryPreviewStatement('movie', hideAdult),
-    series: getCategoryPreviewStatement('series', hideAdult),
-    channel: getCategoryPreviewStatement('channel', hideAdult)
-  };
+  const previewCache = getCategoryPreviewCache(hideAdult);
 
   const categories = requestedTypes.flatMap((currentType) => {
     if (currentType === 'movie') {
@@ -1820,13 +1929,7 @@ app.get('/api/categories', (req, res) => {
   }).map((category) => ({
     ...category,
     total: Number(category.total || 0),
-    previewImages: previewStatements[category.type]
-      .all(category.id)
-      .map((item) => ({
-        title: item.title,
-        imageUrl: item.imageUrl,
-        heroUrl: item.heroUrl
-      }))
+    previewImages: previewCache[`${category.type}:${category.id}`] || []
   }));
 
   res.json({ categories });
@@ -2360,6 +2463,50 @@ app.get('/api/progress', (req, res) => {
   const progressKey = `${userId}:${type}:${id}`;
   const progress = db.prepare('SELECT * FROM watch_progress WHERE progress_key = ?').get(progressKey);
   res.json({ progress: progress || null });
+});
+
+app.put('/api/progress/status', (req, res) => {
+  const userId = getLocalUserId(req);
+  const type = String(req.body.type || '');
+  const id = Number(req.body.id);
+  const completed = req.body.completed === true;
+
+  if (!['movie', 'episode'].includes(type) || !id) {
+    return res.status(400).json({ error: 'Status invalido' });
+  }
+
+  const progressKey = `${userId}:${type}:${id}`;
+  const current = db.prepare('SELECT * FROM watch_progress WHERE progress_key = ?').get(progressKey);
+
+  if (!completed) {
+    db.prepare('DELETE FROM watch_progress WHERE progress_key = ?').run(progressKey);
+    return res.json({ ok: true, completed: false, progress: null });
+  }
+
+  const duration = Math.max(0, Number(req.body.duration || current?.duration || 0));
+  const position = duration > 0 ? duration : Math.max(1, Number(current?.position || 1));
+
+  db.prepare(`
+    INSERT INTO watch_progress (
+      user_id, progress_key, content_type, content_id, episode_id, position, duration, completed_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'), datetime('now'))
+    ON CONFLICT(progress_key) DO UPDATE SET
+      position = excluded.position,
+      duration = excluded.duration,
+      completed_at = datetime('now'),
+      updated_at = datetime('now')
+  `).run(
+    userId,
+    progressKey,
+    type,
+    id,
+    type === 'episode' ? id : null,
+    position,
+    duration
+  );
+
+  const progress = db.prepare('SELECT * FROM watch_progress WHERE progress_key = ?').get(progressKey);
+  res.json({ ok: true, completed: true, progress: progress || null });
 });
 
 app.post('/api/progress', (req, res) => {

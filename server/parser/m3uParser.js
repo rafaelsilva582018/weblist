@@ -220,7 +220,7 @@ function isChannelGroup(group, name) {
 
   if (explicitChannelGroups.has(normalizedGroup) || /\bpay per view\b/.test(normalizedGroup)) return true;
   if (/\b(canal|canais|ao vivo|radio)\b/.test(normalizedGroup)) return true;
-  if (/\b24h\b|\b24 horas\b/.test(normalizedGroup) && !isSeriesGroup(group)) return true;
+  if (/\b24h\b|\b24 horas\b/.test(normalizedGroup)) return true;
 
   return !normalizedGroup && /\b(live|ao vivo|radio)\b/.test(normalizedName);
 }

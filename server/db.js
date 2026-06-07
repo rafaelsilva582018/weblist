@@ -285,7 +285,7 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-05-variant-groups-v10';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v11';
 
 const explicitLinearChannelCategories = new Set([
   'cine sky',
@@ -331,6 +331,18 @@ function isLikelyMovieCategoryName(categoryName = '') {
   return /\b(?:acao|adultos?|animacao|aventura|cinema|comedia|dc|documentarios?|drama|fantasia|ficcao|filmes?|infantil|lancamentos|legendados?|marvel|nacionais|romance|shows?|suspense|terror)\b/.test(
     normalizeTitle(categoryName)
   );
+}
+
+function isLikely24HourLiveCategory(categoryName = '') {
+  return /\b(?:24h|24 horas)\b/.test(normalizeTitle(categoryName));
+}
+
+function channelCategoryNameFromSeries(categoryName = '') {
+  const normalized = compactSpaces(categoryName || 'Sem categoria') || 'Sem categoria';
+  if (!isLikely24HourLiveCategory(normalized)) return normalized;
+  return compactSpaces(
+    normalized.replace(/\b(?:series|serie|seriados|novelas|novela|programas)\b/gi, 'Canais')
+  ) || 'Canais 24 Horas';
 }
 
 function pickPreferredValue(...values) {
@@ -582,7 +594,7 @@ function reclassifyMovieChannels() {
     ORDER BY is_primary DESC, id ASC
   `);
   const insertChannel = db.prepare(`
-    INSERT INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
+    INSERT OR IGNORE INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
     VALUES (?, ?, ?, ?, ?, ?, ?)
   `);
   const insertSource = db.prepare(`
@@ -750,6 +762,141 @@ function reclassifyChannelMovies() {
     moveWatchProgressAcrossTypes('channel', row.id, 'movie', movie.id);
     db.prepare("DELETE FROM stream_sources WHERE content_type = 'channel' AND content_id = ?").run(row.id);
     db.prepare('DELETE FROM channels WHERE id = ?').run(row.id);
+  }
+
+  return changed;
+}
+
+function reclassifySeriesChannels() {
+  const rows = db.prepare(`
+    SELECT
+      s.id,
+      s.title,
+      s.normalized_title AS normalizedTitle,
+      s.poster_url AS posterUrl,
+      s.category_id AS categoryId,
+      c.name AS categoryName
+    FROM series s
+    LEFT JOIN categories c ON c.id = s.category_id
+    ORDER BY s.id ASC
+  `).all();
+
+  const selectEpisodes = db.prepare(`
+    SELECT
+      e.id,
+      e.title,
+      e.display_title AS displayTitle,
+      e.stream_url AS streamUrl,
+      e.poster_url AS posterUrl,
+      e.season_number AS seasonNumber,
+      e.episode_number AS episodeNumber
+    FROM episodes e
+    WHERE e.series_id = ?
+    ORDER BY e.season_number ASC, e.episode_number ASC, e.id ASC
+  `);
+  const selectEpisodeSources = db.prepare(`
+    SELECT id, label, stream_url AS streamUrl, source_host AS sourceHost, is_primary AS isPrimary
+    FROM stream_sources
+    WHERE content_type = 'episode' AND content_id = ?
+    ORDER BY is_primary DESC, id ASC
+  `);
+  const selectChannelByStream = db.prepare(`
+    SELECT id, logo_url AS logoUrl, category_id AS categoryId
+    FROM channels
+    WHERE stream_url = ?
+    LIMIT 1
+  `);
+  const insertChannel = db.prepare(`
+    INSERT OR IGNORE INTO channels (title, normalized_title, tvg_id, tvg_name, stream_url, logo_url, category_id)
+    VALUES (?, ?, ?, ?, ?, ?, ?)
+  `);
+  const updateChannel = db.prepare(`
+    UPDATE channels
+    SET
+      logo_url = CASE
+        WHEN (logo_url IS NULL OR logo_url = '') AND ? IS NOT NULL AND ? != '' THEN ?
+        ELSE logo_url
+      END,
+      category_id = COALESCE(category_id, ?)
+    WHERE id = ?
+  `);
+  const insertSource = db.prepare(`
+    INSERT OR IGNORE INTO stream_sources (
+      content_type, content_id, label, stream_url, source_host, is_primary
+    ) VALUES ('channel', ?, ?, ?, ?, ?)
+  `);
+
+  let changed = false;
+
+  for (const row of rows) {
+    if (!isLikely24HourLiveCategory(row.categoryName)) continue;
+
+    const episodes = selectEpisodes.all(row.id);
+    if (!episodes.length) continue;
+
+    const primaryEpisode = episodes[0];
+    const channelTitle = cleanChannelTitle(row.title || primaryEpisode.title || primaryEpisode.displayTitle) || row.title;
+    const normalizedChannel = normalizeTitle(channelTitle);
+    if (!normalizedChannel || !primaryEpisode.streamUrl) continue;
+
+    changed = true;
+    const channelCategoryId = ensureCategoryId('channel', channelCategoryNameFromSeries(row.categoryName));
+
+    insertChannel.run(
+      channelTitle,
+      normalizedChannel,
+      null,
+      channelTitle,
+      primaryEpisode.streamUrl,
+      row.posterUrl || primaryEpisode.posterUrl || null,
+      channelCategoryId
+    );
+
+    const channel = selectChannelByStream.get(primaryEpisode.streamUrl);
+    if (!channel?.id) continue;
+
+    updateChannel.run(
+      row.posterUrl || primaryEpisode.posterUrl || null,
+      row.posterUrl || primaryEpisode.posterUrl || null,
+      row.posterUrl || primaryEpisode.posterUrl || null,
+      channelCategoryId,
+      channel.id
+    );
+
+    moveFavoritesAcrossTypes('series', row.id, 'channel', channel.id);
+
+    for (const episode of episodes) {
+      const fallbackLabel = buildSourceLabelFromText(`${row.title || ''} ${row.categoryName || ''}`, '');
+      const currentSources = selectEpisodeSources.all(episode.id);
+
+      if (currentSources.length === 0 && episode.streamUrl) {
+        insertSource.run(
+          channel.id,
+          fallbackLabel || 'Opcao',
+          episode.streamUrl,
+          sourceHost(episode.streamUrl),
+          Number(episode.id === primaryEpisode.id)
+        );
+      }
+
+      for (const source of currentSources) {
+        const nextLabel = isGenericSourceLabel(source.label) && fallbackLabel ? fallbackLabel : source.label;
+        insertSource.run(
+          channel.id,
+          nextLabel || source.label || 'Opcao',
+          source.streamUrl,
+          source.sourceHost || sourceHost(source.streamUrl),
+          Number(Boolean(source.isPrimary) && episode.id === primaryEpisode.id)
+        );
+      }
+
+      moveWatchProgressAcrossTypes('episode', episode.id, 'channel', channel.id);
+      db.prepare("DELETE FROM stream_sources WHERE content_type = 'episode' AND content_id = ?").run(episode.id);
+      db.prepare('DELETE FROM episodes WHERE id = ?').run(episode.id);
+    }
+
+    db.prepare('DELETE FROM seasons WHERE series_id = ?').run(row.id);
+    db.prepare('DELETE FROM series WHERE id = ?').run(row.id);
   }
 
   return changed;
@@ -1152,6 +1299,7 @@ function runLibraryGroupingMigration() {
   let changed = false;
   db.exec('BEGIN IMMEDIATE');
   try {
+    changed = reclassifySeriesChannels() || changed;
     changed = reclassifyChannelMovies() || changed;
     changed = reclassifyMovieChannels() || changed;
     changed = mergeMovieVariants() || changed;
