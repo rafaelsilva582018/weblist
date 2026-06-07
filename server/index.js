@@ -1527,23 +1527,52 @@ app.get('/api/stats', (req, res) => {
 
 app.get('/api/categories', (req, res) => {
   const user = getLocalUser(req);
+  const hideAdult = effectiveHideAdult(req, user);
   const type = String(req.query.type || '').trim();
-  const params = [];
-  const where = [];
-  if (type && type !== 'all') {
-    where.push('type = ?');
-    params.push(type);
-  }
-  if (!canShowAdult(user)) {
-    where.push(...buildAdultExclusionClauses({ categoryColumn: 'name' }));
-  }
+  const allowedTypes = new Set(['movie', 'series', 'channel']);
+  const requestedTypes = allowedTypes.has(type) ? [type] : ['movie', 'series', 'channel'];
 
-  const categories = db.prepare(`
-    SELECT id, name, type
-    FROM categories
-    ${whereClause(where)}
-    ORDER BY type, name COLLATE NOCASE
-  `).all(...params);
+  const categories = requestedTypes.flatMap((currentType) => {
+    if (currentType === 'movie') {
+      return db.prepare(`
+        SELECT c.id, c.name, c.type, COUNT(m.id) AS total
+        FROM categories c
+        JOIN movies m ON m.category_id = c.id
+        WHERE c.type = 'movie'
+        ${hideAdult ? `AND ${adultFilterClauses('m').join(' AND ')}` : ''}
+        GROUP BY c.id, c.name, c.type
+        HAVING COUNT(m.id) > 0
+        ORDER BY total DESC, c.name COLLATE NOCASE
+      `).all();
+    }
+
+    if (currentType === 'series') {
+      return db.prepare(`
+        SELECT c.id, c.name, c.type, COUNT(s.id) AS total
+        FROM categories c
+        JOIN series s ON s.category_id = c.id
+        WHERE c.type = 'series'
+        ${hideAdult ? `AND ${adultFilterClauses('s').join(' AND ')}` : ''}
+        GROUP BY c.id, c.name, c.type
+        HAVING COUNT(s.id) > 0
+        ORDER BY total DESC, c.name COLLATE NOCASE
+      `).all();
+    }
+
+    return db.prepare(`
+      SELECT c.id, c.name, c.type, COUNT(ch.id) AS total
+      FROM categories c
+      JOIN channels ch ON ch.category_id = c.id
+      WHERE c.type = 'channel'
+      ${hideAdult ? `AND ${adultFilterClauses('ch').join(' AND ')}` : ''}
+      GROUP BY c.id, c.name, c.type
+      HAVING COUNT(ch.id) > 0
+      ORDER BY total DESC, c.name COLLATE NOCASE
+    `).all();
+  }).map((category) => ({
+    ...category,
+    total: Number(category.total || 0)
+  }));
 
   res.json({ categories });
 });
