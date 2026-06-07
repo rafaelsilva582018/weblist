@@ -3,7 +3,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import bcrypt from 'bcryptjs';
-import { cleanCatalogTitle, cleanChannelTitle, extractStreamVariantInfo, formatSourceLabel, parseEpisodeInfo } from './parser/m3uParser.js';
+import { cleanCatalogTitle, cleanChannelTitle, extractStreamVariantInfo, formatSourceLabel, isLikelyLiveStreamUrl, parseEpisodeInfo } from './parser/m3uParser.js';
 import { isAdultText } from './utils/adult.js';
 import { compactSpaces, normalizeTitle, padNumber } from './utils/normalize.js';
 
@@ -259,7 +259,7 @@ function migrateColumns() {
   db.prepare("UPDATE channels SET tvg_name = title WHERE tvg_name IS NULL OR tvg_name = ''").run();
 
   seedPrimaryStreamSources();
-  runLibraryGroupingMigration();
+  applyLibraryGroupingMigration();
 }
 
 function seedPrimaryStreamSources() {
@@ -285,7 +285,7 @@ function seedPrimaryStreamSources() {
   `).run();
 }
 
-const libraryGroupingVersion = '2026-06-05-variant-groups-v11';
+const libraryGroupingVersion = '2026-06-05-variant-groups-v13';
 
 const explicitLinearChannelCategories = new Set([
   'cine sky',
@@ -343,6 +343,18 @@ function channelCategoryNameFromSeries(categoryName = '') {
   return compactSpaces(
     normalized.replace(/\b(?:series|serie|seriados|novelas|novela|programas)\b/gi, 'Canais')
   ) || 'Canais 24 Horas';
+}
+
+function isLikely24HourSeriesPlaceholder(seriesTitle = '', episode = null) {
+  if (!episode) return false;
+  if (!isLikelyLiveStreamUrl(episode.streamUrl)) return false;
+  if (Number(episode.seasonNumber) !== 1 || Number(episode.episodeNumber) !== 1) return false;
+
+  const normalizedSeries = normalizeTitle(cleanCatalogTitle(seriesTitle));
+  const normalizedEpisode = normalizeTitle(cleanCatalogTitle(episode.title || episode.displayTitle || ''));
+  if (!normalizedSeries || !normalizedEpisode) return false;
+
+  return normalizedSeries === normalizedEpisode;
 }
 
 function pickPreferredValue(...values) {
@@ -833,8 +845,10 @@ function reclassifySeriesChannels() {
 
     const episodes = selectEpisodes.all(row.id);
     if (!episodes.length) continue;
+    const livePlaceholderEpisodes = episodes.filter((episode) => isLikely24HourSeriesPlaceholder(row.title, episode));
+    if (!livePlaceholderEpisodes.length) continue;
 
-    const primaryEpisode = episodes[0];
+    const primaryEpisode = livePlaceholderEpisodes[0];
     const channelTitle = cleanChannelTitle(row.title || primaryEpisode.title || primaryEpisode.displayTitle) || row.title;
     const normalizedChannel = normalizeTitle(channelTitle);
     if (!normalizedChannel || !primaryEpisode.streamUrl) continue;
@@ -863,9 +877,11 @@ function reclassifySeriesChannels() {
       channel.id
     );
 
-    moveFavoritesAcrossTypes('series', row.id, 'channel', channel.id);
+    if (livePlaceholderEpisodes.length === episodes.length) {
+      moveFavoritesAcrossTypes('series', row.id, 'channel', channel.id);
+    }
 
-    for (const episode of episodes) {
+    for (const episode of livePlaceholderEpisodes) {
       const fallbackLabel = buildSourceLabelFromText(`${row.title || ''} ${row.categoryName || ''}`, '');
       const currentSources = selectEpisodeSources.all(episode.id);
 
@@ -895,8 +911,55 @@ function reclassifySeriesChannels() {
       db.prepare('DELETE FROM episodes WHERE id = ?').run(episode.id);
     }
 
-    db.prepare('DELETE FROM seasons WHERE series_id = ?').run(row.id);
-    db.prepare('DELETE FROM series WHERE id = ?').run(row.id);
+    if (livePlaceholderEpisodes.length === episodes.length) {
+      db.prepare('DELETE FROM seasons WHERE series_id = ?').run(row.id);
+      db.prepare('DELETE FROM series WHERE id = ?').run(row.id);
+    }
+  }
+
+  return changed;
+}
+
+function cleanupMisclassified24HourChannels() {
+  const rows = db.prepare(`
+    SELECT
+      ch.id,
+      ch.title,
+      ch.normalized_title AS normalizedTitle,
+      ch.stream_url AS streamUrl,
+      c.name AS categoryName
+    FROM channels ch
+    LEFT JOIN categories c ON c.id = ch.category_id
+    ORDER BY ch.id ASC
+  `).all();
+  const selectSeriesMatch = db.prepare(`
+    SELECT
+      s.id,
+      COUNT(e.id) AS episodeCount
+    FROM series s
+    LEFT JOIN episodes e ON e.series_id = s.id
+    WHERE s.normalized_title = ?
+    GROUP BY s.id
+    ORDER BY episodeCount DESC, s.id ASC
+    LIMIT 1
+  `);
+
+  let changed = false;
+
+  for (const row of rows) {
+    if (!isLikely24HourLiveCategory(row.categoryName)) continue;
+    if (isLikelyLiveStreamUrl(row.streamUrl)) continue;
+    if (!row.normalizedTitle) continue;
+
+    const series = selectSeriesMatch.get(row.normalizedTitle);
+    if (!series?.id || Number(series.episodeCount) <= 1) continue;
+
+    changed = true;
+    moveFavoritesAcrossTypes('channel', row.id, 'series', series.id);
+    db.prepare("DELETE FROM watch_progress WHERE content_type = 'channel' AND content_id = ?").run(row.id);
+    db.prepare("DELETE FROM stream_sources WHERE content_type = 'channel' AND content_id = ?").run(row.id);
+    db.prepare('DELETE FROM epg_programs WHERE channel_id = ?').run(row.id);
+    db.prepare('DELETE FROM channels WHERE id = ?').run(row.id);
   }
 
   return changed;
@@ -1293,12 +1356,15 @@ function mergeSeriesAudioVariants() {
   return changed;
 }
 
-function runLibraryGroupingMigration() {
-  if (getSetting('library_grouping_version', '') === libraryGroupingVersion) return;
+export function applyLibraryGroupingMigration(options = {}) {
+  const force = options?.force === true;
+  const skipSearchRebuild = options?.skipSearchRebuild === true;
+  if (!force && getSetting('library_grouping_version', '') === libraryGroupingVersion) return false;
 
   let changed = false;
   db.exec('BEGIN IMMEDIATE');
   try {
+    changed = cleanupMisclassified24HourChannels() || changed;
     changed = reclassifySeriesChannels() || changed;
     changed = reclassifyChannelMovies() || changed;
     changed = reclassifyMovieChannels() || changed;
@@ -1311,9 +1377,11 @@ function runLibraryGroupingMigration() {
     throw error;
   }
 
-  if (changed) {
+  if (changed && !skipSearchRebuild) {
     rebuildSearchIndex();
   }
+
+  return changed;
 }
 
 export function ensureDefaultAdmin() {

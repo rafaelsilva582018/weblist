@@ -1,7 +1,7 @@
 import fs from 'node:fs';
 import readline from 'node:readline';
 import { randomUUID } from 'node:crypto';
-import { db, rebuildSearchIndex, setSetting } from '../db.js';
+import { applyLibraryGroupingMigration, db, rebuildSearchIndex, setSetting } from '../db.js';
 import {
   classifyItem,
   cleanCatalogTitle,
@@ -385,6 +385,8 @@ async function importPlaylistFile(job) {
       db.exec('COMMIT');
       transactionOpen = false;
     }
+
+    applyLibraryGroupingMigration({ force: true, skipSearchRebuild: true });
 
     job.status = 'done';
     job.message = 'Importacao concluida';

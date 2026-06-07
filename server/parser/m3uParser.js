@@ -91,6 +91,15 @@ function parseAttributes(value) {
   return attrs;
 }
 
+function is24HourGroup(group = '') {
+  return /\b24h\b|\b24 horas\b/.test(normalizeTitle(group));
+}
+
+export function isLikelyLiveStreamUrl(value = '') {
+  const url = String(value || '').trim().toLowerCase();
+  return /\/live\//.test(url) || /\.m3u8(?:$|[?#])/.test(url) || /\.ts(?:$|[?#])/.test(url);
+}
+
 export function parseM3uHeader(line = '') {
   if (!String(line).toUpperCase().startsWith('#EXTM3U')) return {};
   return parseAttributes(line.replace(/^#EXTM3U/i, ''));
@@ -220,7 +229,7 @@ function isChannelGroup(group, name) {
 
   if (explicitChannelGroups.has(normalizedGroup) || /\bpay per view\b/.test(normalizedGroup)) return true;
   if (/\b(canal|canais|ao vivo|radio)\b/.test(normalizedGroup)) return true;
-  if (/\b24h\b|\b24 horas\b/.test(normalizedGroup)) return true;
+  if (is24HourGroup(group) && !isSeriesGroup(group)) return true;
 
   return !normalizedGroup && /\b(live|ao vivo|radio)\b/.test(normalizedName);
 }
@@ -267,6 +276,10 @@ function isLikelyTvgChannel(meta = {}) {
 }
 
 export function classifyItem(meta, url) {
+  if (is24HourGroup(meta.group) && isLikelyLiveStreamUrl(url)) {
+    return { type: 'channel' };
+  }
+
   if (isChannelGroup(meta.group, meta.name)) {
     return { type: 'channel' };
   }
