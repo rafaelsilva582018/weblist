@@ -1,4 +1,4 @@
-import { Film, Info, MonitorPlay, Play, TrendingUp, Tv } from 'lucide-react';
+import { Info, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { apiFetch, mediaLink, watchLink } from '../api.js';
@@ -27,18 +27,6 @@ function heroMeta(item) {
   if (completed > 0) parts.push(`${completed} finalizacao${completed === 1 ? '' : 'es'}`);
   else if (watched > 0) parts.push(`${watched} reproduc${watched === 1 ? 'ao' : 'oes'}`);
   return parts;
-}
-
-function HomeStatCard({ icon: Icon, label, value, tone = 'bg-white/10 text-white' }) {
-  return (
-    <div className="rounded-[22px] border border-white/10 bg-white/6 p-4 backdrop-blur">
-      <div className={`mb-3 inline-flex size-11 items-center justify-center rounded-2xl ${tone}`}>
-        <Icon size={19} />
-      </div>
-      <p className="text-sm text-slate-400">{label}</p>
-      <p className="mt-2 text-2xl font-black text-white">{value ?? 0}</p>
-    </div>
-  );
 }
 
 export default function Home() {
@@ -173,14 +161,7 @@ export default function Home() {
         </section>
       )}
 
-      <div className="mx-auto -mt-10 max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
-        <section className="relative z-10 mb-8 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          <HomeStatCard icon={TrendingUp} label="Assistidos por voce" value={data.profileStats?.watched || 0} tone="bg-brand text-white" />
-          <HomeStatCard icon={Film} label="Filmes na biblioteca" value={data.stats.movies} tone="bg-white text-ink" />
-          <HomeStatCard icon={MonitorPlay} label="Series na biblioteca" value={data.stats.series} tone="bg-ocean text-ink" />
-          <HomeStatCard icon={Tv} label="Canais na biblioteca" value={data.stats.channels} tone="bg-white/14 text-white" />
-        </section>
-
+      <div className="mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
         <ContentRow title="Continue assistindo filmes e series" items={data.continueMoviesSeries || data.continueWatching} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Continue assistindo canais" items={data.continueChannels} onFavoriteChange={updateFavoriteInHome} />
         <ContentRow title="Top 10 da biblioteca" items={data.trending} onFavoriteChange={updateFavoriteInHome} />

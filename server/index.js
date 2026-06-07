@@ -783,6 +783,7 @@ function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page
   const order = {
     name: 'm.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, m.title COLLATE NOCASE ASC',
+    watched: 'completedCount DESC, watchCount DESC, lastWatchedAt DESC, m.imported_at DESC, m.title COLLATE NOCASE ASC',
     yearDesc: 'COALESCE(m.release_year, 0) DESC, m.title COLLATE NOCASE ASC',
     yearAsc: 'COALESCE(m.release_year, 9999) ASC, m.title COLLATE NOCASE ASC',
     imported: 'm.imported_at DESC, m.id DESC',
@@ -794,6 +795,9 @@ function listMovies({ q = '', category = '', sort = 'imported', limit = 40, page
       m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.imported_at AS importedAt,
       m.backdrop_url AS backdropUrl, m.overview, m.release_year AS releaseYear, m.tmdb_id AS tmdbId,
       c.id AS categoryId, c.name AS category,
+      (SELECT COUNT(*) FROM watch_progress wp WHERE wp.content_type = 'movie' AND wp.content_id = m.id) AS watchCount,
+      (SELECT COUNT(*) FROM watch_progress wp WHERE wp.content_type = 'movie' AND wp.content_id = m.id AND wp.completed_at IS NOT NULL) AS completedCount,
+      (SELECT MAX(wp.updated_at) FROM watch_progress wp WHERE wp.content_type = 'movie' AND wp.content_id = m.id) AS lastWatchedAt,
       EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
     FROM movies m
     LEFT JOIN categories c ON c.id = m.category_id
@@ -820,6 +824,7 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
   const order = {
     name: 's.title COLLATE NOCASE ASC',
     category: 'c.name COLLATE NOCASE ASC, s.title COLLATE NOCASE ASC',
+    watched: 'completedCount DESC, watchCount DESC, lastWatchedAt DESC, s.imported_at DESC, s.title COLLATE NOCASE ASC',
     yearDesc: 'COALESCE(s.first_air_year, 0) DESC, s.title COLLATE NOCASE ASC',
     yearAsc: 'COALESCE(s.first_air_year, 9999) ASC, s.title COLLATE NOCASE ASC',
     imported: 's.imported_at DESC, s.id DESC',
@@ -831,15 +836,30 @@ function listSeries({ q = '', category = '', sort = 'imported', limit = 40, page
       s.id, 'series' AS type, s.title, s.poster_url AS posterUrl, s.imported_at AS importedAt,
       s.backdrop_url AS backdropUrl, s.overview, s.first_air_year AS firstAirYear, s.tmdb_id AS tmdbId,
       c.id AS categoryId, c.name AS category,
-      COUNT(DISTINCT seasons.id) AS seasonCount,
-      COUNT(DISTINCT episodes.id) AS episodeCount,
+      (SELECT COUNT(*) FROM seasons seasons WHERE seasons.series_id = s.id) AS seasonCount,
+      (SELECT COUNT(*) FROM episodes episodes WHERE episodes.series_id = s.id) AS episodeCount,
+      (
+        SELECT COUNT(*)
+        FROM watch_progress wp
+        JOIN episodes watched_episode ON watched_episode.id = wp.content_id
+        WHERE wp.content_type = 'episode' AND watched_episode.series_id = s.id
+      ) AS watchCount,
+      (
+        SELECT COUNT(*)
+        FROM watch_progress wp
+        JOIN episodes watched_episode ON watched_episode.id = wp.content_id
+        WHERE wp.content_type = 'episode' AND watched_episode.series_id = s.id AND wp.completed_at IS NOT NULL
+      ) AS completedCount,
+      (
+        SELECT MAX(wp.updated_at)
+        FROM watch_progress wp
+        JOIN episodes watched_episode ON watched_episode.id = wp.content_id
+        WHERE wp.content_type = 'episode' AND watched_episode.series_id = s.id
+      ) AS lastWatchedAt,
       EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'series' AND f.content_id = s.id) AS isFavorite
     FROM series s
     LEFT JOIN categories c ON c.id = s.category_id
-    LEFT JOIN seasons ON seasons.series_id = s.id
-    LEFT JOIN episodes ON episodes.series_id = s.id
     ${whereClause(where)}
-    GROUP BY s.id
     ORDER BY ${order}
     LIMIT ? OFFSET ?
   `).all(userId, ...params, limit, offset);
@@ -1248,7 +1268,7 @@ function getCategoryRows(userId = 1, hideAdult = true) {
   `).all(HOME_ROW_MIN_ITEMS, HOME_CATEGORY_LOOKAHEAD);
 
   for (const category of movieCategories) {
-    const items = listMovies({ category: category.id, sort: 'imported', limit: HOME_ROW_ITEM_LIMIT, userId, hideAdult }).items;
+    const items = listMovies({ category: category.id, sort: 'watched', limit: HOME_ROW_ITEM_LIMIT, userId, hideAdult }).items;
     if (items.length < HOME_ROW_MIN_ITEMS) continue;
     rows.push({
       title: category.name,
@@ -1272,7 +1292,7 @@ function getCategoryRows(userId = 1, hideAdult = true) {
   `).all(HOME_ROW_MIN_ITEMS, HOME_CATEGORY_LOOKAHEAD);
 
   for (const category of seriesCategories) {
-    const items = listSeries({ category: category.id, sort: 'imported', limit: HOME_ROW_ITEM_LIMIT, userId, hideAdult }).items;
+    const items = listSeries({ category: category.id, sort: 'watched', limit: HOME_ROW_ITEM_LIMIT, userId, hideAdult }).items;
     if (items.length < HOME_ROW_MIN_ITEMS) continue;
     rows.push({
       title: `${category.name} - series`,
@@ -1317,9 +1337,15 @@ app.get('/api/me/profile', requireAuth, (req, res) => {
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
   const formattedUser = formatUser(user);
   const hideAdult = !canShowAdult(formattedUser) || formattedUser.preferHideAdult !== false;
+  const libraryStats = getStats();
   res.json({
     user: formattedUser,
     stats: getUserProfileStats(formattedUser.id),
+    libraryStats: {
+      movies: libraryStats.movies,
+      series: libraryStats.series,
+      channels: libraryStats.channels
+    },
     recent: getRecentProfileItems(formattedUser.id, hideAdult),
     history: getWatchedProfileItems(formattedUser.id, hideAdult)
   });
@@ -1346,7 +1372,16 @@ app.patch('/api/me/profile', requireAuth, (req, res) => {
   `).run(displayName, email, preferHideAdult ? 1 : 0, autoplayNext ? 1 : 0, req.user.id);
 
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
-  res.json({ user: formatUser(user), stats: getUserProfileStats(req.user.id) });
+  const libraryStats = getStats();
+  res.json({
+    user: formatUser(user),
+    stats: getUserProfileStats(req.user.id),
+    libraryStats: {
+      movies: libraryStats.movies,
+      series: libraryStats.series,
+      channels: libraryStats.channels
+    }
+  });
 });
 
 app.post('/api/me/avatar', requireAuth, upload.single('image'), asyncRoute(async (req, res) => {
@@ -1388,11 +1423,17 @@ app.put('/api/me/password', requireAuth, (req, res) => {
 app.delete('/api/me/progress', requireAuth, (req, res) => {
   const result = db.prepare('DELETE FROM watch_progress WHERE user_id = ?').run(req.user.id);
   const user = db.prepare('SELECT * FROM users WHERE id = ?').get(req.user.id);
+  const libraryStats = getStats();
   res.json({
     ok: true,
     removed: result.changes || 0,
     user: formatUser(user),
     stats: getUserProfileStats(req.user.id),
+    libraryStats: {
+      movies: libraryStats.movies,
+      series: libraryStats.series,
+      channels: libraryStats.channels
+    },
     recent: [],
     history: []
   });
@@ -1852,7 +1893,6 @@ app.get('/api/home', (req, res) => {
     continueMoviesSeries: getContinueWatching(user.id, 'media', hideAdult),
     continueChannels: getContinueWatching(user.id, 'channels', hideAdult),
     favorites: listFavorites(user.id, { limit: 20, hideAdult }).items,
-    profileStats,
     popularMovies,
     popularSeries,
     popularChannels,

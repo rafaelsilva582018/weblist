@@ -47,6 +47,7 @@ export default function ProfilePage() {
   const { user, updateUser } = useAuth();
   const [profile, setProfile] = useState(null);
   const [stats, setStats] = useState(null);
+  const [libraryStats, setLibraryStats] = useState(null);
   const [recent, setRecent] = useState([]);
   const [history, setHistory] = useState([]);
   const [form, setForm] = useState({ displayName: '', email: '', preferHideAdult: true, autoplayNext: true });
@@ -61,6 +62,7 @@ export default function ProfilePage() {
     const nextUser = data.user;
     setProfile(nextUser);
     setStats(data.stats || null);
+    setLibraryStats(data.libraryStats || null);
     setRecent(data.recent || []);
     setHistory(data.history || []);
     setForm({
@@ -223,6 +225,12 @@ export default function ProfilePage() {
         <StatBox label="Historico" value={stats?.progress} />
         <StatBox label="Assistidos" value={stats?.watched} />
         <StatBox label="Favoritos" value={stats?.favorites} />
+      </div>
+
+      <div className="mb-8 grid gap-3 sm:grid-cols-3">
+        <StatBox label="Filmes na biblioteca" value={libraryStats?.movies} />
+        <StatBox label="Series na biblioteca" value={libraryStats?.series} />
+        <StatBox label="Canais na biblioteca" value={libraryStats?.channels} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[0.95fr,1.05fr]">
