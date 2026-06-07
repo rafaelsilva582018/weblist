@@ -24,7 +24,7 @@ export default function SeriesDetails() {
 
   function loadSeries() {
     setError('');
-    apiFetch(`/series/${id}`)
+    apiFetch(`/series/${id}`, { cacheTtlMs: 30000 })
       .then((data) => {
         setSeries(data.series);
         setSelectedSeason((current) => (

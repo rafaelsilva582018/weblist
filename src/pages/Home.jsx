@@ -35,7 +35,7 @@ export default function Home() {
   const [featuredIndex, setFeaturedIndex] = useState(0);
 
   useEffect(() => {
-    apiFetch('/home')
+    apiFetch('/home', { cacheTtlMs: 30000 })
       .then(setData)
       .catch((err) => setError(err.message));
   }, []);

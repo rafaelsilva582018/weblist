@@ -85,7 +85,7 @@ export default function ProfilePage() {
 
   function loadProfile() {
     setLoading(true);
-    apiFetch('/me/profile')
+    apiFetch('/me/profile', { cacheTtlMs: 15000 })
       .then((data) => {
         applyProfileData(data);
         setError('');

@@ -34,7 +34,7 @@ export default function SearchPage() {
       return;
     }
     setLoading(true);
-    apiFetch(`/search?${queryString}`)
+    apiFetch(`/search?${queryString}`, { cacheTtlMs: 15000 })
       .then((data) => {
         setItems(data.items || []);
         setPagination(data.pagination || null);

@@ -29,7 +29,7 @@ export default function FavoritesPage() {
 
   useEffect(() => {
     setLoading(true);
-    apiFetch(`/favorites?${query}`)
+    apiFetch(`/favorites?${query}`, { cacheTtlMs: 15000 })
       .then((data) => {
         setItems(data.items || []);
         setPagination(data.pagination || null);

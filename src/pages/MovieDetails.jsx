@@ -22,7 +22,7 @@ export default function MovieDetails() {
 
   function loadMovie() {
     setError('');
-    apiFetch(`/movies/${id}`)
+    apiFetch(`/movies/${id}`, { cacheTtlMs: 30000 })
       .then((data) => setMovie(data.movie))
       .catch((err) => setError(err.message));
   }

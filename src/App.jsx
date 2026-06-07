@@ -1,17 +1,43 @@
+import { lazy, Suspense, useEffect } from 'react';
 import { BrowserRouter, Navigate, Outlet, Route, Routes } from 'react-router-dom';
 import Layout from './components/Layout.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import AdminPage from './pages/AdminPage.jsx';
-import CatalogPage from './pages/CatalogPage.jsx';
-import FavoritesPage from './pages/FavoritesPage.jsx';
 import Home from './pages/Home.jsx';
 import LoginPage from './pages/LoginPage.jsx';
-import MovieDetails from './pages/MovieDetails.jsx';
-import PlayerPage from './pages/PlayerPage.jsx';
-import ProfilePage from './pages/ProfilePage.jsx';
-import ProblemsPage from './pages/ProblemsPage.jsx';
-import SearchPage from './pages/SearchPage.jsx';
-import SeriesDetails from './pages/SeriesDetails.jsx';
+
+function lazyPage(loader) {
+  const Component = lazy(loader);
+  Component.preload = loader;
+  return Component;
+}
+
+const CatalogPage = lazyPage(() => import('./pages/CatalogPage.jsx'));
+const FavoritesPage = lazyPage(() => import('./pages/FavoritesPage.jsx'));
+const ProfilePage = lazyPage(() => import('./pages/ProfilePage.jsx'));
+const MovieDetails = lazyPage(() => import('./pages/MovieDetails.jsx'));
+const SeriesDetails = lazyPage(() => import('./pages/SeriesDetails.jsx'));
+const SearchPage = lazyPage(() => import('./pages/SearchPage.jsx'));
+const PlayerPage = lazyPage(() => import('./pages/PlayerPage.jsx'));
+const ProblemsPage = lazyPage(() => import('./pages/ProblemsPage.jsx'));
+const AdminPage = lazyPage(() => import('./pages/AdminPage.jsx'));
+
+const sharedWarmPages = [CatalogPage, FavoritesPage, ProfilePage, SearchPage, MovieDetails, SeriesDetails, PlayerPage];
+const adminWarmPages = [ProblemsPage, AdminPage];
+
+function scheduleWarmPages(warmers) {
+  const run = () => {
+    warmers.forEach((page) => page.preload?.().catch?.(() => {}));
+  };
+
+  if (typeof window === 'undefined') return () => {};
+  if (typeof window.requestIdleCallback === 'function') {
+    const idleId = window.requestIdleCallback(run, { timeout: 1800 });
+    return () => window.cancelIdleCallback?.(idleId);
+  }
+
+  const timeoutId = window.setTimeout(run, 900);
+  return () => window.clearTimeout(timeoutId);
+}
 
 function LoadingScreen() {
   return (
@@ -24,8 +50,26 @@ function LoadingScreen() {
   );
 }
 
+function PageLoadingState() {
+  return (
+    <div className="mx-auto max-w-7xl px-4 py-10 text-sm text-slate-400 sm:px-6 lg:px-8">
+      Carregando pagina...
+    </div>
+  );
+}
+
+function RouteSuspense({ children, fullScreen = false }) {
+  return <Suspense fallback={fullScreen ? <LoadingScreen /> : <PageLoadingState />}>{children}</Suspense>;
+}
+
 function ProtectedApp() {
   const { status, user } = useAuth();
+
+  useEffect(() => {
+    if (status !== 'authenticated' || !user) return undefined;
+    return scheduleWarmPages(user.isAdmin ? [...sharedWarmPages, ...adminWarmPages] : sharedWarmPages);
+  }, [status, user]);
+
   if (status === 'loading') return <LoadingScreen />;
   if (!user) return <LoginPage />;
   return <Outlet />;
@@ -59,19 +103,21 @@ export default function App() {
           <Route element={<ProtectedApp />}>
             <Route element={<Layout />}>
               <Route index element={<Home />} />
-              <Route path="/filmes" element={<CatalogPage type="movie" />} />
-              <Route path="/series" element={<CatalogPage type="series" />} />
-              <Route path="/canais" element={<CatalogPage type="channel" />} />
-              <Route path="/favoritos" element={<FavoritesPage />} />
-              <Route path="/perfil" element={<ProfilePage />} />
-              <Route path="/movies/:id" element={<MovieDetails />} />
-              <Route path="/series/:id" element={<SeriesDetails />} />
-              <Route path="/search" element={<SearchPage />} />
+              <Route path="/filmes" element={<RouteSuspense><CatalogPage type="movie" /></RouteSuspense>} />
+              <Route path="/series" element={<RouteSuspense><CatalogPage type="series" /></RouteSuspense>} />
+              <Route path="/canais" element={<RouteSuspense><CatalogPage type="channel" /></RouteSuspense>} />
+              <Route path="/favoritos" element={<RouteSuspense><FavoritesPage /></RouteSuspense>} />
+              <Route path="/perfil" element={<RouteSuspense><ProfilePage /></RouteSuspense>} />
+              <Route path="/movies/:id" element={<RouteSuspense><MovieDetails /></RouteSuspense>} />
+              <Route path="/series/:id" element={<RouteSuspense><SeriesDetails /></RouteSuspense>} />
+              <Route path="/search" element={<RouteSuspense><SearchPage /></RouteSuspense>} />
               <Route
                 path="/problemas"
                 element={
                   <AdminOnly>
-                    <ProblemsPage />
+                    <RouteSuspense>
+                      <ProblemsPage />
+                    </RouteSuspense>
                   </AdminOnly>
                 }
               />
@@ -79,12 +125,14 @@ export default function App() {
                 path="/admin"
                 element={
                   <AdminOnly>
-                    <AdminPage />
+                    <RouteSuspense>
+                      <AdminPage />
+                    </RouteSuspense>
                   </AdminOnly>
                 }
               />
             </Route>
-            <Route path="/watch/:type/:id" element={<PlayerPage />} />
+            <Route path="/watch/:type/:id" element={<RouteSuspense fullScreen><PlayerPage /></RouteSuspense>} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
         </Routes>

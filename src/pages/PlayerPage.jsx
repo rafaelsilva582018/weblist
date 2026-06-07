@@ -1,11 +1,12 @@
-import Hls from 'hls.js';
-import mpegts from 'mpegts.js';
 import { ArrowLeft, CalendarDays, Cast, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
+
+let hlsModulePromise;
+let mpegtsModulePromise;
 
 function isHlsUrl(url = '') {
   return /\.m3u8(\?|#|$)/i.test(url);
@@ -18,6 +19,16 @@ function isMpegTs(item) {
 function sourceSummary(source, index) {
   const parts = [source?.quality, source?.language, source?.codec].filter(Boolean);
   return parts.join(' - ') || source?.label || `Opcao ${index + 1}`;
+}
+
+async function loadHlsModule() {
+  const module = await (hlsModulePromise ||= import('hls.js'));
+  return module.default || module;
+}
+
+async function loadMpegtsModule() {
+  const module = await (mpegtsModulePromise ||= import('mpegts.js'));
+  return module.default || module;
 }
 
 const liveStashBufferBytes = 4 * 1024 * 1024;
@@ -179,6 +190,7 @@ export default function PlayerPage() {
     const video = videoRef.current;
     let hls;
     let tsPlayer;
+    let mpegtsLib;
     let liveWatchdog;
     let disposed = false;
     mediaPlayerRef.current = null;
@@ -217,84 +229,6 @@ export default function PlayerPage() {
         video.currentTime = Math.max(0, liveEdge - liveTargetLatencySeconds);
       }
     };
-
-    if (isMpegTs(item)) {
-      if (!mpegts.getFeatureList().mseLivePlayback) {
-        setError('Este navegador nao suporta canais MPEG-TS');
-      } else {
-        tsPlayer = mpegts.createPlayer(
-          {
-            type: 'mse',
-            isLive: true,
-            url: item.streamUrl
-          },
-          {
-            enableWorker: false,
-            enableStashBuffer: true,
-            stashInitialSize: liveStashBufferBytes,
-            lazyLoad: false,
-            deferLoadAfterSourceOpen: false,
-            liveBufferLatencyChasing: false,
-            liveSync: false,
-            autoCleanupSourceBuffer: true,
-            autoCleanupMaxBackwardDuration: 30,
-            autoCleanupMinBackwardDuration: liveBackwardBufferSeconds
-          }
-        );
-        mediaPlayerRef.current = tsPlayer;
-        tsPlayer.attachMediaElement(video);
-        tsPlayer.load();
-        tsPlayer.on(mpegts.Events.ERROR, (errorType, errorDetail) => {
-          if (errorDetail === mpegts.ErrorDetails.MEDIA_CODEC_UNSUPPORTED) {
-            setError('Este canal usa um codec que o navegador nao consegue reproduzir');
-            return;
-          }
-          restartLiveStream();
-        });
-        tsPlayer.on(mpegts.Events.LOADING_COMPLETE, restartLiveStream);
-        lastLiveTickRef.current = { position: video.currentTime || 0, updatedAt: Date.now() };
-        liveWatchdog = window.setInterval(() => {
-          finishPendingLivePlay();
-          if (disposed || document.hidden || video.paused) {
-            lastLiveTickRef.current = { position: video.currentTime || 0, updatedAt: Date.now() };
-            return;
-          }
-
-          keepCloseToLiveEdge();
-          const liveEdge = latestBufferedEnd();
-          const bufferedAhead = liveEdge ? liveEdge - (video.currentTime || 0) : 0;
-          if (bufferedAhead > 0 && bufferedAhead < liveMinBufferAheadSeconds) {
-            lowLiveBufferSinceRef.current ||= Date.now();
-            if (Date.now() - lowLiveBufferSinceRef.current > 5000) {
-              restartLiveStream();
-            }
-          } else {
-            lowLiveBufferSinceRef.current = 0;
-          }
-
-          const now = Date.now();
-          const lastTick = lastLiveTickRef.current;
-          if ((video.currentTime || 0) > lastTick.position + 0.25) {
-            lastLiveTickRef.current = { position: video.currentTime || 0, updatedAt: now };
-            return;
-          }
-          if (now - lastTick.updatedAt > liveStallTimeoutMs) {
-            restartLiveStream();
-          }
-        }, 3000);
-      }
-    } else if (isHlsUrl(item.streamUrl) && Hls.isSupported()) {
-      hls = new Hls({ enableWorker: true, lowLatencyMode: true });
-      mediaPlayerRef.current = hls;
-      hls.loadSource(item.streamUrl);
-      hls.attachMedia(video);
-      hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) setError('Nao foi possivel carregar este link HLS');
-      });
-    } else {
-      video.src = item.streamUrl;
-      video.load();
-    }
 
     const restoreProgress = async () => {
       if (type === 'channel') return;
@@ -390,6 +324,106 @@ export default function PlayerPage() {
     video.addEventListener('pause', saveProgress);
     video.addEventListener('ended', onEnded);
     video.addEventListener('error', onVideoError);
+
+    async function setupMedia() {
+      if (isMpegTs(item)) {
+        try {
+          mpegtsLib = await loadMpegtsModule();
+        } catch {
+          if (!disposed) setError('Nao foi possivel carregar o player deste canal');
+          return;
+        }
+        if (disposed) return;
+        if (!mpegtsLib?.getFeatureList?.().mseLivePlayback) {
+          setError('Este navegador nao suporta canais MPEG-TS');
+          return;
+        }
+
+        tsPlayer = mpegtsLib.createPlayer(
+          {
+            type: 'mse',
+            isLive: true,
+            url: item.streamUrl
+          },
+          {
+            enableWorker: false,
+            enableStashBuffer: true,
+            stashInitialSize: liveStashBufferBytes,
+            lazyLoad: false,
+            deferLoadAfterSourceOpen: false,
+            liveBufferLatencyChasing: false,
+            liveSync: false,
+            autoCleanupSourceBuffer: true,
+            autoCleanupMaxBackwardDuration: 30,
+            autoCleanupMinBackwardDuration: liveBackwardBufferSeconds
+          }
+        );
+        mediaPlayerRef.current = tsPlayer;
+        tsPlayer.attachMediaElement(video);
+        tsPlayer.load();
+        tsPlayer.on(mpegtsLib.Events.ERROR, (_errorType, errorDetail) => {
+          if (errorDetail === mpegtsLib.ErrorDetails.MEDIA_CODEC_UNSUPPORTED) {
+            setError('Este canal usa um codec que o navegador nao consegue reproduzir');
+            return;
+          }
+          restartLiveStream();
+        });
+        tsPlayer.on(mpegtsLib.Events.LOADING_COMPLETE, restartLiveStream);
+        lastLiveTickRef.current = { position: video.currentTime || 0, updatedAt: Date.now() };
+        liveWatchdog = window.setInterval(() => {
+          finishPendingLivePlay();
+          if (disposed || document.hidden || video.paused) {
+            lastLiveTickRef.current = { position: video.currentTime || 0, updatedAt: Date.now() };
+            return;
+          }
+
+          keepCloseToLiveEdge();
+          const liveEdge = latestBufferedEnd();
+          const bufferedAhead = liveEdge ? liveEdge - (video.currentTime || 0) : 0;
+          if (bufferedAhead > 0 && bufferedAhead < liveMinBufferAheadSeconds) {
+            lowLiveBufferSinceRef.current ||= Date.now();
+            if (Date.now() - lowLiveBufferSinceRef.current > 5000) {
+              restartLiveStream();
+            }
+          } else {
+            lowLiveBufferSinceRef.current = 0;
+          }
+
+          const now = Date.now();
+          const lastTick = lastLiveTickRef.current;
+          if ((video.currentTime || 0) > lastTick.position + 0.25) {
+            lastLiveTickRef.current = { position: video.currentTime || 0, updatedAt: now };
+            return;
+          }
+          if (now - lastTick.updatedAt > liveStallTimeoutMs) {
+            restartLiveStream();
+          }
+        }, 3000);
+        return;
+      }
+
+      if (isHlsUrl(item.streamUrl)) {
+        try {
+          const Hls = await loadHlsModule();
+          if (disposed) return;
+          if (Hls?.isSupported?.()) {
+            hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+            mediaPlayerRef.current = hls;
+            hls.loadSource(item.streamUrl);
+            hls.attachMedia(video);
+            hls.on(Hls.Events.ERROR, (_event, data) => {
+              if (data.fatal) setError('Nao foi possivel carregar este link HLS');
+            });
+            return;
+          }
+        } catch {}
+      }
+
+      video.src = item.streamUrl;
+      video.load();
+    }
+
+    setupMedia();
 
     return () => {
       disposed = true;

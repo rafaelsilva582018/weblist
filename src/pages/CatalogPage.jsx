@@ -174,7 +174,7 @@ export default function CatalogPage({ type }) {
     }
 
     setLoading(true);
-    apiFetch(`${config.endpoint}?${requestParams}`)
+    apiFetch(`${config.endpoint}?${requestParams}`, { cacheTtlMs: 20000 })
       .then((data) => {
         setItems(data.items || []);
         setPagination(data.pagination || null);
@@ -186,7 +186,7 @@ export default function CatalogPage({ type }) {
 
   useEffect(() => {
     setCategoriesLoading(true);
-    apiFetch(`/categories?type=${type}&hideAdult=${hideAdult ? 'true' : 'false'}`)
+    apiFetch(`/categories?type=${type}&hideAdult=${hideAdult ? 'true' : 'false'}`, { cacheTtlMs: 45000 })
       .then((data) => setCategories(data.categories || []))
       .catch(() => setCategories([]))
       .finally(() => setCategoriesLoading(false));
