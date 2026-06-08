@@ -1,6 +1,6 @@
 import { ArrowLeft, CalendarDays, Cast, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -108,6 +108,7 @@ export default function PlayerPage() {
   const [guideOpen, setGuideOpen] = useState(false);
   const [liveBuffering, setLiveBuffering] = useState(false);
   const [liveBufferAhead, setLiveBufferAhead] = useState(0);
+  const [nextEpisodeBusy, setNextEpisodeBusy] = useState(false);
   const hideTimerRef = useRef(null);
   const isLive = type === 'channel' || item?.streamFormat === 'mpegts';
   const hasGuide = item?.guide?.length > 0;
@@ -174,6 +175,7 @@ export default function PlayerPage() {
     setCurrent(0);
     setDuration(0);
     setIsPlaying(false);
+    setNextEpisodeBusy(false);
     setItem(null);
     setError('');
     releaseVideoElement(videoRef.current);
@@ -305,10 +307,11 @@ export default function PlayerPage() {
       if (isMpegTs(item)) {
         restartLiveStream();
       } else {
-        saveProgress({ completed: true });
         if (shouldAutoplayNext && type === 'episode' && item?.nextEpisode?.id) {
-          navigate(`/watch/episode/${item.nextEpisode.id}?autoplay=1`, { replace: true });
+          goToNextEpisode({ autoplay: true, replace: true });
+          return;
         }
+        saveProgress({ completed: true });
       }
     };
 
@@ -683,6 +686,34 @@ export default function PlayerPage() {
     }
   }
 
+  async function goToNextEpisode(options = {}) {
+    const nextEpisodeId = item?.nextEpisode?.id;
+    if (!nextEpisodeId || nextEpisodeBusy) return;
+
+    setNextEpisodeBusy(true);
+    try {
+      if (type === 'episode') {
+        const video = videoRef.current;
+        const playbackDuration = Number.isFinite(video?.duration) ? video.duration : duration;
+        await apiFetch('/progress/status', {
+          method: 'PUT',
+          body: {
+            type: 'episode',
+            id: Number(id),
+            completed: true,
+            duration: playbackDuration > 0 ? playbackDuration : 0
+          }
+        });
+      }
+    } catch {
+      // If saving fails, continue playback flow and open the next episode anyway.
+    }
+
+    navigate(`/watch/episode/${nextEpisodeId}${options.autoplay ? '?autoplay=1' : ''}`, {
+      replace: options.replace === true
+    });
+  }
+
   useEffect(() => {
     setGuideOpen(false);
   }, [id, type]);
@@ -771,13 +802,15 @@ export default function PlayerPage() {
       {item?.nextEpisode && (
         <div className={`pointer-events-none absolute inset-x-0 bottom-28 z-20 flex justify-end px-4 transition-opacity duration-300 sm:bottom-32 sm:px-8 ${controlsVisible ? 'opacity-100' : 'opacity-0'}`}>
           <div className={controlsVisible ? 'pointer-events-auto' : 'pointer-events-none'}>
-            <Link
-              to={`/watch/episode/${item.nextEpisode.id}`}
-              className="inline-flex items-center justify-center gap-2 rounded bg-white px-4 py-3 text-sm font-black text-ink hover:bg-slate-200"
+            <button
+              type="button"
+              disabled={nextEpisodeBusy}
+              onClick={() => goToNextEpisode()}
+              className="inline-flex items-center justify-center gap-2 rounded bg-white px-4 py-3 text-sm font-black text-ink hover:bg-slate-200 disabled:cursor-wait disabled:opacity-70"
             >
               Proximo
               <SkipForward size={17} fill="currentColor" />
-            </Link>
+            </button>
           </div>
         </div>
       )}
