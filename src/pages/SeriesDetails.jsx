@@ -12,6 +12,26 @@ function episodeProgress(episode) {
   return Math.min(100, Math.max(0, (episode.progressPosition / episode.progressDuration) * 100));
 }
 
+function pickPrioritySeasonId(series) {
+  const seasons = series?.seasons || [];
+  if (!seasons.length) return null;
+
+  for (let index = seasons.length - 1; index >= 0; index -= 1) {
+    const season = seasons[index];
+    if (season.episodes?.some((episode) => !episode.completedAt && Number(episode.progressPosition || 0) > 0)) {
+      return season.id;
+    }
+  }
+
+  for (const season of seasons) {
+    if (season.episodes?.some((episode) => !episode.completedAt)) {
+      return season.id;
+    }
+  }
+
+  return seasons[seasons.length - 1]?.id || seasons[0]?.id || null;
+}
+
 export default function SeriesDetails() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -28,7 +48,7 @@ export default function SeriesDetails() {
       .then((data) => {
         setSeries(data.series);
         setSelectedSeason((current) => (
-          data.series.seasons?.some((season) => season.id === current) ? current : data.series.seasons?.[0]?.id || null
+          data.series.seasons?.some((season) => season.id === current) ? current : pickPrioritySeasonId(data.series)
         ));
       })
       .catch((err) => setError(err.message));

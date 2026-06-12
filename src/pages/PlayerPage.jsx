@@ -710,8 +710,24 @@ export default function PlayerPage() {
     }
 
     navigate(`/watch/episode/${nextEpisodeId}${options.autoplay ? '?autoplay=1' : ''}`, {
-      replace: options.replace === true
+      replace: options.replace !== false
     });
+  }
+
+  function goBackFromPlayer() {
+    if (type === 'episode' && item?.seriesId) {
+      navigate(`/series/${item.seriesId}`, { replace: true });
+      return;
+    }
+    if (type === 'movie') {
+      navigate(`/movies/${id}`, { replace: true });
+      return;
+    }
+    if (type === 'channel') {
+      navigate('/canais', { replace: true });
+      return;
+    }
+    navigate(-1);
   }
 
   useEffect(() => {
@@ -765,7 +781,7 @@ export default function PlayerPage() {
     >
       <div className={`pointer-events-none absolute inset-x-0 top-0 z-20 bg-gradient-to-b from-black/82 via-black/42 to-transparent p-4 pb-20 transition-opacity duration-300 sm:p-6 sm:pb-24 ${controlsVisible ? 'opacity-100' : 'opacity-0'}`}>
         <div className={`${controlsVisible ? 'pointer-events-auto' : 'pointer-events-none'} flex items-center justify-between gap-3`}>
-          <button onClick={() => navigate(-1)} className="inline-flex items-center gap-2 rounded bg-black/64 px-3 py-2 text-sm font-bold text-white backdrop-blur hover:bg-black/80">
+          <button onClick={goBackFromPlayer} className="inline-flex items-center gap-2 rounded bg-black/64 px-3 py-2 text-sm font-bold text-white backdrop-blur hover:bg-black/80">
             <ArrowLeft size={18} />
             Voltar
           </button>
