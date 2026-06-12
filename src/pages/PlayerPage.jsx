@@ -79,7 +79,7 @@ export default function PlayerPage() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const sourceParam = searchParams.get('source') || '';
-  const autoPlayParam = searchParams.get('autoplay') === '1';
+  const autoPlayEnabled = searchParams.get('autoplay') !== '0';
   const videoRef = useRef(null);
   const shellRef = useRef(null);
   const mediaPlayerRef = useRef(null);
@@ -256,8 +256,20 @@ export default function PlayerPage() {
         .catch(() => {});
     };
     const autoPlayIfRequested = () => {
-      if (!autoPlayParam || autoPlayAttemptedRef.current || isLive || document.hidden) return;
+      if (!autoPlayEnabled || autoPlayAttemptedRef.current || document.hidden) return;
       autoPlayAttemptedRef.current = true;
+      if (isMpegTs(item)) {
+        const bufferedAhead = getLiveBufferedAhead(video);
+        setLiveBufferAhead(bufferedAhead);
+        if (!pendingLivePlayRef.current && bufferedAhead < liveStartupBufferSeconds) {
+          pendingLivePlayRef.current = true;
+          pendingLivePlayStartedAtRef.current = Date.now();
+          setLiveBuffering(true);
+          setError('');
+          showControls();
+          return;
+        }
+      }
       playMedia(video).catch(() => {
         setError('Clique novamente para iniciar a reproducao');
         showControls();
@@ -453,7 +465,7 @@ export default function PlayerPage() {
       destroyMediaInstance(tsPlayer);
       releaseVideoElement(video);
     };
-  }, [autoPlayParam, id, isLive, item, navigate, saveProgress, shouldAutoplayNext, streamReloadKey, type]);
+  }, [autoPlayEnabled, id, isLive, item, navigate, saveProgress, shouldAutoplayNext, streamReloadKey, type]);
 
   function showControls() {
     setControlsVisible(true);
