@@ -198,6 +198,58 @@ function cleanEpisodeTitle(value = '') {
   );
 }
 
+const metadataNoisePattern = /\b(?:hdr|dv|dolby vision|cam|telecine|telesync|hdts|hdtc)\b/gi;
+const metadataBracketPattern = /[\[(](?:l|leg|legendado|legendada|d|dub|dublado|dublada|cam|hdr|dv|dolby vision|sdr|uhd|4k|fhd|full hd|hd)[\])]/gi;
+
+function trimDecorativeQuotes(value = '') {
+  return compactSpaces(
+    String(value)
+      .replace(/^[“”"'`]+/, '')
+      .replace(/[“”"'`]+$/g, '')
+  );
+}
+
+function stripMetadataDecorators(value = '') {
+  return compactSpaces(
+    String(value)
+      .replace(/^\s*24h?\s*-\s*/i, '')
+      .replace(metadataBracketPattern, ' ')
+      .replace(metadataNoisePattern, ' ')
+      .replace(/\[\s*\]|\(\s*\)/g, ' ')
+      .replace(/\s{2,}/g, ' ')
+  );
+}
+
+function extractTrailingYear(value = '') {
+  let text = compactSpaces(String(value));
+  let detectedYear = null;
+  const patterns = [
+    /\((19\d{2}|20\d{2})\)\s*$/i,
+    /(?:[-–—/:|]\s*|\s+)(19\d{2}|20\d{2})\s*$/i
+  ];
+
+  for (let index = 0; index < 2; index += 1) {
+    let matched = false;
+
+    for (const pattern of patterns) {
+      const match = text.match(pattern);
+      if (!match) continue;
+
+      const year = Number(match[1]);
+      if (Number.isInteger(year)) {
+        detectedYear = year;
+      }
+      text = compactSpaces(text.slice(0, match.index));
+      matched = true;
+      break;
+    }
+
+    if (!matched) break;
+  }
+
+  return { title: text, year: detectedYear };
+}
+
 export function parseEpisodeInfo(name = '') {
   const title = stripQualityTags(cleanMediaName(name));
   const patterns = [
@@ -253,11 +305,20 @@ export function cleanChannelTitle(value = '') {
 }
 
 export function extractMetadataTitle(value = '') {
-  const cleaned = cleanCatalogTitle(value);
-  const yearMatch = cleaned.match(/\((19\d{2}|20\d{2})\)\s*$/);
-  const year = yearMatch ? Number(yearMatch[1]) : null;
-  const title = compactSpaces(cleaned.replace(/\((19\d{2}|20\d{2})\)\s*$/g, ''));
-  return { title: title || cleaned, year };
+  const cleaned = stripMetadataDecorators(cleanCatalogTitle(value));
+  const extracted = extractTrailingYear(cleaned);
+  const title = trimDecorativeQuotes(
+    compactSpaces(
+      extracted.title
+        .replace(/\s*[-–—/:|]+\s*$/g, '')
+        .replace(/\s{2,}/g, ' ')
+    )
+  );
+
+  return {
+    title: title || trimDecorativeQuotes(cleaned),
+    year: extracted.year
+  };
 }
 
 function isSeriesGroup(group) {

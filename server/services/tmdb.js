@@ -217,52 +217,80 @@ function pickBestResult(results, title, year, kind) {
     .sort((a, b) => b.score - a.score)[0] || null;
 }
 
-export async function searchTmdbMovie(rawTitle) {
-  const { title, year } = extractMetadataTitle(rawTitle);
-  const data = await tmdbFetch('/search/movie', {
-    query: title,
-    year,
-    include_adult: false,
-    page: 1
-  });
-  const match = pickBestResult(data.results, title, year, 'movie');
-  if (!match) return null;
+function stripDiacritics(value = '') {
+  return String(value)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+}
 
-  const item = match.result;
-  return {
-    tmdbId: item.id,
-    title: item.title || title,
-    originalTitle: item.original_title || null,
-    overview: item.overview || null,
-    posterUrl: buildImageUrl(item.poster_path, 'w500'),
-    backdropUrl: buildImageUrl(item.backdrop_path, 'original'),
-    releaseYear: getYear(item.release_date) || year,
-    score: match.score
-  };
+function buildMetadataQueries(rawTitle) {
+  const { title, year } = extractMetadataTitle(rawTitle);
+  const normalizedTitle = compactSpaces(title);
+  const asciiTitle = compactSpaces(stripDiacritics(normalizedTitle));
+  const queries = [
+    { title: normalizedTitle, year },
+    year ? { title: normalizedTitle, year: null } : null,
+    asciiTitle && asciiTitle !== normalizedTitle ? { title: asciiTitle, year } : null,
+    asciiTitle && asciiTitle !== normalizedTitle && year ? { title: asciiTitle, year: null } : null
+  ].filter((query) => query?.title);
+
+  return queries.filter((query, index, array) => (
+    array.findIndex((entry) => entry.title === query.title && entry.year === query.year) === index
+  ));
+}
+
+export async function searchTmdbMovie(rawTitle) {
+  for (const { title, year } of buildMetadataQueries(rawTitle)) {
+    const data = await tmdbFetch('/search/movie', {
+      query: title,
+      year,
+      include_adult: false,
+      page: 1
+    });
+    const match = pickBestResult(data.results, title, year, 'movie');
+    if (!match) continue;
+
+    const item = match.result;
+    return {
+      tmdbId: item.id,
+      title: item.title || title,
+      originalTitle: item.original_title || null,
+      overview: item.overview || null,
+      posterUrl: buildImageUrl(item.poster_path, 'w500'),
+      backdropUrl: buildImageUrl(item.backdrop_path, 'original'),
+      releaseYear: getYear(item.release_date) || year,
+      score: match.score
+    };
+  }
+
+  return null;
 }
 
 export async function searchTmdbSeries(rawTitle) {
-  const { title, year } = extractMetadataTitle(rawTitle);
-  const data = await tmdbFetch('/search/tv', {
-    query: title,
-    first_air_date_year: year,
-    include_adult: false,
-    page: 1
-  });
-  const match = pickBestResult(data.results, title, year, 'series');
-  if (!match) return null;
+  for (const { title, year } of buildMetadataQueries(rawTitle)) {
+    const data = await tmdbFetch('/search/tv', {
+      query: title,
+      first_air_date_year: year,
+      include_adult: false,
+      page: 1
+    });
+    const match = pickBestResult(data.results, title, year, 'series');
+    if (!match) continue;
 
-  const item = match.result;
-  return {
-    tmdbId: item.id,
-    title: item.name || title,
-    originalTitle: item.original_name || null,
-    overview: item.overview || null,
-    posterUrl: buildImageUrl(item.poster_path, 'w500'),
-    backdropUrl: buildImageUrl(item.backdrop_path, 'original'),
-    firstAirYear: getYear(item.first_air_date) || year,
-    score: match.score
-  };
+    const item = match.result;
+    return {
+      tmdbId: item.id,
+      title: item.name || title,
+      originalTitle: item.original_name || null,
+      overview: item.overview || null,
+      posterUrl: buildImageUrl(item.poster_path, 'w500'),
+      backdropUrl: buildImageUrl(item.backdrop_path, 'original'),
+      firstAirYear: getYear(item.first_air_date) || year,
+      score: match.score
+    };
+  }
+
+  return null;
 }
 
 async function searchOmdbMetadata(rawTitle, type) {
