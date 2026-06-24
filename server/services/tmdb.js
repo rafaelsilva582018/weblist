@@ -74,6 +74,30 @@ function maskSecret(value = '') {
   return `${value.slice(0, 4)}...${value.slice(-4)}`;
 }
 
+const ratingsCache = new Map();
+
+function ratingsCacheTtlMs() {
+  const value = Number(process.env.RATINGS_CACHE_TTL_MS || 1000 * 60 * 60 * 12);
+  return Number.isFinite(value) ? Math.min(Math.max(value, 60_000), 1000 * 60 * 60 * 24 * 30) : 1000 * 60 * 60 * 12;
+}
+
+function readRatingsCache(key) {
+  const cached = ratingsCache.get(key);
+  if (!cached) return null;
+  if (cached.expiresAt <= Date.now()) {
+    ratingsCache.delete(key);
+    return null;
+  }
+  return cached.data;
+}
+
+function writeRatingsCache(key, data) {
+  ratingsCache.set(key, {
+    data,
+    expiresAt: Date.now() + ratingsCacheTtlMs()
+  });
+}
+
 function buildImageUrl(path, size = 'w500') {
   return path ? `${TMDB_IMAGE_BASE}/${size}${path}` : null;
 }
@@ -185,6 +209,106 @@ function mergeMetadata(primary, fallback) {
     releaseYear: primary.releaseYear || fallback.releaseYear || null,
     firstAirYear: primary.firstAirYear || fallback.firstAirYear || null
   };
+}
+
+function formatVoteCount(value) {
+  const count = Number(value || 0);
+  return Number.isFinite(count) && count > 0 ? `${count.toLocaleString('pt-BR')} votos` : '';
+}
+
+function buildTmdbRatingEntry(item = {}) {
+  const value = Number(item.vote_average || 0);
+  if (!Number.isFinite(value) || value <= 0) return null;
+  return {
+    id: 'tmdb',
+    label: 'TMDB',
+    value: `${value.toFixed(1)}/10`,
+    detail: formatVoteCount(item.vote_count),
+    source: 'tmdb'
+  };
+}
+
+function buildOmdbRatingEntries(data = {}) {
+  if (!data) return [];
+
+  const entries = [];
+  const byId = new Set();
+  const ratings = Array.isArray(data.Ratings) ? data.Ratings : [];
+
+  function push(entry) {
+    if (!entry?.id || !entry.value || byId.has(entry.id)) return;
+    byId.add(entry.id);
+    entries.push(entry);
+  }
+
+  const imdbRating = validText(data.imdbRating);
+  const imdbVotes = validText(data.imdbVotes);
+  if (imdbRating) {
+    push({
+      id: 'imdb',
+      label: 'IMDb',
+      value: `${imdbRating}/10`,
+      detail: imdbVotes ? `${imdbVotes} votos` : '',
+      source: 'omdb'
+    });
+  }
+
+  for (const rating of ratings) {
+    const source = compactSpaces(rating?.Source || '');
+    const value = compactSpaces(rating?.Value || '');
+    if (!source || !value) continue;
+
+    if (/rotten tomatoes/i.test(source)) {
+      push({ id: 'rotten-tomatoes', label: 'Rotten Tomatoes', value, detail: '', source: 'omdb' });
+      continue;
+    }
+
+    if (/metacritic/i.test(source)) {
+      push({ id: 'metacritic', label: 'Metacritic', value, detail: '', source: 'omdb' });
+      continue;
+    }
+  }
+
+  const metascore = validText(data.Metascore);
+  if (metascore) {
+    push({
+      id: 'metacritic',
+      label: 'Metacritic',
+      value: /^\d+$/.test(metascore) ? `${metascore}/100` : metascore,
+      detail: '',
+      source: 'omdb'
+    });
+  }
+
+  return entries;
+}
+
+async function searchOmdbTitle(paramsList = []) {
+  for (const params of paramsList) {
+    const data = await omdbFetch(params);
+    if (data) return data;
+  }
+  return null;
+}
+
+async function getOmdbRatings({ title, originalTitle, year, type }) {
+  if (!getOmdbConfig().apiKey) return [];
+
+  const titles = [...new Set([
+    compactSpaces(originalTitle || ''),
+    compactSpaces(title || '')
+  ].filter(Boolean))];
+
+  for (const candidateTitle of titles) {
+    const data = await searchOmdbTitle([
+      { t: candidateTitle, y: year, type: type === 'series' ? 'series' : 'movie' },
+      { t: candidateTitle, type: type === 'series' ? 'series' : 'movie' }
+    ]).catch(() => null);
+    const ratings = buildOmdbRatingEntries(data);
+    if (ratings.length) return ratings;
+  }
+
+  return [];
 }
 
 function scoreResult(result, title, year, kind) {
@@ -521,6 +645,51 @@ export async function getTmdbById(type, tmdbId, options = {}) {
     ? await getSeasonDetails(tmdbId, item.seasons || [], options.seasonNumbers || [])
     : null;
   return mapSeriesResult(item, 100, seasons);
+}
+
+export async function getExternalRatings({ type = 'movie', tmdbId = null, title = '', originalTitle = '', year = null } = {}) {
+  const normalizedType = type === 'series' ? 'series' : 'movie';
+  const cacheKey = JSON.stringify({
+    type: normalizedType,
+    tmdbId: Number(tmdbId || 0) || 0,
+    title: compactSpaces(title || ''),
+    originalTitle: compactSpaces(originalTitle || ''),
+    year: Number(year || 0) || 0
+  });
+  const cached = readRatingsCache(cacheKey);
+  if (cached) return cached;
+
+  const ratings = [];
+  const tmdbConfigured = getTmdbPublicConfig().configured;
+  const omdbConfigured = getOmdbPublicConfig().configured;
+
+  if (tmdbConfigured && tmdbId) {
+    try {
+      const endpoint = normalizedType === 'series' ? `/tv/${tmdbId}` : `/movie/${tmdbId}`;
+      const item = await tmdbFetch(endpoint);
+      const entry = buildTmdbRatingEntry(item);
+      if (entry) ratings.push(entry);
+    } catch {
+      // Keep page rendering even when TMDB detail lookup fails.
+    }
+  }
+
+  if (omdbConfigured) {
+    const omdbRatings = await getOmdbRatings({
+      type: normalizedType,
+      title,
+      originalTitle,
+      year
+    }).catch(() => []);
+    ratings.push(...omdbRatings);
+  }
+
+  const ordered = ['tmdb', 'imdb', 'rotten-tomatoes', 'metacritic']
+    .map((id) => ratings.find((entry) => entry.id === id))
+    .filter(Boolean);
+
+  writeRatingsCache(cacheKey, ordered);
+  return ordered;
 }
 
 function scorePersonResult(person, rawName) {

@@ -2,6 +2,8 @@ import { ArrowLeft, Pencil, Play } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
+import CriticRatings from '../components/CriticRatings.jsx';
+import ContentRow from '../components/ContentRow.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
@@ -19,6 +21,16 @@ export default function MovieDetails() {
   const [movie, setMovie] = useState(null);
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState('');
+
+  function updateFavoriteInDetails(target, next) {
+    setMovie((current) => current ? {
+      ...current,
+      isFavorite: target.id === current.id ? next : current.isFavorite,
+      recommendations: current.recommendations?.map((item) => (
+        item.id === target.id && item.type === target.type ? { ...item, isFavorite: next } : item
+      )) || []
+    } : current);
+  }
 
   function loadMovie() {
     setError('');
@@ -61,6 +73,7 @@ export default function MovieDetails() {
             <h2 className="mb-2 text-lg font-black text-white">Sinopse</h2>
             <p className="text-slate-300">{movie.overview || 'Sinopse ainda nao importada do TMDB.'}</p>
           </div>
+          <CriticRatings ratings={movie.ratings || []} />
           {movie.releaseYear && <p className="mt-3 text-sm text-slate-400">{movie.releaseYear}</p>}
           <div className="mt-8 flex flex-wrap gap-3">
             <Link to={`/watch/movie/${movie.id}`} className="inline-flex items-center gap-2 rounded bg-white px-6 py-3 text-sm font-black text-ink hover:bg-slate-200">
@@ -78,7 +91,7 @@ export default function MovieDetails() {
               id={movie.id}
               initial={movie.isFavorite}
               label
-              onChange={(next) => setMovie((current) => current ? { ...current, isFavorite: next } : current)}
+              onChange={(next) => updateFavoriteInDetails(movie, next)}
             />
           </div>
           {sources.length > 1 && (
@@ -99,6 +112,14 @@ export default function MovieDetails() {
             </div>
           )}
         </div>
+      </div>
+
+      <div className="relative mx-auto max-w-7xl px-4 pb-16 sm:px-6 lg:px-8">
+        <ContentRow
+          title="Filmes indicados"
+          items={movie.recommendations || []}
+          onFavoriteChange={updateFavoriteInDetails}
+        />
       </div>
       <ManualTmdbModal item={isAdmin && editing ? movie : null} title="Editar filme" onClose={() => setEditing(false)} onApplied={loadMovie} />
     </div>

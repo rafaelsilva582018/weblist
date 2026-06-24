@@ -166,35 +166,64 @@ export default function CatalogPage({ type }) {
   }, [category, hideAdult, metadata, page, query, sort, type, year]);
 
   useEffect(() => {
+    let cancelled = false;
+
     if (showCategoryLanding) {
-      setLoading(false);
-      setError('');
-      setPagination(null);
-      return;
+      if (!cancelled) {
+        setLoading(false);
+        setError('');
+        setPagination(null);
+      }
+      return () => {
+        cancelled = true;
+      };
     }
 
     setLoading(true);
     apiFetch(`${config.endpoint}?${requestParams}`, { cacheTtlMs: 20000 })
       .then((data) => {
+        if (cancelled) return;
         setItems(data.items || []);
         setPagination(data.pagination || null);
         setError('');
       })
-      .catch((err) => setError(err.message))
-      .finally(() => setLoading(false));
+      .catch((err) => {
+        if (!cancelled) setError(err.message);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [config.endpoint, requestParams, showCategoryLanding]);
 
   useEffect(() => {
+    let cancelled = false;
     setCategoriesLoading(true);
+    setCategories([]);
     apiFetch(`/categories?type=${type}&hideAdult=${hideAdult ? 'true' : 'false'}`, { cacheTtlMs: 45000 })
-      .then((data) => setCategories(data.categories || []))
-      .catch(() => setCategories([]))
-      .finally(() => setCategoriesLoading(false));
+      .then((data) => {
+        if (!cancelled) setCategories(data.categories || []);
+      })
+      .catch(() => {
+        if (!cancelled) setCategories([]);
+      })
+      .finally(() => {
+        if (!cancelled) setCategoriesLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [hideAdult, type]);
 
-  const visibleCategories = hideAdult
-    ? categories.filter((item) => !/adult|xxx/i.test(item.name))
-    : categories;
+  const visibleCategories = categories.filter((item) => {
+    if (item.type !== type) return false;
+    if (hideAdult && /adult|xxx/i.test(item.name)) return false;
+    return true;
+  });
 
   const selectedCategory = useMemo(() => (
     visibleCategories.find((item) => String(item.id) === category || item.name === category) || null

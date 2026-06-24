@@ -13,7 +13,7 @@ import { getActiveEnrichJob, getEnrichJob, queueTmdbEnrichment, updateEnrichJob 
 import { attachCurrentPrograms, getChannelGuide, getCurrentProgram, getEpgJob, getEpgStatus, getNextProgram, queueEpgImport } from './services/epg.js';
 import { getImportJob, queueImport } from './services/importer.js';
 import { getIptvOrgEpgJob, queueIptvOrgEpgImport } from './services/iptvOrgEpg.js';
-import { getOmdbPublicConfig, getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, searchTmdbPersonCredits, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
+import { getExternalRatings, getOmdbPublicConfig, getTmdbById, getTmdbPublicConfig, searchTmdbCandidates, searchTmdbPersonCredits, updateMovieMetadata, updateSeriesMetadata } from './services/tmdb.js';
 import { buildAdultExclusionClauses, isAdultText } from './utils/adult.js';
 import { normalizeTitle } from './utils/normalize.js';
 import { startAutoTmdbEnrichment } from './services/autoTmdb.js';
@@ -1275,6 +1275,54 @@ function getPopularChannels(userId, hideAdult = true, limit = 20) {
   return attachCurrentPrograms(items);
 }
 
+function getRecommendedMovies(movieId, userId, hideAdult = true, limit = 18) {
+  const referenceMovie = db.prepare(`
+    SELECT id, category_id AS categoryId, release_year AS releaseYear
+    FROM movies
+    WHERE id = ?
+  `).get(movieId);
+
+  if (!referenceMovie?.id) return [];
+
+  return db.prepare(`
+    SELECT
+      m.id, 'movie' AS type, m.title, m.poster_url AS posterUrl, m.backdrop_url AS backdropUrl,
+      m.overview, m.release_year AS releaseYear, m.imported_at AS importedAt,
+      c.name AS category,
+      COUNT(wp.id) AS watchCount,
+      SUM(CASE WHEN wp.completed_at IS NOT NULL THEN 1 ELSE 0 END) AS completedCount,
+      MAX(wp.updated_at) AS lastWatchedAt,
+      CASE WHEN ? IS NOT NULL AND m.category_id = ? THEN 1 ELSE 0 END AS sameCategory,
+      CASE
+        WHEN ? IS NOT NULL AND m.release_year IS NOT NULL THEN ABS(m.release_year - ?)
+        ELSE 9999
+      END AS yearDistance,
+      EXISTS(SELECT 1 FROM favorites f WHERE f.user_id = ? AND f.content_type = 'movie' AND f.content_id = m.id) AS isFavorite
+    FROM movies m
+    LEFT JOIN categories c ON c.id = m.category_id
+    LEFT JOIN watch_progress wp ON wp.content_type = 'movie' AND wp.content_id = m.id
+    WHERE m.id != ?
+      ${hideAdult ? `AND ${adultFilterClauses('m').join(' AND ')}` : ''}
+    GROUP BY m.id
+    ORDER BY
+      sameCategory DESC,
+      completedCount DESC,
+      watchCount DESC,
+      yearDistance ASC,
+      m.imported_at DESC,
+      m.title COLLATE NOCASE ASC
+    LIMIT ?
+  `).all(
+    referenceMovie.categoryId,
+    referenceMovie.categoryId,
+    referenceMovie.releaseYear,
+    referenceMovie.releaseYear,
+    userId,
+    movieId,
+    limit
+  );
+}
+
 function getPopularMediaItems(movies = [], series = [], limit = 10) {
   return [...movies, ...series]
     .sort(sortByLibraryActivity)
@@ -2090,8 +2138,9 @@ app.get('/api/movies', (req, res) => {
   res.json(result);
 });
 
-app.get('/api/movies/:id', (req, res) => {
+app.get('/api/movies/:id', asyncRoute(async (req, res) => {
   const user = getLocalUser(req);
+  const hideAdult = !canShowAdult(user) || user.preferHideAdult !== false;
   const movie = db.prepare(`
     SELECT
       m.id, 'movie' AS type, m.title, m.stream_url AS streamUrl, m.poster_url AS posterUrl,
@@ -2106,8 +2155,24 @@ app.get('/api/movies/:id', (req, res) => {
   if (!movie) return res.status(404).json({ error: 'Filme nao encontrado' });
   if (!canShowAdult(user) && isAdultRecord(movie)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
   const sources = getStreamSources('movie', movie.id, movie.streamUrl);
-  res.json({ movie: { ...movie, isFavorite: isFavorite(user.id, 'movie', movie.id), sources: publicSources(sources), sourceCount: sources.length } });
-});
+  const ratings = await getExternalRatings({
+    type: 'movie',
+    tmdbId: movie.tmdbId,
+    title: movie.title,
+    originalTitle: movie.originalTitle,
+    year: movie.releaseYear
+  });
+  res.json({
+    movie: {
+      ...movie,
+      isFavorite: isFavorite(user.id, 'movie', movie.id),
+      sources: publicSources(sources),
+      sourceCount: sources.length,
+      ratings,
+      recommendations: getRecommendedMovies(movie.id, user.id, hideAdult, 18)
+    }
+  });
+}));
 
 app.get('/api/series', (req, res) => {
   const user = getLocalUser(req);
@@ -2125,7 +2190,7 @@ app.get('/api/series', (req, res) => {
   res.json(result);
 });
 
-app.get('/api/series/:id', (req, res) => {
+app.get('/api/series/:id', asyncRoute(async (req, res) => {
   const user = getLocalUser(req);
   const series = db.prepare(`
     SELECT
@@ -2140,6 +2205,13 @@ app.get('/api/series/:id', (req, res) => {
 
   if (!series) return res.status(404).json({ error: 'Serie nao encontrada' });
   if (!canShowAdult(user) && isAdultRecord(series)) return res.status(403).json({ error: 'Conteudo restrito para este usuario' });
+  const ratings = await getExternalRatings({
+    type: 'series',
+    tmdbId: series.tmdbId,
+    title: series.title,
+    originalTitle: series.originalTitle,
+    year: series.firstAirYear
+  });
 
   const seasons = db.prepare(`
     SELECT id, season_number AS seasonNumber, title, poster_url AS posterUrl
@@ -2172,8 +2244,8 @@ app.get('/api/series/:id', (req, res) => {
     bySeason.get(episode.seasonId)?.episodes.push(episode);
   }
 
-  res.json({ series: { ...series, isFavorite: isFavorite(user.id, 'series', series.id), seasons: [...bySeason.values()] } });
-});
+  res.json({ series: { ...series, isFavorite: isFavorite(user.id, 'series', series.id), ratings, seasons: [...bySeason.values()] } });
+}));
 
 app.get('/api/channels', (req, res) => {
   const user = getLocalUser(req);

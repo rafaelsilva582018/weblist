@@ -2,6 +2,7 @@ import { ArrowLeft, Check, CheckCircle2, Pencil, Play } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
+import CriticRatings from '../components/CriticRatings.jsx';
 import EmptyState from '../components/EmptyState.jsx';
 import FavoriteButton from '../components/FavoriteButton.jsx';
 import ManualTmdbModal from '../components/ManualTmdbModal.jsx';
@@ -125,6 +126,7 @@ export default function SeriesDetails() {
             <h2 className="mb-2 text-lg font-black text-white">Sinopse</h2>
             <p className="text-slate-300">{series.overview || 'Sinopse ainda nao importada do TMDB.'}</p>
           </div>
+          <CriticRatings ratings={series.ratings || []} />
           <p className="mt-3 text-sm text-slate-400">
             {series.seasons.length} temporadas{series.firstAirYear ? ` - ${series.firstAirYear}` : ''}
           </p>
