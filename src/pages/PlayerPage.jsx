@@ -1,4 +1,4 @@
-import { ArrowLeft, CalendarDays, Cast, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
+import { ArrowLeft, CalendarDays, Cast, Flag, Maximize, Minimize, Pause, PictureInPicture, Play, RotateCcw, RotateCw, Server, SkipForward, Volume2, VolumeX } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { apiFetch } from '../api.js';
@@ -88,6 +88,7 @@ export default function PlayerPage() {
   const lastLiveTickRef = useRef({ position: 0, updatedAt: Date.now() });
   const lowLiveBufferSinceRef = useRef(0);
   const lastLiveRestartRef = useRef(0);
+  const failedSourceKeysRef = useRef(new Set());
   const backgroundPausedRef = useRef(false);
   const shouldResumeLiveRef = useRef(false);
   const pendingLivePlayRef = useRef(false);
@@ -109,6 +110,8 @@ export default function PlayerPage() {
   const [liveBuffering, setLiveBuffering] = useState(false);
   const [liveBufferAhead, setLiveBufferAhead] = useState(0);
   const [nextEpisodeBusy, setNextEpisodeBusy] = useState(false);
+  const [reportBusy, setReportBusy] = useState(false);
+  const [reportedBroken, setReportedBroken] = useState(false);
   const hideTimerRef = useRef(null);
   const isLive = type === 'channel' || item?.streamFormat === 'mpegts';
   const hasGuide = item?.guide?.length > 0;
@@ -172,6 +175,8 @@ export default function PlayerPage() {
     setLiveBuffering(false);
     setLiveBufferAhead(0);
     setGuideOpen(false);
+    setReportedBroken(false);
+    failedSourceKeysRef.current = new Set();
     setCurrent(0);
     setDuration(0);
     setIsPlaying(false);
@@ -184,6 +189,21 @@ export default function PlayerPage() {
       .then((data) => setItem(data.item))
       .catch((err) => setError(err.message));
   }, [id, sourceParam, type]);
+
+  function tryNextSourceAfterFailure(message = 'Fonte indisponivel') {
+    if (!item?.sources?.length || item.sources.length < 2) return false;
+    const currentKey = String(item.activeSourceId || '');
+    failedSourceKeysRef.current.add(currentKey);
+    const nextSource = item.sources.find((source) => !failedSourceKeysRef.current.has(String(source.id || '')));
+    if (!nextSource) return false;
+
+    setError(`${message}. Tentando outra fonte...`);
+    const next = new URLSearchParams(searchParams);
+    if (nextSource.id) next.set('source', nextSource.id);
+    else next.delete('source');
+    setSearchParams(next, { replace: true });
+    return true;
+  }
 
   useEffect(() => {
     if (!item?.streamUrl || !videoRef.current) return undefined;
@@ -311,6 +331,7 @@ export default function PlayerPage() {
     const onVideoError = () => {
       window.setTimeout(() => {
         if (video.error && video.readyState < 2) {
+          if (tryNextSourceAfterFailure('O navegador nao conseguiu reproduzir este link')) return;
           setError('O navegador nao conseguiu reproduzir este link');
         }
       }, 250);
@@ -427,7 +448,9 @@ export default function PlayerPage() {
             hls.loadSource(item.streamUrl);
             hls.attachMedia(video);
             hls.on(Hls.Events.ERROR, (_event, data) => {
-              if (data.fatal) setError('Nao foi possivel carregar este link HLS');
+              if (data.fatal && !tryNextSourceAfterFailure('Nao foi possivel carregar este link HLS')) {
+                setError('Nao foi possivel carregar este link HLS');
+              }
             });
             return;
           }
@@ -726,6 +749,30 @@ export default function PlayerPage() {
     });
   }
 
+  async function reportBrokenLink() {
+    if (!item || reportBusy) return;
+    setReportBusy(true);
+    try {
+      await apiFetch('/reports/playback', {
+        method: 'POST',
+        body: {
+          type,
+          id: Number(id),
+          sourceId: item.activeSourceId || null,
+          message: error || 'Link informado como quebrado pelo player'
+        }
+      });
+      setReportedBroken(true);
+      setError('Relatorio enviado. Obrigado por avisar.');
+      showControls();
+    } catch (err) {
+      setError(err.message);
+      showControls();
+    } finally {
+      setReportBusy(false);
+    }
+  }
+
   function goBackFromPlayer() {
     if (type === 'episode' && item?.seriesId) {
       navigate(`/series/${item.seriesId}`, { replace: true });
@@ -962,6 +1009,14 @@ export default function PlayerPage() {
               />
               <button onClick={togglePip} className="grid size-10 place-items-center rounded bg-white/10 text-white hover:bg-white/16" title={isPip ? 'Sair do Picture-in-Picture' : 'Picture-in-Picture'}>
                 <PictureInPicture size={18} />
+              </button>
+              <button
+                onClick={reportBrokenLink}
+                disabled={!item || reportBusy || reportedBroken}
+                className="grid size-10 place-items-center rounded bg-white/10 text-white hover:bg-white/16 disabled:cursor-not-allowed disabled:opacity-45"
+                title={reportedBroken ? 'Relatorio enviado' : 'Reportar link quebrado'}
+              >
+                <Flag size={18} />
               </button>
               <button
                 onClick={openRemotePlayback}

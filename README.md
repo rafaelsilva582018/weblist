@@ -111,7 +111,11 @@ No `.env`, preencha pelo menos:
 ```bash
 JWT_SECRET=um_segredo_grande
 TMDB_ACCESS_TOKEN=seu_token_tmdb
+LOCAL_MODE=false
+ALLOWED_ORIGINS=http://IP_DO_SERVIDOR:3333
 ```
+
+Em producao o servidor bloqueia `JWT_SECRET` fraco por padrao. Use `LOCAL_MODE=true` somente em ambiente domestico/local, pois esse modo permite que algumas rotas de progresso e favoritos funcionem como usuario local quando nao ha token.
 
 Depois acesse:
 
@@ -148,6 +152,23 @@ A pagina `Problemas` mostra:
 - Series suspeitas, como series com apenas um episodio
 
 Nessa pagina, use o botao de busca para escolher manualmente o resultado correto do TMDB e aplicar a capa/sinopse certa.
+
+## Manutencao
+
+No painel `Admin > Biblioteca`:
+
+- `Backup` baixa uma copia atual do banco SQLite.
+- `Verificar` roda uma checagem de integridade do SQLite, indice de busca e registros orfaos.
+- O player tem um botao para reportar link quebrado; a contagem aparece nos cards do Admin.
+- A tela de login usa capas fixas em cache local por ciclos de 30 dias; quando vence, o servidor apaga o cache antigo e baixa uma nova selecao.
+
+Scripts de qualidade:
+
+```bash
+npm run lint
+npm test
+npm run build
+```
 
 ## Busca e filtros
 

@@ -1,6 +1,10 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api';
 const apiResponseCache = new Map();
 
+export function apiUrl(path) {
+  return `${API_BASE}${path}`;
+}
+
 export function getToken() {
   return localStorage.getItem('weblist_token');
 }

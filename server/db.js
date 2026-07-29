@@ -165,6 +165,17 @@ export function initDatabase() {
       FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
     );
 
+    CREATE TABLE IF NOT EXISTS playback_reports (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      content_type TEXT NOT NULL CHECK (content_type IN ('movie', 'episode', 'channel')),
+      content_id INTEGER NOT NULL,
+      source_id INTEGER,
+      message TEXT,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
     CREATE TABLE IF NOT EXISTS epg_programs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       channel_id INTEGER NOT NULL,
@@ -189,6 +200,7 @@ export function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_stream_sources_url ON stream_sources(stream_url);
     CREATE INDEX IF NOT EXISTS idx_watch_progress_recent ON watch_progress(updated_at DESC);
     CREATE INDEX IF NOT EXISTS idx_favorites_user_recent ON favorites(user_id, created_at DESC);
+    CREATE INDEX IF NOT EXISTS idx_playback_reports_recent ON playback_reports(created_at DESC);
     CREATE INDEX IF NOT EXISTS idx_epg_channel_time ON epg_programs(channel_id, start_at, stop_at);
     CREATE INDEX IF NOT EXISTS idx_epg_time ON epg_programs(start_at, stop_at);
 
@@ -1398,6 +1410,7 @@ export function clearLibrary() {
     db.exec(`
       DELETE FROM watch_progress;
       DELETE FROM favorites;
+      DELETE FROM playback_reports;
       DELETE FROM epg_programs;
       DELETE FROM stream_sources;
       DELETE FROM episodes;
@@ -1408,7 +1421,7 @@ export function clearLibrary() {
       DELETE FROM categories;
       DELETE FROM search_index;
       DELETE FROM sqlite_sequence WHERE name IN (
-        'watch_progress', 'favorites', 'stream_sources', 'episodes', 'seasons', 'series', 'movies', 'channels', 'categories', 'epg_programs'
+        'watch_progress', 'favorites', 'playback_reports', 'stream_sources', 'episodes', 'seasons', 'series', 'movies', 'channels', 'categories', 'epg_programs'
       );
     `);
     db.exec('COMMIT');
@@ -1427,6 +1440,7 @@ export function getStats() {
     channels: db.prepare('SELECT COUNT(*) AS total FROM channels').get().total,
     sources: db.prepare('SELECT COUNT(*) AS total FROM stream_sources').get().total,
     watched: db.prepare('SELECT COUNT(*) AS total FROM watch_progress WHERE completed_at IS NOT NULL').get().total,
+    reports: db.prepare('SELECT COUNT(*) AS total FROM playback_reports').get().total,
     categories: db.prepare('SELECT COUNT(*) AS total FROM categories').get().total
   };
 }

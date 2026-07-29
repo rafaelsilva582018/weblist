@@ -1,12 +1,12 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import cors from 'cors';
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import multer from 'multer';
-import { clearLibrary, db, ensureSearchIndex, getSetting, getStats, initDatabase, projectRoot, rebuildSearchIndex, setSetting, uploadsDir } from './db.js';
+import { clearLibrary, db, dbPath, ensureSearchIndex, getSetting, getStats, initDatabase, projectRoot, rebuildSearchIndex, setSetting, uploadsDir } from './db.js';
 import { extractStreamVariantInfo } from './parser/m3uParser.js';
 import { getActiveAiMetadataJob, getAiMetadataJob, getAiMetadataPublicConfig, queueAiMetadataAssistant, updateAiMetadataJob } from './services/aiMetadata.js';
 import { getActiveEnrichJob, getEnrichJob, queueTmdbEnrichment, updateEnrichJob } from './services/enricher.js';
@@ -20,23 +20,142 @@ import { startAutoTmdbEnrichment } from './services/autoTmdb.js';
 
 const app = express();
 const port = Number(process.env.PORT || 3333);
+const isProduction = process.env.NODE_ENV === 'production';
 const jwtSecret = process.env.JWT_SECRET || 'weblist-local-secret';
 const jwtExpiresIn = process.env.JWT_EXPIRES_IN || '30d';
+const localMode = boolEnv('LOCAL_MODE', !isProduction);
+const allowedOrigins = parseCsvEnv('ALLOWED_ORIGINS');
+const imageUploadMaxBytes = numberEnv('IMAGE_UPLOAD_MAX_BYTES', 8 * 1024 * 1024);
+const weakJwtSecrets = new Set(['', 'weblist-local-secret', 'troque-este-segredo', 'troque-por-um-segredo-grande']);
 const upload = multer({
   dest: uploadsDir,
   limits: { fileSize: 1024 * 1024 * 700 }
 });
 
+const startupWarnings = [];
+
 initDatabase();
 ensureSearchIndex();
+validateRuntimeConfig();
 
-app.use(cors({ origin: true, credentials: true }));
+app.use(cors(buildCorsOptions()));
 app.use(express.json({ limit: '150mb' }));
 app.use(express.urlencoded({ extended: true, limit: '150mb' }));
-app.use('/api/uploads', express.static(uploadsDir));
+app.use('/api/uploads', express.static(uploadsDir, {
+  maxAge: '30d',
+  immutable: false
+}));
 
 function asyncRoute(handler) {
   return (req, res, next) => Promise.resolve(handler(req, res, next)).catch(next);
+}
+
+function boolEnv(name, fallback = false) {
+  const value = process.env[name];
+  if (value === undefined || value === '') return fallback;
+  return ['1', 'true', 'yes', 'sim', 'on'].includes(String(value).toLowerCase());
+}
+
+function numberEnv(name, fallback) {
+  const value = Number(process.env[name]);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function parseCsvEnv(name) {
+  return String(process.env[name] || '')
+    .split(',')
+    .map((value) => value.trim())
+    .filter(Boolean);
+}
+
+function addStartupWarning(message) {
+  if (!startupWarnings.includes(message)) startupWarnings.push(message);
+  console.warn(`[Config] ${message}`);
+}
+
+function getSecurityWarnings() {
+  const warnings = [...startupWarnings];
+  const admin = db.prepare("SELECT password_hash FROM users WHERE username = 'admin' COLLATE NOCASE").get();
+  if (admin?.password_hash && bcrypt.compareSync('admin123', admin.password_hash)) {
+    warnings.push('O usuario admin ainda usa a senha padrao admin123. Troque a senha no perfil.');
+  }
+  return [...new Set(warnings)];
+}
+
+function validateRuntimeConfig() {
+  if (weakJwtSecrets.has(jwtSecret)) {
+    const message = 'JWT_SECRET nao foi configurado com um segredo forte.';
+    if (isProduction && process.env.WEBLIST_STRICT_PRODUCTION !== 'false') {
+      throw new Error(`${message} Defina JWT_SECRET no ambiente ou use WEBLIST_STRICT_PRODUCTION=false conscientemente.`);
+    }
+    addStartupWarning(message);
+  }
+
+  if (isProduction && localMode) {
+    addStartupWarning('LOCAL_MODE esta ativo em producao; rotas de escrita sem login podem usar o usuario local.');
+  }
+
+  if (isProduction && !allowedOrigins.length) {
+    addStartupWarning('ALLOWED_ORIGINS nao foi definido; CORS aceitara qualquer origem.');
+  }
+}
+
+function buildCorsOptions() {
+  if (!allowedOrigins.length) {
+    return { origin: true, credentials: true };
+  }
+
+  const allowed = new Set(allowedOrigins);
+  return {
+    credentials: true,
+    origin(origin, callback) {
+      if (!origin || allowed.has(origin)) return callback(null, true);
+      return callback(new Error('Origem nao permitida pelo CORS'));
+    }
+  };
+}
+
+async function detectImageExtension(filePath) {
+  const file = await fs.promises.open(filePath, 'r');
+  try {
+    const buffer = Buffer.alloc(16);
+    const { bytesRead } = await file.read(buffer, 0, buffer.length, 0);
+    const header = buffer.subarray(0, bytesRead);
+    if (header.length >= 3 && header[0] === 0xff && header[1] === 0xd8 && header[2] === 0xff) return '.jpg';
+    if (header.length >= 8 && header.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) return '.png';
+    if (header.length >= 12 && header.subarray(0, 4).toString('ascii') === 'RIFF' && header.subarray(8, 12).toString('ascii') === 'WEBP') return '.webp';
+    if (header.length >= 6 && ['GIF87a', 'GIF89a'].includes(header.subarray(0, 6).toString('ascii'))) return '.gif';
+    return '';
+  } finally {
+    await file.close();
+  }
+}
+
+async function validateUploadedImage(file) {
+  if (!file) {
+    throw new Error('Envie uma imagem');
+  }
+  if (file.size > imageUploadMaxBytes) {
+    throw new Error(`Imagem muito grande. Limite: ${Math.round(imageUploadMaxBytes / 1024 / 1024)} MB`);
+  }
+
+  const detectedExt = await detectImageExtension(file.path);
+  if (!detectedExt) {
+    throw new Error('Arquivo precisa ser uma imagem JPG, PNG, WEBP ou GIF valida');
+  }
+
+  const expectedMimeByExt = {
+    '.jpg': ['image/jpeg', 'image/jpg'],
+    '.png': ['image/png'],
+    '.webp': ['image/webp'],
+    '.gif': ['image/gif']
+  };
+  const mimetype = String(file.mimetype || '').toLowerCase();
+  if (mimetype && !expectedMimeByExt[detectedExt].includes(mimetype)) {
+    throw new Error('Tipo de imagem nao confere com o conteudo do arquivo');
+  }
+
+  return detectedExt;
 }
 
 function parseTmdbReference(value = '') {
@@ -142,19 +261,28 @@ function requireAdmin(req, res, next) {
 }
 
 function getLocalUserId(req) {
-  return getLocalUser(req).id;
+  return (req.localUser || getLocalUser(req)).id;
 }
 
 function getLocalUser(req) {
   try {
     const token = getBearerToken(req);
-    if (!token) return { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
+    if (!token) return { id: 1, username: 'local', isAdmin: false, canViewAdult: false, preferHideAdult: true, isGuest: true };
     const payload = jwt.verify(token, jwtSecret);
     const user = db.prepare('SELECT * FROM users WHERE id = ?').get(Number(payload.sub));
-    return user ? formatUser(user) : { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
+    return user ? { ...formatUser(user), isGuest: false } : { id: 1, username: 'local', isAdmin: false, canViewAdult: false, preferHideAdult: true, isGuest: true };
   } catch {
-    return { id: 1, username: 'local', isAdmin: false, canViewAdult: false };
+    return { id: 1, username: 'local', isAdmin: false, canViewAdult: false, preferHideAdult: true, isGuest: true };
   }
+}
+
+function requireWritableUser(req, res, next) {
+  const user = getLocalUser(req);
+  if (user.isGuest && !localMode) {
+    return res.status(401).json({ error: 'Login necessario' });
+  }
+  req.localUser = user;
+  return next();
 }
 
 function signUser(user) {
@@ -1471,8 +1599,140 @@ function buildLoginBackgroundItems(limit = 56) {
 
 function getLoginBackgroundItems(limit = 56) {
   const cacheKey = `visual-cache:login-background:${limit}`;
-  const items = getMonthlyVisualCache(cacheKey, () => buildLoginBackgroundItems(limit));
+  const cycle = loginBackgroundCycleToken();
+  const signature = visualCacheSignature();
+  const cached = readVisualCache(cacheKey);
+
+  const items = (
+    cached
+    && cached.version === VISUAL_CACHE_VERSION
+    && cached.cycle === cycle
+    && cached.signature === signature
+    && Array.isArray(cached.data)
+  )
+    ? cached.data
+    : buildLoginBackgroundItems(limit);
+
+  if (items !== cached?.data) {
+    setSetting(cacheKey, JSON.stringify({
+      version: VISUAL_CACHE_VERSION,
+      cycle,
+      signature,
+      data: items
+    }));
+  }
+
   return Array.isArray(items) ? items.slice(0, limit) : [];
+}
+
+const LOGIN_BACKGROUND_LIMIT = 56;
+const LOGIN_BACKGROUND_CACHE_DAYS = 30;
+const LOGIN_BACKGROUND_CACHE_MS = LOGIN_BACKGROUND_CACHE_DAYS * 24 * 60 * 60 * 1000;
+const LOGIN_BACKGROUND_DIR = path.join(uploadsDir, 'login-background');
+const LOGIN_BACKGROUND_FETCH_TIMEOUT_MS = numberEnv('LOGIN_BACKGROUND_FETCH_TIMEOUT_MS', 20000);
+const imageExtByContentType = {
+  'image/jpeg': '.jpg',
+  'image/jpg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif'
+};
+
+function loginBackgroundCycleToken(date = new Date()) {
+  const epoch = Date.UTC(2026, 0, 1);
+  const cycle = Math.floor((date.getTime() - epoch) / LOGIN_BACKGROUND_CACHE_MS);
+  return `cycle-${Math.max(0, cycle)}`;
+}
+
+function imageUrlHash(url = '') {
+  return createHash('sha256').update(String(url)).digest('hex').slice(0, 24);
+}
+
+function extensionFromImageUrl(url = '') {
+  try {
+    const ext = path.extname(new URL(url).pathname).toLowerCase();
+    if (['.jpg', '.jpeg', '.png', '.webp', '.gif'].includes(ext)) return ext === '.jpeg' ? '.jpg' : ext;
+  } catch {
+    // Fallback to content-type after fetch.
+  }
+  return '';
+}
+
+async function removeExpiredLoginBackgroundCaches(currentToken) {
+  await fs.promises.mkdir(LOGIN_BACKGROUND_DIR, { recursive: true });
+  const entries = await fs.promises.readdir(LOGIN_BACKGROUND_DIR, { withFileTypes: true }).catch(() => []);
+  await Promise.all(entries
+    .filter((entry) => entry.isDirectory() && entry.name !== currentToken)
+    .map((entry) => fs.promises.rm(path.join(LOGIN_BACKGROUND_DIR, entry.name), { recursive: true, force: true }).catch(() => {})));
+}
+
+async function downloadLoginBackgroundImage(imageUrl, targetBase) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), LOGIN_BACKGROUND_FETCH_TIMEOUT_MS);
+  try {
+    const response = await fetch(imageUrl, {
+      signal: controller.signal,
+      headers: {
+        Accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif,image/*;q=0.8,*/*;q=0.5',
+        'User-Agent': 'Weblist/1.0'
+      }
+    });
+    if (!response.ok) throw new Error(`Imagem respondeu ${response.status}`);
+
+    const contentType = String(response.headers.get('content-type') || '').split(';')[0].trim().toLowerCase();
+    const ext = extensionFromImageUrl(imageUrl) || imageExtByContentType[contentType] || '.jpg';
+    const target = `${targetBase}${ext}`;
+    const bytes = Buffer.from(await response.arrayBuffer());
+    if (!bytes.length || bytes.length > imageUploadMaxBytes) {
+      throw new Error('Imagem vazia ou maior que o limite configurado');
+    }
+    await fs.promises.writeFile(target, bytes);
+    return target;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function localizeLoginBackgroundItem(item, cycleDir, cycleToken) {
+  const imageUrl = String(item?.imageUrl || '').trim();
+  if (!imageUrl) return null;
+  if (imageUrl.startsWith('/api/uploads/')) return item;
+  if (!/^https?:\/\//i.test(imageUrl)) return null;
+
+  const fileBase = `${item.type}-${item.id}-${imageUrlHash(imageUrl)}`;
+  const existing = await fs.promises.readdir(cycleDir).catch(() => []);
+  const current = existing.find((name) => name.startsWith(fileBase));
+  const target = current
+    ? path.join(cycleDir, current)
+    : await downloadLoginBackgroundImage(imageUrl, path.join(cycleDir, fileBase)).catch((error) => {
+      console.warn(`[Login Background] ${item.title || imageUrl}: ${error.message}`);
+      return '';
+    });
+  if (!target) return null;
+
+  return {
+    ...item,
+    imageUrl: `/api/uploads/login-background/${cycleToken}/${path.basename(target)}`
+  };
+}
+
+async function getCachedLoginBackgroundItems(limit = LOGIN_BACKGROUND_LIMIT) {
+  const cycleToken = loginBackgroundCycleToken();
+  const cycleDir = path.join(LOGIN_BACKGROUND_DIR, cycleToken);
+  await removeExpiredLoginBackgroundCaches(cycleToken);
+  await fs.promises.mkdir(cycleDir, { recursive: true });
+
+  const items = getLoginBackgroundItems(limit);
+  const localized = [];
+  const batchSize = 6;
+  for (let index = 0; index < items.length; index += batchSize) {
+    const batch = await Promise.all(
+      items.slice(index, index + batchSize).map((item) => localizeLoginBackgroundItem(item, cycleDir, cycleToken))
+    );
+    localized.push(...batch.filter(Boolean));
+  }
+
+  return localized.slice(0, limit);
 }
 
 function getCategoryRows(userId = 1, hideAdult = true) {
@@ -1534,13 +1794,16 @@ function getCategoryRows(userId = 1, hideAdult = true) {
 }
 
 app.get('/api/health', (req, res) => {
-  res.json({ ok: true, stats: getStats() });
+  res.json({ ok: true, stats: getStats(), warnings: getSecurityWarnings() });
 });
 
-app.get('/api/auth/login-background', (req, res) => {
-  res.setHeader('Cache-Control', 'no-store');
-  res.json({ items: getLoginBackgroundItems() });
-});
+app.get('/api/auth/login-background', asyncRoute(async (req, res) => {
+  res.setHeader('Cache-Control', 'public, max-age=3600');
+  res.json({
+    cacheDays: LOGIN_BACKGROUND_CACHE_DAYS,
+    items: await getCachedLoginBackgroundItems()
+  });
+}));
 
 app.post('/api/auth/login', (req, res) => {
   const username = String(req.body.username || '').trim();
@@ -1613,13 +1876,14 @@ app.patch('/api/me/profile', requireAuth, (req, res) => {
 });
 
 app.post('/api/me/avatar', requireAuth, upload.single('image'), asyncRoute(async (req, res) => {
-  if (!req.file) return res.status(400).json({ error: 'Envie uma imagem' });
-  if (!String(req.file.mimetype || '').startsWith('image/')) {
-    await fs.promises.unlink(req.file.path).catch(() => {});
-    return res.status(400).json({ error: 'Arquivo precisa ser imagem' });
+  let ext = '';
+  try {
+    ext = await validateUploadedImage(req.file);
+  } catch (error) {
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
+    return res.status(400).json({ error: error.message });
   }
 
-  const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
   const avatarsDir = path.join(uploadsDir, 'avatars');
   await fs.promises.mkdir(avatarsDir, { recursive: true });
   const fileName = `user-${req.user.id}-${Date.now()}-${randomUUID()}${ext}`;
@@ -1725,12 +1989,78 @@ app.delete('/api/admin/users/:id/progress', requireAdmin, (req, res) => {
   res.json({ ok: true, removed: result.changes || 0, users: listUsers(), stats: getStats() });
 });
 
+app.get('/api/admin/backup', requireAdmin, asyncRoute(async (req, res) => {
+  db.exec('PRAGMA wal_checkpoint(TRUNCATE)');
+  const backupsDir = path.join(uploadsDir, 'backups');
+  await fs.promises.mkdir(backupsDir, { recursive: true });
+  const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+  const fileName = `weblist-${timestamp}.sqlite`;
+  const target = path.join(backupsDir, fileName);
+  await fs.promises.copyFile(dbPath, target);
+  res.download(target, fileName, async (error) => {
+    if (error && !res.headersSent) {
+      res.status(500).json({ error: 'Nao foi possivel baixar o backup' });
+    }
+    await fs.promises.unlink(target).catch(() => {});
+  });
+}));
+
+app.get('/api/admin/integrity', requireAdmin, (req, res) => {
+  const integrityRows = db.prepare('PRAGMA integrity_check').all();
+  const integrity = integrityRows.map((row) => Object.values(row)[0]);
+  const stats = getStats();
+  const indexed = db.prepare('SELECT COUNT(*) AS total FROM search_index').get().total;
+  const expectedIndex = stats.movies + stats.series + stats.channels;
+  const checks = {
+    sqliteOk: integrity.length === 1 && integrity[0] === 'ok',
+    searchIndexOk: indexed === expectedIndex,
+    orphanSeasons: db.prepare('SELECT COUNT(*) AS total FROM seasons se LEFT JOIN series s ON s.id = se.series_id WHERE s.id IS NULL').get().total,
+    orphanEpisodes: db.prepare('SELECT COUNT(*) AS total FROM episodes e LEFT JOIN series s ON s.id = e.series_id LEFT JOIN seasons se ON se.id = e.season_id WHERE s.id IS NULL OR se.id IS NULL').get().total,
+    orphanSources: db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM stream_sources ss
+      LEFT JOIN movies m ON ss.content_type = 'movie' AND m.id = ss.content_id
+      LEFT JOIN episodes e ON ss.content_type = 'episode' AND e.id = ss.content_id
+      LEFT JOIN channels ch ON ss.content_type = 'channel' AND ch.id = ss.content_id
+      WHERE m.id IS NULL AND e.id IS NULL AND ch.id IS NULL
+    `).get().total,
+    orphanFavorites: db.prepare(`
+      SELECT COUNT(*) AS total
+      FROM favorites f
+      LEFT JOIN movies m ON f.content_type = 'movie' AND m.id = f.content_id
+      LEFT JOIN series s ON f.content_type = 'series' AND s.id = f.content_id
+      LEFT JOIN channels ch ON f.content_type = 'channel' AND ch.id = f.content_id
+      WHERE m.id IS NULL AND s.id IS NULL AND ch.id IS NULL
+    `).get().total
+  };
+
+  res.json({
+    ok: checks.sqliteOk
+      && checks.searchIndexOk
+      && checks.orphanSeasons === 0
+      && checks.orphanEpisodes === 0
+      && checks.orphanSources === 0
+      && checks.orphanFavorites === 0,
+    integrity,
+    stats,
+    searchIndex: { indexed, expected: expectedIndex },
+    checks
+  });
+});
+
 app.get('/api/admin/settings', requireAdmin, (req, res) => {
   res.json({
     tmdb: getTmdbPublicConfig(),
     omdb: getOmdbPublicConfig(),
     ai: getAiMetadataPublicConfig(),
     epg: getEpgStatus(),
+    security: {
+      localMode,
+      production: isProduction,
+      corsRestricted: allowedOrigins.length > 0,
+      weakJwtSecret: weakJwtSecrets.has(jwtSecret),
+      warnings: getSecurityWarnings()
+    },
     raw: {
       tmdbLanguage: getSetting('tmdb_language', process.env.TMDB_LANGUAGE || 'pt-BR'),
       aiEnabled: getSetting('ai_metadata_enabled', process.env.AI_METADATA_ENABLED || 'false') === 'true',
@@ -1946,13 +2276,14 @@ app.post('/api/admin/media/:type/:id/image', requireAdmin, upload.single('image'
   if (!['movie', 'series', 'channel'].includes(type) || !id) {
     return res.status(400).json({ error: 'Item invalido' });
   }
-  if (!req.file) return res.status(400).json({ error: 'Envie uma imagem' });
-  if (!String(req.file.mimetype || '').startsWith('image/')) {
-    await fs.promises.unlink(req.file.path).catch(() => {});
-    return res.status(400).json({ error: 'Arquivo precisa ser imagem' });
+  let ext = '';
+  try {
+    ext = await validateUploadedImage(req.file);
+  } catch (error) {
+    if (req.file?.path) await fs.promises.unlink(req.file.path).catch(() => {});
+    return res.status(400).json({ error: error.message });
   }
 
-  const ext = path.extname(req.file.originalname || '').toLowerCase() || '.jpg';
   const coversDir = path.join(uploadsDir, 'covers');
   await fs.promises.mkdir(coversDir, { recursive: true });
   const fileName = `${type}-${id}-${Date.now()}-${randomUUID()}${ext}`;
@@ -2062,8 +2393,8 @@ app.get('/api/favorites', (req, res) => {
   res.json(result);
 });
 
-app.post('/api/favorites', (req, res) => {
-  const user = getLocalUser(req);
+app.post('/api/favorites', requireWritableUser, (req, res) => {
+  const user = req.localUser;
   const type = normalizeFavoriteType(req.body.type);
   const id = Number(req.body.id);
 
@@ -2079,7 +2410,7 @@ app.post('/api/favorites', (req, res) => {
   res.json({ ok: true, isFavorite: true });
 });
 
-app.delete('/api/favorites/:type/:id', (req, res) => {
+app.delete('/api/favorites/:type/:id', requireWritableUser, (req, res) => {
   const userId = getLocalUserId(req);
   const type = normalizeFavoriteType(req.params.type);
   const id = Number(req.params.id);
@@ -2604,7 +2935,7 @@ app.get('/api/progress', (req, res) => {
   res.json({ progress: progress || null });
 });
 
-app.put('/api/progress/status', (req, res) => {
+app.put('/api/progress/status', requireWritableUser, (req, res) => {
   const userId = getLocalUserId(req);
   const type = String(req.body.type || '');
   const id = Number(req.body.id);
@@ -2648,7 +2979,7 @@ app.put('/api/progress/status', (req, res) => {
   res.json({ ok: true, completed: true, progress: progress || null });
 });
 
-app.post('/api/progress', (req, res) => {
+app.post('/api/progress', requireWritableUser, (req, res) => {
   const userId = getLocalUserId(req);
   const type = String(req.body.type || '');
   const id = Number(req.body.id);
@@ -2691,6 +3022,33 @@ app.post('/api/progress', (req, res) => {
   );
 
   res.json({ ok: true, completed });
+});
+
+app.post('/api/reports/playback', requireWritableUser, (req, res) => {
+  const user = req.localUser;
+  const type = String(req.body.type || '');
+  const id = Number(req.body.id);
+  const sourceId = Number(req.body.sourceId || 0) || null;
+  const message = compactInput(req.body.message || '', 240);
+
+  if (!['movie', 'episode', 'channel'].includes(type) || !id) {
+    return res.status(400).json({ error: 'Relatorio invalido' });
+  }
+
+  let exists = false;
+  if (type === 'episode') {
+    exists = Boolean(db.prepare('SELECT id FROM episodes WHERE id = ?').get(id));
+  } else {
+    exists = contentExists(type, id);
+  }
+  if (!exists) return res.status(404).json({ error: 'Item nao encontrado' });
+
+  db.prepare(`
+    INSERT INTO playback_reports (user_id, content_type, content_id, source_id, message)
+    VALUES (?, ?, ?, ?, ?)
+  `).run(user.id, type, id, sourceId, message);
+
+  res.status(201).json({ ok: true, stats: getStats() });
 });
 
 app.use((error, req, res, next) => {

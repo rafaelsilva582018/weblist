@@ -70,24 +70,5 @@ textarea {
 }
 
 .login-mosaic-tile {
-  animation: login-mosaic-row-down 28s ease-in-out infinite alternate;
-  will-change: transform;
-}
-
-.login-mosaic-tile:nth-child(odd) {
-  animation-direction: alternate-reverse;
-}
-
-.login-mosaic-tile:nth-child(3n) {
-  animation-duration: 34s;
-}
-
-.login-mosaic-tile:nth-child(4n) {
-  animation-duration: 40s;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .login-mosaic-tile {
-    animation: none;
-  }
+  animation: none;
 }

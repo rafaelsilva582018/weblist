@@ -1,6 +1,6 @@
-import { CalendarDays, Database, Eraser, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Sparkles, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
+import { CalendarDays, Database, Download, Eraser, FileUp, Image, KeyRound, RefreshCcw, ShieldCheck, Sparkles, Trash2, UserPlus, Users, Wand2 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { apiFetch } from '../api.js';
+import { apiFetch, apiUrl } from '../api.js';
 import { useAuth } from '../context/AuthContext.jsx';
 
 function StatBox({ label, value }) {
@@ -22,6 +22,8 @@ export default function AdminPage() {
   const [tmdbStatus, setTmdbStatus] = useState(null);
   const [omdbStatus, setOmdbStatus] = useState(null);
   const [aiStatus, setAiStatus] = useState(null);
+  const [securityStatus, setSecurityStatus] = useState(null);
+  const [integrityStatus, setIntegrityStatus] = useState(null);
   const [aiJob, setAiJob] = useState(null);
   const [tmdbApiKey, setTmdbApiKey] = useState('');
   const [tmdbAccessToken, setTmdbAccessToken] = useState('');
@@ -83,6 +85,7 @@ export default function AdminPage() {
         setTmdbStatus(data.tmdb);
         setOmdbStatus(data.omdb);
         setAiStatus(data.ai);
+        setSecurityStatus(data.security);
         setEpgStatus(data.epg);
         setEpgUrl(data.epg?.url || '');
         setTmdbLanguage(data.raw?.tmdbLanguage || data.tmdb?.language || 'pt-BR');
@@ -288,6 +291,55 @@ export default function AdminPage() {
 
   async function clearWatched() {
     await clearUserProgress(user?.id, user?.username || 'usuario atual');
+  }
+
+  async function downloadBackup() {
+    setBusy(true);
+    setError('');
+    setLibraryMessage('');
+    try {
+      const response = await fetch(apiUrl('/admin/backup'), {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (!response.ok) {
+        const data = await response.json().catch(() => ({}));
+        throw new Error(data.error || 'Nao foi possivel gerar o backup');
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get('content-disposition') || '';
+      const fileName = disposition.match(/filename="?([^"]+)"?/i)?.[1] || `weblist-${Date.now()}.sqlite`;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+      setLibraryMessage('Backup gerado');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function checkIntegrity() {
+    setBusy(true);
+    setError('');
+    setLibraryMessage('');
+    try {
+      const data = await apiFetch('/admin/integrity', { cacheTtlMs: 0 });
+      setIntegrityStatus(data);
+      setLibraryMessage(data.ok ? 'Integridade verificada sem problemas' : 'Integridade encontrou pontos para revisar');
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function createUser(event) {
@@ -511,7 +563,7 @@ export default function AdminPage() {
         </button>
       </div>
 
-      <div className="mb-8 grid gap-3 sm:grid-cols-4 lg:grid-cols-8">
+      <div className="mb-8 grid gap-3 sm:grid-cols-4 lg:grid-cols-9">
         <StatBox label="Filmes" value={stats?.movies ?? 0} />
         <StatBox label="Series" value={stats?.series ?? 0} />
         <StatBox label="Temporadas" value={stats?.seasons ?? 0} />
@@ -519,6 +571,7 @@ export default function AdminPage() {
         <StatBox label="Canais" value={stats?.channels ?? 0} />
         <StatBox label="Assistidos" value={stats?.watched ?? 0} />
         <StatBox label="Fontes" value={stats?.sources ?? 0} />
+        <StatBox label="Relatorios" value={stats?.reports ?? 0} />
         <StatBox label="Categorias" value={stats?.categories ?? 0} />
       </div>
 
@@ -694,7 +747,23 @@ export default function AdminPage() {
               <Eraser size={17} />
               Limpar meus assistidos
             </button>
+            <button type="button" onClick={downloadBackup} disabled={busy || !token} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
+              <Download size={17} />
+              Backup
+            </button>
+            <button type="button" onClick={checkIntegrity} disabled={busy} className="inline-flex items-center gap-2 rounded border border-white/10 px-5 py-3 text-sm font-bold text-slate-200 hover:bg-white/8 disabled:opacity-60">
+              <ShieldCheck size={17} />
+              Verificar
+            </button>
           </div>
+
+          {securityStatus?.warnings?.length > 0 && (
+            <div className="mt-5 rounded border border-amber-400/25 bg-amber-400/10 p-3 text-sm text-amber-100">
+              {securityStatus.warnings.map((warning) => (
+                <p key={warning}>{warning}</p>
+              ))}
+            </div>
+          )}
         </form>
 
         <aside className="rounded border border-white/10 bg-white/6 p-5">
@@ -746,6 +815,17 @@ export default function AdminPage() {
             </div>
           ) : (
             <p className="text-sm text-slate-400">O progresso aparece aqui depois que a importacao comecar.</p>
+          )}
+
+          {integrityStatus && (
+            <div className="mt-5 rounded border border-white/10 bg-black/20 p-3 text-sm text-slate-300">
+              <p className="font-bold text-white">{integrityStatus.ok ? 'Biblioteca integra' : 'Revisao recomendada'}</p>
+              <p className="mt-2">Indice: {integrityStatus.searchIndex?.indexed ?? 0}/{integrityStatus.searchIndex?.expected ?? 0}</p>
+              <p>Temporadas orfas: {integrityStatus.checks?.orphanSeasons ?? 0}</p>
+              <p>Episodios orfaos: {integrityStatus.checks?.orphanEpisodes ?? 0}</p>
+              <p>Fontes orfas: {integrityStatus.checks?.orphanSources ?? 0}</p>
+              <p>Favoritos orfaos: {integrityStatus.checks?.orphanFavorites ?? 0}</p>
+            </div>
           )}
         </aside>
       </div>
