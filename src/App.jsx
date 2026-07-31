@@ -20,8 +20,9 @@ const SearchPage = lazyPage(() => import('./pages/SearchPage.jsx'));
 const PlayerPage = lazyPage(() => import('./pages/PlayerPage.jsx'));
 const ProblemsPage = lazyPage(() => import('./pages/ProblemsPage.jsx'));
 const AdminPage = lazyPage(() => import('./pages/AdminPage.jsx'));
+const RandomPage = lazyPage(() => import('./pages/RandomPage.jsx'));
 
-const sharedWarmPages = [CatalogPage, FavoritesPage, ProfilePage, SearchPage, MovieDetails, SeriesDetails, PlayerPage];
+const sharedWarmPages = [CatalogPage, FavoritesPage, ProfilePage, SearchPage, MovieDetails, SeriesDetails, PlayerPage, RandomPage];
 const adminWarmPages = [ProblemsPage, AdminPage];
 
 function scheduleWarmPages(warmers) {
@@ -107,6 +108,7 @@ export default function App() {
               <Route path="/series" element={<RouteSuspense><CatalogPage type="series" /></RouteSuspense>} />
               <Route path="/canais" element={<RouteSuspense><CatalogPage type="channel" /></RouteSuspense>} />
               <Route path="/favoritos" element={<RouteSuspense><FavoritesPage /></RouteSuspense>} />
+              <Route path="/sorteador" element={<RouteSuspense><RandomPage /></RouteSuspense>} />
               <Route path="/perfil" element={<RouteSuspense><ProfilePage /></RouteSuspense>} />
               <Route path="/movies/:id" element={<RouteSuspense><MovieDetails /></RouteSuspense>} />
               <Route path="/series/:id" element={<RouteSuspense><SeriesDetails /></RouteSuspense>} />

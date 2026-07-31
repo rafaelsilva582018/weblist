@@ -2650,6 +2650,30 @@ app.get('/api/search', asyncRoute(async (req, res) => {
   });
 }));
 
+app.get('/api/random-pick', (req, res) => {
+  const user = getLocalUser(req);
+  const type = String(req.query.type || 'movie') === 'series' ? 'series' : 'movie';
+  const category = String(req.query.category || '');
+  const year = String(req.query.year || '');
+  const metadata = String(req.query.metadata || 'all');
+  const hideAdult = effectiveHideAdult(req, user);
+  const options = {
+    category,
+    year,
+    metadata,
+    hideAdult,
+    sort: 'random',
+    limit: 1,
+    userId: user.id
+  };
+  const result = type === 'series' ? listSeries(options) : listMovies(options);
+  res.json({
+    item: result.items[0] || null,
+    total: result.pagination.total,
+    filters: { type, category, year, metadata, hideAdult }
+  });
+});
+
 app.get('/api/problems', requireAdmin, (req, res) => {
   const limit = parseLimit(req.query.limit, 40, 120);
   const missing = [

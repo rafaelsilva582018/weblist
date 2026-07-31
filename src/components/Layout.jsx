@@ -1,4 +1,4 @@
-import { AlertTriangle, Film, Home, LogOut, MonitorPlay, Search, Settings, Star, Tv, UserCircle } from 'lucide-react';
+import { AlertTriangle, Dice5, Film, Home, LogOut, MonitorPlay, Search, Settings, Star, Tv, UserCircle } from 'lucide-react';
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext.jsx';
@@ -8,7 +8,8 @@ const baseNavItems = [
   { to: '/filmes', label: 'Filmes', icon: Film },
   { to: '/series', label: 'Series', icon: MonitorPlay },
   { to: '/canais', label: 'Canais', icon: Tv },
-  { to: '/favoritos', label: 'Favoritos', icon: Star }
+  { to: '/favoritos', label: 'Favoritos', icon: Star },
+  { to: '/sorteador', label: 'Sorteador', icon: Dice5 }
 ];
 
 const adminNavItems = [
